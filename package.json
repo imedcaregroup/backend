@@ -1,0 +1,55 @@
+{
+  "name": "imed-backend",
+  "version": "1.0.0",
+  "description": "<div align=\"center\"> <img src=\"logo.png\" width=120 height=120/> <h1> IMED BACKEND </h1>   </div>",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "files": [
+    "build/**/*"
+  ],
+  "scripts": {
+    "build": "npm run lint:fix && rm -rf ./build; npx tsc && ./node_modules/.bin/eslint 'src/**/*.ts'",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --ignore-pattern \"src/seeders/**\" --fix",
+    "dev": "npx nodemon",
+    "start": "node build/index.js",
+    "seed": "npx ts-node-dev src/seeders",
+    "start:prod": "pm2 start yarn --name imed-backend-prod  -- start",
+    "start:container": "docker-compose down --remove-orphans && docker-compose up --build --force-recreate imed-backend -d"
+  },
+  "keywords": [],
+  "author": "mudassir089",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/express-validator": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/winston": "^2.4.4",
+    "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "@typescript-eslint/parser": "^8.5.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.3.3",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.21.1",
+    "chalk": "4.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-node": "^11.1.0",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "npm": "^10.8.3",
+    "prisma": "^5.21.1",
+    "winston": "^3.14.2"
+  },
+  "repository": "https://github.com/mudassir089/iMed-backend.git"
+}

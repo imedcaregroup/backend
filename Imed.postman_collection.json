@@ -1,0 +1,103 @@
+{
+	"info": {
+		"_postman_id": "cfb25cc9-1466-45a7-a91d-f775b129f6b7",
+		"name": "Imed",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38451856",
+		"_collection_link": "https://safe-appetite.postman.co/workspace/Team-Workspace~33c567f9-2770-46a2-80f0-c09dba390b87/collection/38451856-cfb25cc9-1466-45a7-a91d-f775b129f6b7?action=share&source=collection_link&creator=38451856"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login With Google",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"givenName\": \"INSARAM ALAM\",\n    \"familyName\": \"SIDDIQUE\",\n    \"name\": \"INSARAM ALAM SIDDIQUE\",\n    \"email\": \"alaminsaram92@gmail.com\",\n    \"id\": \"101748810510647259024\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/user/google",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"user",
+								"google"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{URL}}/user/me",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"    const jsonData = pm.response.json()",
+					"    if(jsonData.data&&jsonData.data.token){",
+					"        pm.collectionVariables.set(\"TOKEN\", `Bearer ${jsonData.data.token}`)",
+					"    }"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "URL",
+			"value": "http://localhost:4000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "TOKEN",
+			"value": ""
+		}
+	]
+}

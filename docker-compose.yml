@@ -1,0 +1,33 @@
+services:
+  # Node.js service
+  imed-backend:
+    container_name: imed-backend
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app # Mount current directory to /app
+      - /app/node_modules # Optional: only if necessary
+    env_file:
+      - .env
+    depends_on:
+      - postgres # Ensure the db service starts before the app service
+
+  # PostgreSQL service
+  postgres:
+    image: postgres:latest
+    restart: always
+    container_name: postgres
+    ports:
+      - "5432:5432" # Map port 5432 of the container to port 5432 on the host machine
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "imedDb-dev"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persist the PostgreSQL data
+# Named volumes for persistent data storage
+volumes:
+  pgdata:
