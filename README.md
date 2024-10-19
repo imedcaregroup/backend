@@ -44,25 +44,25 @@ docker run -d --name some-postgres  -p 5432:5432  -e POSTGRES_USER=â€˜postgresâ€
 Install dependencies
 
 ```bash
-yarn
+npm install
 ```
 
 ## Run development server
 
 ```bash
-yarn dev
+npm run dev
 ```
 
 ## Create production build
 
 ```bash
-yarn run build
+npm run build
 ```
 
 ## Prettify code
 
 ```bash
-yarn lint:fix
+npm run lint:fix
 ```
 
 ## Generate Migration And Apply To DB:
@@ -74,7 +74,7 @@ npx prisma migrate dev --name MINGRATION_NAME
 ## Run Docker Container:
 
 ```
-yarn start:container
+npm run start:container
 ```
 
 ## Check Logs For Docker Container:
