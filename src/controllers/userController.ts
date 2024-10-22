@@ -8,7 +8,7 @@ import { UserRequest } from "../types";
 const UserController = () => {
   const loginUserWithGoogle = async (
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
@@ -38,7 +38,7 @@ const UserController = () => {
       logHttp("Creating jwt");
       const token = await generateJWT(
         { _id: user?.id, tyep: "ACCESS_TOKEN" },
-        "365d",
+        "365d"
       );
       logHttp("Created jwt");
 
@@ -86,6 +86,39 @@ const UserController = () => {
     }
   };
 
+  const setMyProfile = async (req: UserRequest, res: Response) => {
+    try {
+      logHttp("Setting up user profile with body ", req.body);
+
+      const user = await prisma.user.update({
+        where: {
+          id: req.user._id,
+        },
+        data: {
+          ...req.body,
+          ...(req.body.dob && { dob: new Date(req.body.dob) }),
+        },
+      });
+
+      logHttp("Setted user profile");
+
+      return sendSuccessResponse({
+        res,
+        data: {
+          ...user,
+        },
+        message: "Setted user profile successfully!!!",
+      });
+    } catch (error) {
+      logError(`Error while setMyProfile ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`User - ${context} => ${JSON.stringify(value)}`);
 
@@ -95,6 +128,7 @@ const UserController = () => {
   return {
     loginUserWithGoogle,
     getMyProfile,
+    setMyProfile,
   };
 };
 

@@ -7,6 +7,7 @@ import helmet from "helmet";
 import logger from "./utils/logger";
 import { sendSuccessResponse } from "./utils/response";
 import routes from "./routes";
+import errorMiddleware from "./middlewares/error";
 
 const app: express.Application = express();
 
@@ -16,17 +17,20 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.ENV === "development" ? "*" : process.env.WEB_URL,
-  }),
+  })
 );
 
 app.get("/", (_: Request, res: Response) =>
   sendSuccessResponse({
     res,
     message: "Hello from imed nbackend",
-  }),
+  })
 );
 
 app.use("/api/v1", routes);
+
+// Error Middleware
+app.use(errorMiddleware as any);
 
 const PORT = process.env.PORT || 5000;
 
