@@ -22,7 +22,7 @@ type SuccessParamType = {
 
 type ErrorParamType = {
   res: Response;
-  error: string;
+  error: string | any;
   statusCode?: number;
 };
 export const sendSuccessResponse = ({

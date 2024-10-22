@@ -19,17 +19,19 @@ model User {
   id      Int      @id @default(autoincrement())
   email   String?  @unique
   password    String?
+  authProvider String
+  googleId String?
   mobileNumber String?
   otp Int?
   name String? 
   surName String?
   pytroNym String?
-  pin String?
   dob DateTime?
-  city String?
-  district String?
+  gender String?
+  country String?
   address String?
-  authProvider String
-  googleId String?
+  lat Float?
+  lng Float?
   notificationEnabled Boolean  @default(false)
 }
+

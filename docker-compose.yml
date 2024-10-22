@@ -14,7 +14,6 @@ services:
       - .env
     depends_on:
       - postgres # Ensure the db service starts before the app service
-
   # PostgreSQL service
   postgres:
     image: postgres:latest
