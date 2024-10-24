@@ -23,7 +23,7 @@ app.use(
 app.get("/", (_: Request, res: Response) =>
   sendSuccessResponse({
     res,
-    message: "Hello From Imed Backend",
+    message: "Hello From Imed Backend!!!",
   })
 );
 

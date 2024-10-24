@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "cfb25cc9-1466-45a7-a91d-f775b129f6b7",
-		"name": "Imed",
+		"name": "Imed Dev",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "38451856",
 		"_collection_link": "https://safe-appetite.postman.co/workspace/Team-Workspace~33c567f9-2770-46a2-80f0-c09dba390b87/collection/38451856-cfb25cc9-1466-45a7-a91d-f775b129f6b7?action=share&source=collection_link&creator=38451856"
@@ -60,6 +60,39 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Set My Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mobileNumber\": \"+9230533232144\",\n    \"name\": \"Insaram\",\n    \"surName\": \"Isaram Shameem\",\n    \"dob\": \"1996-04-12\",\n    \"country\": \"Pakistan\",\n    \"address\": \"Nazimabad\",\n    \"lat\": 180,\n    \"lng\": 30.30,\n    \"notificationEnabled\": true,\n    \"gender\": \"male\" // male or female\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/user/profile",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
@@ -92,12 +125,17 @@
 	"variable": [
 		{
 			"key": "URL",
-			"value": "http://localhost:4000/api/v1",
+			"value": "http://13.60.113.40/api/v1",
 			"type": "string"
 		},
 		{
 			"key": "TOKEN",
 			"value": ""
+		},
+		{
+			"key": "LOCAL_URL",
+			"value": "http://localhost:4000/api/v1",
+			"type": "string"
 		}
 	]
 }
