@@ -43,8 +43,11 @@ jobs:
             echo "Deployment in progress."
             cd /home/imed-user/projects/iMed-backend || exit 1
             git config pull.rebase false
+
             git config --global user.email "muhammadmudassir0900@gmail.com"
             git config --global user.name "mudassir089"
+            
+            git reset --hard HEAD || exit 1
             git pull origin main || exit 1 
             
             export NVM_DIR="$HOME/.nvm"
