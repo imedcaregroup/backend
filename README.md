@@ -71,6 +71,18 @@ npm run lint:fix
 npx prisma migrate dev --name MINGRATION_NAME
 ```
 
+## During Development To Create And Apply New Migrations:
+
+```
+npx prisma migrate dev
+```
+
+## During Production To Apply Existing Migrations Without Modifying The Schema Or Introducing New Migrations:
+
+```
+npx prisma migrate deploy
+```
+
 ## Run Docker Container:
 
 ```

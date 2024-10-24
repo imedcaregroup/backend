@@ -15,7 +15,7 @@ router
   .route("/profile")
   .patch(
     setUserProfileValidation,
-    validationWrapper(userController.setMyProfile)
+    validationWrapper(userController.setMyProfile),
   );
 
 export default router;

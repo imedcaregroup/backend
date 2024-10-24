@@ -1,0 +1,70 @@
+name: Deploy to EC2 Dev
+
+on:
+  push:
+    branches:
+      - main # This targets the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the project
+        run: npm run build
+
+      - name: Setup SSH
+        env:
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Debug SSH connection
+        run: |
+          ssh -v -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} echo "SSH connection successful"
+
+      - name: Deploy to EC2
+        if: success()
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            echo "Deployment in progress."
+            cd /home/imed-user/projects/iMed-backend || exit 1
+            git config pull.rebase false
+            git config --global user.email "muhammadmudassir0900@gmail.com"
+            git config --global user.name "mudassir089"
+            git pull origin main || exit 1 
+            
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+            
+            npm install || exit 1
+            npm run build || exit 1
+
+            # Running migrations
+            npx prisma migrate deploy
+
+            # Stop the existing process if it exists
+            pm2 stop imed-backend-prod || true
+            pm2 delete imed-backend-prod|| true
+
+            # Start the process
+            npm run start:prod
+
+            pm2 save
+
+            echo "Deployment successful."
+          EOF
