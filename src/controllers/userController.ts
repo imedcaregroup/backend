@@ -8,7 +8,7 @@ import { UserRequest } from "../types";
 const UserController = () => {
   const loginUserWithGoogle = async (
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
@@ -38,7 +38,7 @@ const UserController = () => {
       logHttp("Creating jwt");
       const token = await generateJWT(
         { _id: user?.id, tyep: "ACCESS_TOKEN" },
-        "365d"
+        "365d",
       );
       logHttp("Created jwt");
 

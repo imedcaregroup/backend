@@ -5,7 +5,7 @@ const errorMiddleware = (
   error: HttpException,
   req: Request,
   res: Response,
-  _: unknown
+  _: unknown,
 ) => {
   return res.status(error.status || 500).json({
     success: false,

@@ -34,7 +34,7 @@ export const validationWrapper = (callback: any): any => {
   return (
     req: Request | UserRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): any => {
     let errors = checkValidation(req as any);
     if (errors) {
@@ -54,7 +54,7 @@ export const generateJWT = (payload: object, expiresIn = "30d"): string => {
 export const verifyJWT = (token: string): DecodedLoginTokenType => {
   const decode: DecodedLoginTokenType = verify(
     token,
-    SECRET_KEY
+    SECRET_KEY,
   ) as DecodedLoginTokenType;
   if (!decode) throw new Error("You are not authorized to perform this action");
   return decode;
