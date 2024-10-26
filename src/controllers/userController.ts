@@ -8,11 +8,11 @@ import { UserRequest } from "../types";
 const UserController = () => {
   const loginUserWithGoogle = async (
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
-      const { name, givenName, familyName, email, id } = req.body;
+      const { name, givenName, familyName, email, id, photo } = req.body;
 
       logHttp("Finding user with email ==> ", email);
       let user = await prisma.user.findFirst({
@@ -30,6 +30,7 @@ const UserController = () => {
             googleId: id,
             email,
             authProvider: "GOOGLE",
+            imageUrl: photo,
           },
         });
         logHttp("Created new user with email ", email);
@@ -38,7 +39,7 @@ const UserController = () => {
       logHttp("Creating jwt");
       const token = await generateJWT(
         { _id: user?.id, tyep: "ACCESS_TOKEN" },
-        "365d",
+        "365d"
       );
       logHttp("Created jwt");
 

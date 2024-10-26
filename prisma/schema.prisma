@@ -32,6 +32,7 @@ model User {
   address String?
   lat Float?
   lng Float?
+  imageUrl String?
   notificationEnabled Boolean  @default(false)
 }
 
