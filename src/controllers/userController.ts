@@ -30,7 +30,7 @@ const UserController = () => {
             googleId: id,
             email,
             authProvider: "GOOGLE",
-            imageUrl: photo,
+            imageUrl: photo || "",
           },
         });
         logHttp("Created new user with email ", email);
