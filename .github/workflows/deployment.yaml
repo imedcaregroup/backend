@@ -49,6 +49,9 @@ jobs:
             
             git reset --hard HEAD || exit 1
             git pull origin main || exit 1 
+
+            # Running migrations
+            npx prisma migrate deploy
             
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -57,8 +60,6 @@ jobs:
             npm install || exit 1
             npm run build || exit 1
 
-            # Running migrations
-            npx prisma migrate deploy
 
             # Stop the existing process if it exists
             pm2 stop imed-backend-prod || true
