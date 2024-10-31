@@ -49,26 +49,36 @@ jobs:
             
             git reset --hard HEAD || exit 1
             git pull origin main || exit 1 
-
-            # Running migrations
-            npx prisma migrate deploy
             
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
             [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
             
+            echo "Installing dependencies."
             npm install || exit 1
+            
+            echo "Generate Prisma Client."
+            npx prisma generate || exit 1 
+
+            echo "Building Project."
             npm run build || exit 1
 
+            echo "Running Migrations."
+            npx prisma migrate deploy
 
-            # Stop the existing process if it exists
+
+            echo "Stop the existing process if it exists"
             pm2 stop imed-backend-prod || true
             pm2 delete imed-backend-prod|| true
 
-            # Start the process
+
+            echo "Start the process"
             npm run start:prod
 
+
+            echo "Saving pm2"
             pm2 save
+            
 
             echo "Deployment successful."
           EOF
