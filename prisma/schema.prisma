@@ -40,5 +40,15 @@ model Service{
    id      Int      @id @default(autoincrement())
    iconUrl String
    name    String
+   categories   Category[]
 }
 
+
+
+model Category{
+   id      Int      @id @default(autoincrement())
+   iconUrl String
+   name    String
+   serviceId   Int    // Foreign key
+   service     Service   @relation(fields: [serviceId], references: [id]) // Relation to User
+}
