@@ -8,15 +8,18 @@ const logger = createLogger({
     timestamp(),
     printf(({ level, message, timestamp }) => {
       return getColor(level)(
-        `${timestamp} [${level.toUpperCase()}] ${message}`,
+        `${timestamp} [${level.toUpperCase()}] ${message}`
       );
-    }),
+    })
   ),
-  transports: [
-    new transports.Console(),
-    new transports.File({ filename: "logs/error.log", level: "error" }),
-    new transports.File({ filename: "logs/combined.log" }),
-  ],
+  transports:
+    process.env.ENV === "development"
+      ? [
+          new transports.Console(),
+          new transports.File({ filename: "logs/error.log", level: "error" }),
+          new transports.File({ filename: "logs/combined.log" }),
+        ]
+      : [new transports.Console()],
 });
 
 function getColor(level: string) {

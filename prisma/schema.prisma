@@ -35,3 +35,10 @@ model User {
   notificationEnabled Boolean  @default(false)
 }
 
+
+model Service{
+   id      Int      @id @default(autoincrement())
+   iconUrl String
+   name    String
+}
+
