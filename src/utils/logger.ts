@@ -8,9 +8,9 @@ const logger = createLogger({
     timestamp(),
     printf(({ level, message, timestamp }) => {
       return getColor(level)(
-        `${timestamp} [${level.toUpperCase()}] ${message}`
+        `${timestamp} [${level.toUpperCase()}] ${message}`,
       );
-    })
+    }),
   ),
   transports:
     process.env.ENV === "development"
