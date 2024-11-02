@@ -7,7 +7,7 @@ import { UserRequest } from "../types";
 const SubCategoryController = () => {
   const getSubCategories = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;

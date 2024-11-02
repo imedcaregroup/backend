@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
+import "./config/prisma";
 
 import cors from "cors";
 import express, { Request, Response } from "express";
@@ -17,14 +18,14 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.ENV === "development" ? "*" : process.env.WEB_URL,
-  })
+  }),
 );
 
 app.get("/", (_: Request, res: Response) =>
   sendSuccessResponse({
     res,
     message: "Hello From Imed Backend!!!",
-  })
+  }),
 );
 
 app.use("/api/v1", routes);
