@@ -33,6 +33,7 @@ model User {
   lat Float?
   lng Float?
   notificationEnabled Boolean  @default(false)
+  orders Order[]
 }
 
 
@@ -41,6 +42,7 @@ model Service{
    iconUrl String
    name    String
    categories   Category[]
+    orders Order[]
 }
 
 
@@ -52,6 +54,7 @@ model Category{
    serviceId   Int    
    service     Service   @relation(fields: [serviceId], references: [id]) 
    subcategories   SubCategory[]
+    orders Order[]
 }
 
 
@@ -63,6 +66,7 @@ model SubCategory{
    categoryId   Int    
    category     Category   @relation(fields: [categoryId], references: [id]) 
    medicalCatrgories MedicalCategory[]
+    orders Order[]
 }
 
 
@@ -74,6 +78,7 @@ model Medical{
    lng Float
    address String 
    medicalCatrgories MedicalCategory[]
+   orders Order[]
 }
 
 
@@ -85,4 +90,30 @@ model MedicalCategory{
    medical           Medical          @relation(fields: [medicalId], references: [id])
    subCategory       SubCategory       @relation(fields: [subCategoryId], references: [id])
    price    Float @default(0)
+}
+
+
+
+model Order{
+   id      Int      @id @default(autoincrement())
+   createdAt         DateTime         @default(now())
+   serviceId   Int
+   categoryId Int
+   subCategoryId Int
+   medicalId Int
+   userId Int
+   price Float @default(0)
+   address String
+   lat Float?
+   lng Float?
+   paymetStatus String @default("pending")
+   orderStatus String @default("pending")
+   declinedReason String?
+   additionalInfo String?
+   orderDate     DateTime
+   medical           Medical          @relation(fields: [medicalId], references: [id])
+   service       Service       @relation(fields: [serviceId], references: [id])
+   category       Category       @relation(fields: [categoryId], references: [id])
+   subCategory       SubCategory       @relation(fields: [subCategoryId], references: [id])
+   user       User       @relation(fields: [userId], references: [id])
 }
