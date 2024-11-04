@@ -3,6 +3,7 @@ import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
+import { formatTime } from "../utils/helpers";
 
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
@@ -66,15 +67,17 @@ const OrderController = () => {
 
       if (!medicalCategory) throw new Error("No medical category found");
 
+      const formatedTime = formatTime(+req.body.startTime);
+
       logHttp("Checked for  service,category,subCategiry and medical ==> ");
 
       logHttp("Creating order ==> ");
-      await prisma.order.create({
+      const order = await prisma.order.create({
         data: {
           ...req.body,
           price: medicalCategory.price,
           userId: req.user._id,
-          orderDate: new Date(req.body.orderDate),
+          orderDate: new Date(`${req.body.date} ${formatedTime}`),
         },
       });
       logHttp("Created order ==> ");
@@ -83,10 +86,7 @@ const OrderController = () => {
         res,
         message: "Order created successfully!!!",
         data: {
-          ...req.body,
-          price: medicalCategory.price,
-          userId: req.user._id,
-          orderDate: new Date(req.body.orderDate),
+          ...order,
         },
       });
     } catch (error: any) {

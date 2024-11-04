@@ -9,7 +9,8 @@ export const createOrderValidation = [
   check("lat").optional({ nullable: true, checkFalsy: true }),
   check("lng").optional({ nullable: true, checkFalsy: true }),
   check("additionalInfo").optional({ nullable: true, checkFalsy: true }),
-  check("orderDate").notEmpty().withMessage("Please provide orderDate"),
+  check("date").notEmpty().withMessage("Please provide date"),
+  check("startTime").notEmpty().withMessage("Please provide startTime"),
 ];
 
 export const acceptOrRejectOrderValidation = [

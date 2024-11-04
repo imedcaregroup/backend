@@ -34,7 +34,7 @@ export const validationWrapper = (callback: any): any => {
   return (
     req: Request | UserRequest,
     res: Response,
-    next: NextFunction,
+    next: NextFunction
   ): any => {
     let errors = checkValidation(req as any);
     if (errors) {
@@ -54,7 +54,7 @@ export const generateJWT = (payload: object, expiresIn = "30d"): string => {
 export const verifyJWT = (token: string): DecodedLoginTokenType => {
   const decode: DecodedLoginTokenType = verify(
     token,
-    SECRET_KEY,
+    SECRET_KEY
   ) as DecodedLoginTokenType;
   if (!decode) throw new Error("You are not authorized to perform this action");
   return decode;
@@ -63,4 +63,16 @@ export const verifyJWT = (token: string): DecodedLoginTokenType => {
 export const decordToken = (token: string): string => {
   const decodedToken = verify(token, SECRET_KEY) as DecodedTokenType;
   return decodedToken.userId;
+};
+
+export const formatTime = (time: number) => {
+  // Convert to string and pad with leading zeros if needed
+  const timeString = time.toString().padStart(4, "0");
+
+  // Extract hour and minute parts
+  const hours = timeString.slice(0, 2);
+  const minutes = timeString.slice(2, 4);
+
+  // Return formatted time
+  return `${hours}:${minutes}:00`;
 };
