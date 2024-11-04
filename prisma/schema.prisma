@@ -79,6 +79,7 @@ model Medical{
    address String 
    medicalCatrgories MedicalCategory[]
    orders Order[]
+   availabilities Availability[]
 }
 
 
@@ -111,9 +112,26 @@ model Order{
    declinedReason String?
    additionalInfo String?
    orderDate     DateTime
+
+   date String?
+   startTime Int?
+   endTime Int?
+
+   
    medical           Medical          @relation(fields: [medicalId], references: [id])
    service       Service       @relation(fields: [serviceId], references: [id])
    category       Category       @relation(fields: [categoryId], references: [id])
    subCategory       SubCategory       @relation(fields: [subCategoryId], references: [id])
    user       User       @relation(fields: [userId], references: [id])
+}
+
+
+model Availability{
+   id  Int @id @default(autoincrement())
+   createdAt DateTime @default(now())
+   day Int
+   startTime Int
+   endTime Int
+   medicalId Int
+   medical Medical  @relation(fields: [medicalId], references: [id])
 }
