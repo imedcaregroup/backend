@@ -73,6 +73,11 @@ const UserController = () => {
       );
       logHttp("Created jwt");
 
+      if (user?.password) {
+        // @ts-ignore
+        delete user.password;
+      }
+
       return sendSuccessResponse({
         res,
         data: {
