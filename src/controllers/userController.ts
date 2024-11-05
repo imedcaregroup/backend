@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import bcrypt from "bcrypt";
 import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
@@ -6,9 +7,92 @@ import { generateJWT } from "../utils/helpers";
 import { UserRequest } from "../types";
 
 const UserController = () => {
+  const signUp = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Adding user with reqBody ==> ", req.body);
+      const { name, password, email } = req.body;
+
+      logHttp("Finding user with email ==> ", email);
+      let user = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+
+      if (user) throw new Error("Email already in use");
+
+      const hashPassword = await bcrypt.hash(password, 10);
+
+      logHttp("Creating user");
+      await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashPassword,
+          authProvider: "PASSWORD",
+        },
+      });
+      logHttp("Created user");
+
+      return sendSuccessResponse({
+        res,
+        message: "User created successfully!!!",
+      });
+    } catch (error: any) {
+      logError(`Error while signUp ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
+  const logIn = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Logging user in with reqBody ==> ", req.body);
+      const { password, email } = req.body;
+
+      logHttp("Finding user with email ==> ", email);
+      let user = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+
+      if (!user || !user?.password)
+        throw new Error("Invalid email or password");
+      const isMatched = await bcrypt.compare(password, user?.password);
+
+      if (!isMatched) throw new Error("Invalid email or password");
+
+      logHttp("Creating jwt");
+      const token = await generateJWT(
+        { _id: user?.id, tyep: "ACCESS_TOKEN" },
+        "365d"
+      );
+      logHttp("Created jwt");
+
+      return sendSuccessResponse({
+        res,
+        data: {
+          user,
+          token,
+        },
+      });
+    } catch (error: any) {
+      logError(`Error while logIn ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const loginUserWithGoogle = async (
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
@@ -38,7 +122,7 @@ const UserController = () => {
       logHttp("Creating jwt");
       const token = await generateJWT(
         { _id: user?.id, tyep: "ACCESS_TOKEN" },
-        "365d",
+        "365d"
       );
       logHttp("Created jwt");
 
@@ -126,6 +210,8 @@ const UserController = () => {
     logger.error(`User - ${context} => ${JSON.stringify(value)}`);
 
   return {
+    signUp,
+    logIn,
     loginUserWithGoogle,
     getMyProfile,
     setMyProfile,

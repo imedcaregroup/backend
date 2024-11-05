@@ -43,6 +43,9 @@ export const sendErrorResponse = ({
   error,
   statusCode = 500,
 }: ErrorParamType): void => {
-  const responseObj: ErrorResponseType = { error, status: false };
+  const responseObj: ErrorResponseType = {
+    error: error?.message || error?.response?.data || error,
+    status: false,
+  };
   res.status(statusCode).send(responseObj);
 };
