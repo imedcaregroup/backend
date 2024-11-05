@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.ENV === "development" ? "*" : process.env.WEB_URL,
+    origin: "*"
   }),
 );
 
