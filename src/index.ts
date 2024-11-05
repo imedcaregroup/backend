@@ -17,15 +17,16 @@ app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 app.use(helmet());
 app.use(
   cors({
-    origin: "*"
-  }),
+    origin: "*",
+    methods: "*",
+  })
 );
 
 app.get("/", (_: Request, res: Response) =>
   sendSuccessResponse({
     res,
     message: "Hello From Imed Backend!!!",
-  }),
+  })
 );
 
 app.use("/api/v1", routes);
