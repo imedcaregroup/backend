@@ -102,6 +102,7 @@ const UserController = () => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
       const { name, givenName, familyName, email, id, photo } = req.body;
+      let userExists = true;
 
       logHttp("Finding user with email ==> ", email);
       let user = await prisma.user.findFirst({
@@ -122,6 +123,7 @@ const UserController = () => {
           },
         });
         logHttp("Created new user with email ", email);
+        userExists = false;
       }
 
       logHttp("Creating jwt");
@@ -136,6 +138,7 @@ const UserController = () => {
         data: {
           user,
           token,
+          userExists,
         },
       });
     } catch (error: any) {
