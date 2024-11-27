@@ -5,6 +5,7 @@ import {
   setUserProfileValidation,
   createUserValidation,
   loginUserValidation,
+  updatePasswordValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 const userController = UserController();
@@ -27,6 +28,13 @@ router
   .patch(
     setUserProfileValidation,
     validationWrapper(userController.setMyProfile)
+  );
+
+router
+  .route("/password")
+  .patch(
+    updatePasswordValidation,
+    validationWrapper(userController.updatePassword)
   );
 
 export default router;

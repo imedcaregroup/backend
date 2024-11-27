@@ -24,3 +24,10 @@ export const setUserProfileValidation = [
   check("lat").optional({ nullable: true, checkFalsy: true }),
   check("lng").optional({ nullable: true, checkFalsy: true }),
 ];
+
+export const updatePasswordValidation = [
+  check("password").notEmpty().withMessage("Please provide password"),
+  check("confirmPassword")
+    .notEmpty()
+    .withMessage("Please provide confirmPassword"),
+];
