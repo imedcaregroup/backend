@@ -6,6 +6,7 @@ import subCategoryRoute from "./subCategory";
 import medicalRoute from "./medical";
 import orderRoute from "./order";
 import availbilityRoute from "./availability";
+import addressRoute from "./address";
 import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -19,5 +20,6 @@ router.use("/subcategory", subCategoryRoute);
 router.use("/medical", medicalRoute);
 router.use("/order", orderRoute);
 router.use("/availability", availbilityRoute);
+router.use("/address", addressRoute);
 
 export default router;

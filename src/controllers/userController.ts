@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { generateJWT } from "../utils/helpers";
@@ -13,7 +12,7 @@ const UserController = () => {
       const { name, password, email } = req.body;
 
       logHttp("Finding user with email ==> ", email);
-      let user = await prisma.user.findFirst({
+      let user = await __db.user.findFirst({
         where: {
           email,
         },
@@ -24,7 +23,7 @@ const UserController = () => {
       const hashPassword = await bcrypt.hash(password, 10);
 
       logHttp("Creating user");
-      await prisma.user.create({
+      await __db.user.create({
         data: {
           name,
           email,
@@ -54,7 +53,7 @@ const UserController = () => {
       const { password, email } = req.body;
 
       logHttp("Finding user with email ==> ", email);
-      let user = await prisma.user.findFirst({
+      let user = await __db.user.findFirst({
         where: {
           email,
         },
@@ -62,6 +61,7 @@ const UserController = () => {
 
       if (!user || !user?.password)
         throw new Error("Invalid email or password");
+
       const isMatched = await bcrypt.compare(password, user?.password);
 
       if (!isMatched) throw new Error("Invalid email or password");
@@ -73,10 +73,7 @@ const UserController = () => {
       );
       logHttp("Created jwt");
 
-      if (user?.password) {
-        // @ts-ignore
-        delete user.password;
-      }
+      user.password = null;
 
       return sendSuccessResponse({
         res,
@@ -105,7 +102,7 @@ const UserController = () => {
       let userExists = true;
 
       logHttp("Finding user with email ==> ", email);
-      let user = await prisma.user.findFirst({
+      let user = await __db.user.findFirst({
         where: {
           googleId: id,
         },
@@ -113,7 +110,7 @@ const UserController = () => {
 
       if (!user) {
         logHttp("Creating new user with email ", email);
-        user = await prisma.user.create({
+        user = await __db.user.create({
           data: {
             name,
             surName: familyName || givenName,
@@ -154,13 +151,17 @@ const UserController = () => {
   const getMyProfile = async (req: UserRequest, res: Response) => {
     try {
       logHttp("Getting user profile with id ", req.user.id);
-      const user = await prisma.user.findFirst({
+      const user = await __db.user.findFirst({
         where: {
           id: req.user._id,
         },
       });
 
       logHttp("Got user profile with id ", req.user.id);
+
+      if (user?.password)
+        // @ts-ignore
+        delete user.password;
 
       return sendSuccessResponse({
         res,
@@ -182,7 +183,7 @@ const UserController = () => {
     try {
       logHttp("Setting up user profile with body ", req.body);
 
-      const user = await prisma.user.update({
+      const user = await __db.user.update({
         where: {
           id: req.user._id,
         },
@@ -193,6 +194,10 @@ const UserController = () => {
       });
 
       logHttp("Setted user profile");
+
+      if (user?.password)
+        // @ts-ignore
+        delete user.password;
 
       return sendSuccessResponse({
         res,

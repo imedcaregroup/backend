@@ -4,7 +4,7 @@
 
 # Documentation
 
-[FIGMA DESIGN](<https://www.figma.com/design/8rUddxTGlNsPhJRBbFsfQJ/iMed-(Copy)?node-id=515-34735&node-type=canvas&t=4UzkJ15PnWnxiSO2-0>)
+[FIGMA DESIGN](<https://www.figma.com/design/NhgzPIIHFFaOOjZUtIylpc/iMed-(Copy)?node-id=1702-4351&node-type=canvas&t=r87AF33V8Ozqv0AO-0>)
 
 ## Tech Stack
 

@@ -1,5 +1,4 @@
 import { Response } from "express";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -13,7 +12,7 @@ const OrderController = () => {
       const { serviceId, categoryId, subCategoryId, medicalId } = req.body;
       const [service, category, subCategory, medical, medicalCategory] =
         await Promise.all([
-          prisma.service.findFirst({
+          __db.service.findFirst({
             where: {
               id: +serviceId,
             },
@@ -21,7 +20,7 @@ const OrderController = () => {
               id: true,
             },
           }),
-          prisma.category.findFirst({
+          __db.category.findFirst({
             where: {
               id: +categoryId,
             },
@@ -29,7 +28,7 @@ const OrderController = () => {
               id: true,
             },
           }),
-          prisma.subCategory.findFirst({
+          __db.subCategory.findFirst({
             where: {
               id: +subCategoryId,
             },
@@ -37,7 +36,7 @@ const OrderController = () => {
               categoryId: true,
             },
           }),
-          prisma.medical.findFirst({
+          __db.medical.findFirst({
             where: {
               id: +medicalId,
             },
@@ -45,7 +44,7 @@ const OrderController = () => {
               id: true,
             },
           }),
-          prisma.medicalCategory.findFirst({
+          __db.medicalCategory.findFirst({
             where: {
               medicalId,
               subCategoryId,
@@ -72,7 +71,7 @@ const OrderController = () => {
       logHttp("Checked for  service,category,subCategiry and medical ==> ");
 
       logHttp("Creating order ==> ");
-      const order = await prisma.order.create({
+      const order = await __db.order.create({
         data: {
           ...req.body,
           price: medicalCategory.price,
@@ -110,7 +109,7 @@ const OrderController = () => {
       };
 
       logHttp("Fetching orders ==> ");
-      let orders = await prisma.order.findMany({
+      let orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
         },
@@ -164,7 +163,7 @@ const OrderController = () => {
       const orderId = +req.params.id;
 
       logHttp("Checking for order in db");
-      const order = await prisma.order.findFirst({
+      const order = await __db.order.findFirst({
         where: {
           id: +orderId,
         },
@@ -178,7 +177,7 @@ const OrderController = () => {
       logHttp("Checked for order in db");
 
       logHttp("Accepting or rejecting order ==> ");
-      await prisma.order.update({
+      await __db.order.update({
         where: {
           id: orderId,
         },
@@ -230,14 +229,14 @@ const OrderController = () => {
       }
 
       logHttp("Counting orders");
-      const count = await prisma.order.count({
+      const count = await __db.order.count({
         where: condition,
       });
 
       logHttp("Counted orders");
 
       logHttp("Fetching orders ==> ");
-      let orders = await prisma.order.findMany({
+      let orders = await __db.order.findMany({
         where: condition,
         skip: (page - 1) * limit,
         take: limit,
@@ -293,7 +292,7 @@ const OrderController = () => {
       };
 
       logHttp("Fetching order");
-      let order = await prisma.order.findFirst({
+      let order = await __db.order.findFirst({
         where: {
           id: orderId,
         },

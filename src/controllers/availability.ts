@@ -1,5 +1,4 @@
 import { Response } from "express";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -14,7 +13,7 @@ const AvailabilityController = () => {
       const medicalId = parseInt(req.query.medicalId as string);
 
       logHttp("Fetching categories ==> ");
-      let days = await prisma.availability.findMany({
+      let days = await __db.availability.findMany({
         where: {
           medicalId,
         },
@@ -56,7 +55,7 @@ const AvailabilityController = () => {
 
       logHttp("Fetching timeSlots ==> ");
       const [medical, availableDays, timeSlots] = await Promise.all([
-        prisma.medical.findFirst({
+        __db.medical.findFirst({
           where: {
             id: medicalId,
           },
@@ -64,7 +63,7 @@ const AvailabilityController = () => {
             id: true,
           },
         }),
-        prisma.availability.findFirst({
+        __db.availability.findFirst({
           where: {
             day,
           },
@@ -72,7 +71,7 @@ const AvailabilityController = () => {
             id: true,
           },
         }),
-        prisma.availability.findMany({
+        __db.availability.findMany({
           where: {
             day,
             medicalId,
@@ -96,7 +95,7 @@ const AvailabilityController = () => {
 
       logHttp("Fetched timeSlots");
 
-      const orders = await prisma.order.findMany({
+      const orders = await __db.order.findMany({
         where: {
           date: date as string,
           medicalId,
