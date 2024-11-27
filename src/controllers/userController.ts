@@ -216,6 +216,40 @@ const UserController = () => {
     }
   };
 
+  const updatePassword = async (req: UserRequest, res: Response) => {
+    try {
+      logHttp("Updating password with body ", req.body);
+
+      if (req.body.password !== req.body.confirmPassword)
+        throw new Error("Password and confirm password mismatched");
+
+      const hashPassword = await bcrypt.hash(req.body.password, 10);
+
+      await __db.user.update({
+        where: {
+          id: req.user._id,
+        },
+        data: {
+          password: hashPassword,
+        },
+      });
+
+      logHttp("Setted user profile");
+
+      return sendSuccessResponse({
+        res,
+        message: "Updated password successfully!!!",
+      });
+    } catch (error) {
+      logError(`Error while updatePassword ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`User - ${context} => ${JSON.stringify(value)}`);
 
@@ -228,6 +262,7 @@ const UserController = () => {
     loginUserWithGoogle,
     getMyProfile,
     setMyProfile,
+    updatePassword,
   };
 };
 
