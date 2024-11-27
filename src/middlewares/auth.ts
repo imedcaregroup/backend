@@ -8,7 +8,7 @@ import { UserRequest } from "../types";
 export const authMiddleware = async (
   req: UserRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   try {
     if (
@@ -28,7 +28,7 @@ export const authMiddleware = async (
 
       const user = await prisma.user.findFirst({
         where: {
-          id: decode?.id,
+          id: decode?._id,
         },
       });
 
@@ -47,7 +47,7 @@ export const authMiddleware = async (
     }
   } catch (error) {
     logger.error(
-      `Error while authenticating user ==> ${JSON.stringify(error.message)}`,
+      `Error while authenticating user ==> ${JSON.stringify(error.message)}`
     );
     sendErrorResponse({
       res,

@@ -156,7 +156,7 @@ const UserController = () => {
       logHttp("Getting user profile with id ", req.user.id);
       const user = await prisma.user.findFirst({
         where: {
-          id: req.user.id,
+          id: req.user._id,
         },
       });
 
