@@ -34,6 +34,7 @@ model User {
   lng Float?
   notificationEnabled Boolean  @default(false)
   orders Order[]
+  addresses Address[]
 }
 
 
@@ -66,7 +67,7 @@ model SubCategory{
    categoryId   Int    
    category     Category   @relation(fields: [categoryId], references: [id]) 
    medicalCatrgories MedicalCategory[]
-    orders Order[]
+   orders Order[]
 }
 
 
@@ -134,4 +135,21 @@ model Availability{
    endTime Int
    medicalId Int
    medical Medical  @relation(fields: [medicalId], references: [id])
+}
+
+
+
+
+model Address{
+   id  Int @id @default(autoincrement())
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+   shortName String
+   city String
+   district String
+   address String
+   userId Int
+   lat Int
+   lng Int
+   user       User       @relation(fields: [userId], references: [id])
 }

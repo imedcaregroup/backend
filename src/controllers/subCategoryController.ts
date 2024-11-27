@@ -1,5 +1,4 @@
 import { Response } from "express";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -7,7 +6,7 @@ import { UserRequest } from "../types";
 const SubCategoryController = () => {
   const getSubCategories = async (
     req: UserRequest,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -15,7 +14,7 @@ const SubCategoryController = () => {
       const categoryId = parseInt(req.query.category as string);
 
       logHttp("Fetching subCategories ==> ");
-      let subCategories = await prisma.subCategory.findMany({
+      let subCategories = await __db.subCategory.findMany({
         where: {
           categoryId,
         },

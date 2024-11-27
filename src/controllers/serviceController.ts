@@ -1,5 +1,4 @@
 import { Response } from "express";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -11,7 +10,7 @@ const ServiceController = () => {
       const cursor = parseInt(req.query.cursor as string) || "";
 
       logHttp("Fetching services ==> ");
-      let services = await prisma.service.findMany({
+      let services = await __db.service.findMany({
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
         take: limit,

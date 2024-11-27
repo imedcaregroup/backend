@@ -1,5 +1,4 @@
 import { Response } from "express";
-import prisma from "../config/db";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -7,7 +6,7 @@ import { UserRequest } from "../types";
 const CategoryController = () => {
   const getCategories = async (
     req: UserRequest,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -15,7 +14,7 @@ const CategoryController = () => {
       const serviceId = parseInt(req.query.service as string);
 
       logHttp("Fetching categories ==> ");
-      let categories = await prisma.category.findMany({
+      let categories = await __db.category.findMany({
         where: {
           serviceId,
         },
