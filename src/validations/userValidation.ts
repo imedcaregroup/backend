@@ -12,14 +12,21 @@ export const loginUserValidation = [
 ];
 
 export const setUserProfileValidation = [
-  check("mobileNumber").notEmpty().withMessage("Please provide mobileNumber"),
-  check("name").notEmpty().withMessage("Please provide name"),
-  check("surName").notEmpty().withMessage("Please provide surName"),
+  check("mobileNumber")
+    .optional()
+    .notEmpty()
+    .withMessage("Please provide mobileNumber"),
+  check("name")
+    .optional()
+    .notEmpty()
+    .notEmpty()
+    .withMessage("Please provide name"),
+  check("surName").optional().notEmpty().withMessage("Please provide surName"),
   check("pytroNym").optional({ nullable: true, checkFalsy: true }),
-  check("dob").notEmpty().withMessage("Please provide dob"),
+  check("dob").optional().notEmpty().withMessage("Please provide dob"),
   check("gender").optional({ nullable: true, checkFalsy: true }),
-  check("country").notEmpty().withMessage("Please provide country"),
-  check("address").notEmpty().withMessage("Please provide address"),
+  check("country").optional().notEmpty().withMessage("Please provide country"),
+  check("address").optional().notEmpty().withMessage("Please provide address"),
   check("imageUrl").optional({ nullable: true, checkFalsy: true }),
   check("lat").optional({ nullable: true, checkFalsy: true }),
   check("lng").optional({ nullable: true, checkFalsy: true }),
