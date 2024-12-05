@@ -112,6 +112,7 @@ const OrderController = () => {
       let orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
+          orderStatus: req.query.status as string,
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
@@ -127,7 +128,12 @@ const OrderController = () => {
             select,
           },
           medical: {
-            select,
+            select: {
+              ...select,
+              lat: true,
+              lng: true,
+              address: true,
+            },
           },
         },
         orderBy: {
@@ -227,6 +233,9 @@ const OrderController = () => {
           lte: endDate, // Less than or equal to end date
         };
       }
+      condition["user"] = {
+        isDeleted: false,
+      };
 
       logHttp("Counting orders");
       const count = await __db.order.count({

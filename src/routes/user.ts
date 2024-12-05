@@ -28,7 +28,8 @@ router
   .patch(
     setUserProfileValidation,
     validationWrapper(userController.setMyProfile)
-  );
+  )
+  .delete(userController.deleteMyProfile);
 
 router
   .route("/password")

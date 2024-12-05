@@ -35,6 +35,7 @@ model User {
   notificationEnabled Boolean  @default(false)
   orders Order[]
   addresses Address[]
+  isDeleted Boolean? @default(false)
 }
 
 

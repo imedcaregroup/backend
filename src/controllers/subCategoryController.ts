@@ -12,11 +12,15 @@ const SubCategoryController = () => {
       const limit = parseInt(req.query.limit as string) || 10;
       const cursor = parseInt(req.query.cursor as string) || "";
       const categoryId = parseInt(req.query.category as string);
+      const searchText = req.query.searchText || "";
 
       logHttp("Fetching subCategories ==> ");
       let subCategories = await __db.subCategory.findMany({
         where: {
-          categoryId,
+          ...(categoryId && { categoryId }),
+          ...(searchText && {
+            name: { contains: searchText as string, mode: "insensitive" },
+          }),
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
