@@ -56,6 +56,7 @@ const UserController = () => {
       let user = await __db.user.findFirst({
         where: {
           email,
+          isDeleted: false,
         },
       });
 
@@ -105,6 +106,7 @@ const UserController = () => {
       let user = await __db.user.findFirst({
         where: {
           googleId: id,
+          isDeleted: false,
         },
       });
 
@@ -216,6 +218,35 @@ const UserController = () => {
     }
   };
 
+  const deleteMyProfile = async (req: UserRequest, res: Response) => {
+    try {
+      logHttp("Setting up user profile with body ", req.body);
+
+      const user = await __db.user.update({
+        where: {
+          id: req.user._id,
+        },
+        data: {
+          isDeleted: true,
+        },
+      });
+
+      logHttp("Deleted user profile");
+
+      return sendSuccessResponse({
+        res,
+        message: "Deleted user profile successfully!!!",
+      });
+    } catch (error) {
+      logError(`Error while deleteProfile ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const updatePassword = async (req: UserRequest, res: Response) => {
     try {
       logHttp("Updating password with body ", req.body);
@@ -263,6 +294,7 @@ const UserController = () => {
     getMyProfile,
     setMyProfile,
     updatePassword,
+    deleteMyProfile,
   };
 };
 

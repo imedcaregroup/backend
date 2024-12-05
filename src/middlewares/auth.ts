@@ -29,6 +29,7 @@ export const authMiddleware = async (
       const user = await prisma.user.findFirst({
         where: {
           id: decode?._id,
+          isDeleted: false,
         },
       });
 
