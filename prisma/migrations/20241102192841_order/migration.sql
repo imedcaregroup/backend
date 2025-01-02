@@ -2,9 +2,9 @@
 CREATE TABLE "Order" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "serviceId" INTEGER NOT NULL,
-    "categoryId" INTEGER NOT NULL,
-    "subCategoryId" INTEGER NOT NULL,
+    "serviceId" INTEGER,
+    "categoryId" INTEGER,
+    "subCategoryId" INTEGER,
     "medicalId" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
     "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -16,6 +16,7 @@ CREATE TABLE "Order" (
     "declinedReason" TEXT,
     "addintionalInfo" TEXT,
     "orderDate" TIMESTAMP(3) NOT NULL,
+    "fileUrl"   TEXT,
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
 );

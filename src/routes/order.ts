@@ -15,6 +15,7 @@ router
   .post(createOrderValidation, validationWrapper(orderController.createOrder))
   .get(orderController.getOrders);
 router.route("/my").get(orderController.getMyOrders);
+router.route("/createRequestOrder").post(orderController.createRequestOrder);
 
 router
   .route("/:id")

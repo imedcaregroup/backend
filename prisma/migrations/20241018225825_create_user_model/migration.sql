@@ -12,7 +12,7 @@ CREATE TABLE "User" (
     "dob" TIMESTAMP(3),
     "city" TEXT,
     "district" TEXT,
-    "address" TEXT,
+    "address" TEXT DEFAULT 'None',
     "authProvider" TEXT NOT NULL,
     "googleId" TEXT,
     "notificationEnabled" BOOLEAN NOT NULL DEFAULT false,

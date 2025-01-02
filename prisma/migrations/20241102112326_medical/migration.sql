@@ -6,6 +6,8 @@ CREATE TABLE "Medical" (
     "lat" DOUBLE PRECISION NOT NULL,
     "lng" DOUBLE PRECISION NOT NULL,
     "address" TEXT NOT NULL,
+    "contact" INTEGER,
+    "services" TEXT,
 
     CONSTRAINT "Medical_pkey" PRIMARY KEY ("id")
 );
