@@ -16,6 +16,7 @@ router
   .get(orderController.getOrders);
 router.route("/my").get(orderController.getMyOrders);
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
+router.route("/getRequestOrder").get(orderController.getRequestOrder);
 
 router
   .route("/:id")

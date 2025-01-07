@@ -80,7 +80,7 @@ model Medical{
    lat  Float
    lng Float
    address String 
-   services  String[] 
+   services  Json 
    contact Int? 
    medicalCatrgories MedicalCategory[]
    orders Order[]
@@ -116,7 +116,7 @@ model Order{
    declinedReason String?
    additionalInfo String?
    orderDate     DateTime
-   fileUrl         String?
+   fileUrl        Json?
 
    date String?
    startTime Int?

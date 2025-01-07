@@ -23,7 +23,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // Max file size 10MB
-}).single('file');
+}).array('files');
 
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
@@ -93,6 +93,8 @@ const OrderController = () => {
   };
   const createRequestOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
+      const fileUrls: string[] = []; // Initialize an array to store file URLs
+  
       upload(req, res, async (err) => {
         if (err) {
           console.error("Multer Error: ", err);
@@ -102,14 +104,42 @@ const OrderController = () => {
             error: err.message,
           });
         }
+  
+        if (req.files && Array.isArray(req.files)) {
+          const uploadPromises = req.files.map((file: Express.Multer.File) => {
+            const fileName = `${Date.now()}-${file.originalname}`;
+            const params = {
+              Bucket: process.env.AWS_S3_BUCKET_NAME!,
+              Key: fileName,
+              Body: file.buffer,
+              ContentType: file.mimetype,
+            };
 
+            console.log("1")
+  
+            
+      return new Promise((resolve, reject) => {
+        s3.upload(params, (uploadError: Error | null, data: any) => {
+          if (uploadError) {
+            reject("Error uploading file to S3");
+          } else {
+            fileUrls.push(data.Location);
+            resolve(data.Location);
+          }
+        });
+      });
+    });
+    console.log("2")
+
+  
+          await Promise.all(uploadPromises);
+        }
+  
         const { additionalInfo, medicalId, address, lat, lng } = req.body;
   
-        // Ensure lat and lng are numbers (floats)
         const latFloat = parseFloat(lat);
         const lngFloat = parseFloat(lng);
   
-        // Check if the lat and lng are valid numbers
         if (isNaN(latFloat) || isNaN(lngFloat)) {
           console.error("Invalid lat or lng values");
           return sendErrorResponse({
@@ -119,83 +149,56 @@ const OrderController = () => {
           });
         }
   
-        // Check if the medicalId exists
         if (!medicalId) {
           console.error("Medical ID is missing");
           throw new Error("Medical ID is required");
         }
-  
-        // Handle file upload to S3
-        let fileUrl = null;
-        if (req.file) {
-          const fileName = `${Date.now()}-${req.file.originalname}`;
-          const params = {
-            Bucket: process.env.AWS_S3_BUCKET_NAME!,
-            Key: fileName,
-            Body: req.file.buffer,
-            ContentType: req.file.mimetype,
-          };
-          try {
-            const data = await s3.upload(params).promise();
-            fileUrl = data.Location; // The URL of the uploaded file in S3
-          } catch (uploadError) {
-            console.error("S3 Upload Error: ", uploadError); // Log S3 upload error
-            return sendErrorResponse({
-              res,
-              statusCode: 500,
-              error: "Error uploading file to S3",
-            });
-          }
-        }
-  
-        // Log form fields before database operation
-        console.log("Form data:", {
-          additionalInfo,
-          medicalId,
-          address,
-          latFloat,
-          lngFloat,
+      console.log("3",fileUrls)
+      console.log("Preparing to create request order...");
+      const orderData = {
+        additionalInfo,
+        user: {
+          connect: {
+            id: req.user._id,
+          },
+        },
+        fileUrl: fileUrls,
+        createdAt: new Date(),
+        orderDate: new Date(),
+        address,
+        lat: latFloat,
+        lng: lngFloat,
+        medical: {
+          connect: {
+            id: parseInt(medicalId),
+          },
+        },
+      };
+
+      console.log("Order data:", orderData);  // Log the data to verify
+
+      try {
+        const requestOrder = await __db.order.create({
+          data: orderData,
         });
-  
-        // Create the request order in the database
-        try {
-          const requestOrder = await __db.order.create({
-            data: {
-              additionalInfo,
-              user: {
-                connect: {
-                  id: req.user._id, // Correctly connect the user
-                },
-              },
-              fileUrl,
-              createdAt: new Date(),
-              orderDate: new Date(),
-              address,
-              lat: latFloat, // Store lat as Float
-              lng: lngFloat, // Store lng as Float
-              medical: {
-                connect: {
-                  id: parseInt(medicalId), // Use connect to relate the existing medical record
-                },
-              },
-            },
-          });
-          return sendSuccessResponse({
-            res,
-            message: "Request order created successfully!",
-            data: requestOrder,
-          });
-        } catch (dbError) {
-          console.error("Database Error: ", dbError); // Log database error
-          return sendErrorResponse({
-            res,
-            statusCode: 500,
-            error: "Error creating request order in the database",
-          });
-        }
-      });
+
+        console.log("Request order created:", requestOrder);  // Log the created order
+        return sendSuccessResponse({
+          res,
+          message: "Request order created successfully!",
+          data: requestOrder,
+        });
+      } catch (error) {
+        console.error("Error creating request order:", error);
+        return sendErrorResponse({
+          res,
+          statusCode: 400,
+          error: "Error creating request order",
+        });
+      }
+    });
     } catch (error) {
-      console.error("Unexpected Error: ", error); 
+      console.error("Unexpected Error: ", error);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -203,7 +206,7 @@ const OrderController = () => {
       });
     }
   };
-
+  
   // const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
   //   try {
   //     const limit = parseInt(req.query.limit as string) || 10;
@@ -281,6 +284,9 @@ const OrderController = () => {
         where: {
           userId: req.user._id,
           orderStatus: req.query.status as string,
+          startTime:{
+            not:null
+          }
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
@@ -415,11 +421,14 @@ const OrderController = () => {
           lte: endDate, // Less than or equal to end date
         };
       }
+      condition["startTime"] = {
+        not: null, // This filters for orders where startTime is not null
+      };
       condition["user"] = {
         isDeleted: false,
       };
 
-      logHttp("Counting orders");
+      logHttp("Counting orders",condition);
       const count = await __db.order.count({
         where: condition,
       });
@@ -427,6 +436,7 @@ const OrderController = () => {
       logHttp("Counted orders");
 
       logHttp("Fetching orders ==> ");
+      try{
       let orders = await __db.order.findMany({
         where: condition,
         skip: (page - 1) * limit,
@@ -453,7 +463,6 @@ const OrderController = () => {
           orderDate: "desc",
         },
       });
-
       logHttp("Fetched orders");
 
       // Format `orderSubCategories` into a flat array of subCategory objects
@@ -477,6 +486,14 @@ const OrderController = () => {
           },
         },
       });
+    } catch (error) {
+      console.error("Error creating request order:", error);
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: "Error creating request order",
+      });
+    }
     } catch (error: any) {
       logError(`Error while getMyOrder ==> `, error?.message);
       return sendErrorResponse({
@@ -486,6 +503,85 @@ const OrderController = () => {
       });
     }
   };
+  const getRequestOrder = async (req: UserRequest, res: Response): Promise<any> => {
+    try {
+      console.log("in here")
+      const limit = parseInt(req.query.limit as string) || 10;
+      const page = parseInt(req.query.page as string) || 1;
+      const orderStatus = req.query.orderStatus;
+      const from = req.query.from;
+      const to = req.query.to;
+  
+      const condition: { [key: string]: any } = {};
+      if (orderStatus) condition["orderStatus"] = orderStatus;
+  
+      // Add date range condition if from and to are provided
+      if (from && to) {
+        const startDate = new Date(`${from}T00:00:00.000Z`); // Start date
+        const endDate = new Date(`${to}T23:59:59.999Z`);
+        condition["orderDate"] = {
+          gte: startDate, // Greater than or equal to start date
+          lte: endDate, // Less than or equal to end date
+        };
+      }
+  
+      // Fetch orders where startTime is null
+      condition["startTime"] = null;
+      condition["user"] = {
+        isDeleted: false,
+      };
+  
+      logHttp("condistions --->", condition);
+      const count = await __db.order.count({
+        where: condition,
+      });
+  
+      logHttp("Counted orders");
+  
+      logHttp("Fetching orders ==> ");
+      let orders = await __db.order.findMany({
+        where: condition,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          // Removed service and category as per the request
+          medical: {
+            select: {
+              id: true,
+              name: true,
+              iconUrl: true,
+            },
+          },
+        },
+        orderBy: {
+          orderDate: "desc",
+        },
+      });
+  
+      logHttp("Fetched orders");
+  
+      return sendSuccessResponse({
+        res,
+        data: {
+          orders,
+          meta: {
+            count,
+            limit: +limit,
+            page: +page,
+          },
+        },
+      });
+    } catch (error: any) {
+      logError(`Error while getRequestOrder ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+  
+  
 
 const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
   try {
@@ -574,7 +670,8 @@ const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
     acceptOrRejeectOrder,
     getOrders,
     getOrder,
-    createRequestOrder
+    createRequestOrder,
+    getRequestOrder
   };
 };
 

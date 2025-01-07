@@ -50,25 +50,28 @@ const MedicalController = () => {
     res: Response,
   ): Promise<any> => {
     try {
-      // Query database to fetch top 4 medical partners
-      const topPartners = await global.__db.medical.findMany({
-        orderBy: {
-          id: "desc",
-        },
-      });
-  
-      if (!topPartners.length) {
-        return res.status(404).json({
-          success: false,
-          message: "No medical partners found",
-        });
-      }
+      // Fetching all partners
+      const topPartners = await global.__db.medical.findMany();
+      
+      // Iterate through the results to ensure services are in JSON format
+      // topPartners.forEach(partner => {
+      //   // If the services field is stored as a string, parse it into an array
+      //   if (typeof partner.services === 'string') {
+      //     try {
+      //       partner.services = JSON.parse(partner.services);  // Convert string to JSON array if needed
+      //     } catch (e) {
+      //       console.error("Error parsing services field:", partner.services, e);
+      //       partner.services = []; // In case of error, set services to an empty array
+      //     }
+      //   }
+      // });
   
       return res.status(200).json({
         success: true,
         data: topPartners,
       });
     } catch (error: any) {
+      console.error("Error in fetching top partners:", error);
       logError(`Error while fetching top medical partners ==> `, error?.message);
       return sendErrorResponse({
         res,
