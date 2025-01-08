@@ -135,19 +135,19 @@ const OrderController = () => {
           await Promise.all(uploadPromises);
         }
   
-        const { additionalInfo, medicalId, address, lat, lng } = req.body;
+        const { additionalInfo, medicalId,doctor,address=null } = req.body;
   
-        const latFloat = parseFloat(lat);
-        const lngFloat = parseFloat(lng);
+        // const latFloat = parseFloat(lat);
+        // const lngFloat = parseFloat(lng);
   
-        if (isNaN(latFloat) || isNaN(lngFloat)) {
-          console.error("Invalid lat or lng values");
-          return sendErrorResponse({
-            res,
-            statusCode: 400,
-            error: "Invalid latitude or longitude values",
-          });
-        }
+        // if (isNaN(latFloat) || isNaN(lngFloat)) {
+        //   console.error("Invalid lat or lng values");
+        //   return sendErrorResponse({
+        //     res,
+        //     statusCode: 400,
+        //     error: "Invalid latitude or longitude values",
+        //   });
+        // }
   
         if (!medicalId) {
           console.error("Medical ID is missing");
@@ -166,8 +166,9 @@ const OrderController = () => {
         createdAt: new Date(),
         orderDate: new Date(),
         address,
-        lat: latFloat,
-        lng: lngFloat,
+        // lat: latFloat,
+        // lng: lngFloat,
+        doctor,
         medical: {
           connect: {
             id: parseInt(medicalId),
@@ -301,7 +302,16 @@ const OrderController = () => {
           orderSubCategories: {
             include: {
               subCategory: {
-                select,
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                  medicalCatrgories: {
+                    select: {
+                      price: true, // Fetch price from MedicalCategory
+                    },
+                  },
+                },
               },
             },
           },
@@ -326,6 +336,7 @@ const OrderController = () => {
           id: osc.subCategory.id,
           name: osc.subCategory.name,
           iconUrl: osc.subCategory.iconUrl,
+          price: osc.subCategory.medicalCatrgories?.[0]?.price || 0,
         })),
       }));
   

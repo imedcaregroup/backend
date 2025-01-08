@@ -108,7 +108,7 @@ model Order{
    medicalId Int
    userId Int
    price Float @default(0)
-   address String
+   address String?
    lat Float?
    lng Float?
    paymetStatus String @default("pending")
@@ -121,6 +121,7 @@ model Order{
    date String?
    startTime Int?
    endTime Int?
+   doctor String?
 
    
    medical           Medical          @relation(fields: [medicalId], references: [id])
