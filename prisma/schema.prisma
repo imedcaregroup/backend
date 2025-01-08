@@ -68,7 +68,8 @@ model SubCategory{
    categoryId   Int    
    category     Category   @relation(fields: [categoryId], references: [id]) 
    medicalCatrgories MedicalCategory[]
-   orders Order[]
+   orders          Order[]        @relation("OrderSubCategories")
+   orderSubCategories OrderSubCategory[]
 }
 
 
@@ -79,6 +80,8 @@ model Medical{
    lat  Float
    lng Float
    address String 
+   services  Json 
+   contact Int? 
    medicalCatrgories MedicalCategory[]
    orders Order[]
    availabilities Availability[]
@@ -100,13 +103,12 @@ model MedicalCategory{
 model Order{
    id      Int      @id @default(autoincrement())
    createdAt         DateTime         @default(now())
-   serviceId   Int
-   categoryId Int
-   subCategoryId Int
+   serviceId   Int?
+   categoryId Int?
    medicalId Int
    userId Int
    price Float @default(0)
-   address String
+   address String?
    lat Float?
    lng Float?
    paymetStatus String @default("pending")
@@ -114,17 +116,20 @@ model Order{
    declinedReason String?
    additionalInfo String?
    orderDate     DateTime
+   fileUrl        Json?
 
    date String?
    startTime Int?
    endTime Int?
+   doctor String?
 
    
    medical           Medical          @relation(fields: [medicalId], references: [id])
-   service       Service       @relation(fields: [serviceId], references: [id])
-   category       Category       @relation(fields: [categoryId], references: [id])
-   subCategory       SubCategory       @relation(fields: [subCategoryId], references: [id])
+   service       Service?       @relation(fields: [serviceId], references: [id])
+   category       Category?       @relation(fields: [categoryId], references: [id])
    user       User       @relation(fields: [userId], references: [id])
+   subCategories  SubCategory[] @relation("OrderSubCategories")
+   orderSubCategories OrderSubCategory[]
 }
 
 
@@ -138,7 +143,14 @@ model Availability{
    medical Medical  @relation(fields: [medicalId], references: [id])
 }
 
+model OrderSubCategory {
+ orderId      Int
+  subCategoryId Int
+  order        Order       @relation(fields: [orderId], references: [id])
+  subCategory  SubCategory @relation(fields: [subCategoryId], references: [id])
 
+  @@id([orderId, subCategoryId])
+}
 
 
 model Address{

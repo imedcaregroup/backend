@@ -1,60 +1,110 @@
 export const getMedicalsBySubcategory = (
-  subCategoryId: number,
-  lastPrice: number | null,
-  lastMedicalId: number | null,
-  limit = 10,
-  sortOrder: string
-) => {
-  // Validate sortOrder to ensure it is either 'ASC' or 'DESC'
-  if (!["ASC", "DESC"].includes(sortOrder.toUpperCase())) {
-    throw new Error('Invalid sort order. Please use "ASC" or "DESC".');
-  }
-
-  let query;
-
-  // Initial query without lastPrice and lastId
-  if (!lastPrice || !lastMedicalId) {
-    query = `
+    subCategoryIds: number[],
+    lastPrice: number | null,
+    lastMedicalId: number | null,
+    limit = 10,
+    sortOrder: string
+  ) => {
+    let query;
+  
+    const subCategoryArray = subCategoryIds.join(',');
+  
+    // Query to fetch medicals and subcategory details
+    if (!lastPrice || !lastMedicalId) {
+      query = `
+        WITH subcategory_data AS (
+          SELECT 
+              "mc"."subCategoryId",
+              "s"."name" AS "subCategoryName",
+              SUM("mc"."price") AS "totalPrice"
+          FROM 
+              "MedicalCategory" AS "mc"
+          JOIN 
+              "SubCategory" AS "s" ON "mc"."subCategoryId" = "s"."id"
+          WHERE 
+              "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}])
+          GROUP BY 
+              "mc"."subCategoryId", "s"."name"
+        )
         SELECT 
             "m"."id",
             "m"."iconUrl",
             "m"."name",
             "m"."address",
-            "mc"."price"
+            SUM("mc"."price") AS "price",
+            ARRAY_AGG(
+              JSON_BUILD_OBJECT(
+                'subCategoryName', "sd"."subCategoryName",
+                'totalPrice', "sd"."totalPrice"
+              )
+            ) AS "subcategories"
         FROM 
-            "Medical"  AS "m"
+            "Medical" AS "m"
         JOIN 
             "MedicalCategory" AS "mc" ON "mc"."medicalId" = "m"."id"
+        JOIN 
+            subcategory_data AS "sd" ON "mc"."subCategoryId" = "sd"."subCategoryId"
         WHERE 
-            "mc"."subCategoryId" = ${subCategoryId}
+            "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}])
+        GROUP BY 
+            "m"."id", "m"."iconUrl", "m"."name", "m"."address"
+        HAVING 
+            ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 
-            "mc"."price" ${sortOrder}, "m"."id" ${sortOrder}
+            "price" ${sortOrder}, "m"."id" ${sortOrder}
         LIMIT ${limit};
       `;
-  } else {
-    // Pagination logic when lastPrice and lastId are provided
-    query = `
+    } else {
+      query = `
+        WITH subcategory_data AS (
+          SELECT 
+              "mc"."subCategoryId",
+              "s"."name" AS "subCategoryName",
+              SUM("mc"."price") AS "totalPrice"
+          FROM 
+              "MedicalCategory" AS "mc"
+          JOIN 
+              "SubCategory" AS "s" ON "mc"."subCategoryId" = "s"."id"
+          WHERE 
+              "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}])
+          GROUP BY 
+              "mc"."subCategoryId", "s"."name"
+        )
         SELECT 
             "m"."id",
             "m"."iconUrl",
             "m"."name",
             "m"."address",
-            "mc"."price"
+            SUM("mc"."price") AS "price",
+            ARRAY_AGG(
+              JSON_BUILD_OBJECT(
+                'subCategoryName', "sd"."subCategoryName",
+                'totalPrice', "sd"."totalPrice"
+              )
+            ) AS "subcategories"
         FROM 
-            "Medical" AS  "m"
+            "Medical" AS "m"
         JOIN 
             "MedicalCategory" AS "mc" ON "mc"."medicalId" = "m"."id"
+        JOIN 
+            subcategory_data AS "sd" ON "mc"."subCategoryId" = "sd"."subCategoryId"
         WHERE 
-            "mc"."subCategoryId" = ${subCategoryId} AND
+            "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}]) AND
             (
-                (CASE WHEN '${sortOrder}' = 'ASC' THEN "mc"."price" > ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" > ${lastMedicalId})
-                      ELSE "mc"."price" < ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" < ${lastMedicalId}) END)
+                CASE WHEN '${sortOrder}' = 'ASC'
+                THEN "mc"."price" > ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" > ${lastMedicalId})
+                ELSE "mc"."price" < ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" < ${lastMedicalId}) END
             )
+        GROUP BY 
+            "m"."id", "m"."iconUrl", "m"."name", "m"."address"
+        HAVING 
+            ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 
-            "mc"."price" ${sortOrder}, "m"."id" ${sortOrder}
+            "price" ${sortOrder}, "m"."id" ${sortOrder}
         LIMIT ${limit};
       `;
-  }
-
-  return query;
-};
+    }
+  
+    return query;
+  };
+  

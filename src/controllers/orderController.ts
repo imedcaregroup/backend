@@ -1,118 +1,293 @@
 import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
+import multer, { FileFilterCallback } from 'multer';
+import path from 'path';
+import s3 from '../utils/aws'; // Import the AWS S3 instance
 import { UserRequest } from "../types";
 import { formatTime } from "../utils/helpers";
 
+// Set up Multer storage for S3 file upload
+const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
+
+const fileFilter = (req: UserRequest, file: Express.Multer.File, cb: FileFilterCallback) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); // Accept file
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // Max file size 10MB
+}).array('files');
+
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
+    console.log("asdasd")
     try {
-      logHttp("Checking for  service,category,subCategOry and medical ==> ");
-
-      const { serviceId, categoryId, subCategoryId, medicalId } = req.body;
-      const [service, category, subCategory, medical, medicalCategory] =
-        await Promise.all([
-          __db.service.findFirst({
-            where: {
-              id: +serviceId,
-            },
-            select: {
-              id: true,
-            },
-          }),
-          __db.category.findFirst({
-            where: {
-              id: +categoryId,
-            },
-            select: {
-              id: true,
-            },
-          }),
-          __db.subCategory.findFirst({
-            where: {
-              id: +subCategoryId,
-            },
-            select: {
-              categoryId: true,
-            },
-          }),
-          __db.medical.findFirst({
-            where: {
-              id: +medicalId,
-            },
-            select: {
-              id: true,
-            },
-          }),
-          __db.medicalCategory.findFirst({
-            where: {
-              medicalId,
-              subCategoryId,
-            },
-            select: {
-              id: true,
-              price: true,
-            },
-          }),
-        ]);
-
-      if (!service) throw new Error("No service found");
-
-      if (!category) throw new Error("No category found");
-
-      if (!subCategory) throw new Error("No subCategory found");
-
-      if (!medical) throw new Error("No medical found");
-
-      if (!medicalCategory) throw new Error("No medical category found");
+      const {
+        serviceId,
+        categoryId,
+        subCategoryId,  // Array of subCategoryIds to associate with the order
+        medicalId,
+        userId,
+        price,
+        address,
+        lat,
+        lng,
+        orderDate,
+        startTime,
+        endTime,
+        additionalInfo,
+        fileUrl,
+      } = req.body;
+  
+      // Validate required fields
+      if (!serviceId || !categoryId || !subCategoryId || !medicalId  ) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
 
       const formatedTime = formatTime(+req.body.startTime);
-
-      logHttp("Checked for  service,category,subCategiry and medical ==> ");
-
-      logHttp("Creating order ==> ");
+  
+      // Create the order with associated subcategories
       const order = await __db.order.create({
         data: {
-          ...req.body,
-          price: medicalCategory.price,
-          userId: req.user._id,
-          orderDate: new Date(`${req.body.date} ${formatedTime}`),
+          category: { connect: { id: categoryId } }, // Linking category
+        medical: { connect: { id: medicalId } },   // Linking medical
+        user: { connect: { id: req.user._id, } },         // Linking user
+        service: { connect: { id: serviceId } },  
+          price,
+          address,
+          lat,
+          lng,
+          orderDate: new Date(`${req.body.date} ${formatedTime}`),  // Convert to Date type
+          startTime,
+          endTime,
+          additionalInfo,
+          fileUrl,
+          orderSubCategories: {
+            create: subCategoryId.map((subCategoryId: number) => ({
+              subCategoryId,  // Link the subCategoryId to the OrderSubCategory
+            })),
+          },
+          
         },
       });
-      logHttp("Created order ==> ");
-
-      return sendSuccessResponse({
-        res,
-        message: "Order created successfully!!!",
-        data: {
-          ...order,
-        },
+  
+      return res.status(201).json({
+        status: true,
+        message: "Order created successfully",
+        data: order,
       });
-    } catch (error: any) {
-      logError(`Error while createOrder ==> `, error?.message);
-      return sendErrorResponse({
-        res,
-        statusCode: error?.statusCode || 400,
-        error: error?.message,
+    } catch (error) {
+      console.error("Error creating order:", error);
+      return res.status(500).json({
+        status: false,
+        error: "An error occurred while creating the order",
       });
     }
   };
+  const createRequestOrder = async (req: UserRequest, res: Response): Promise<any> => {
+    try {
+      const fileUrls: string[] = []; // Initialize an array to store file URLs
+  
+      upload(req, res, async (err) => {
+        if (err) {
+          console.error("Multer Error: ", err);
+          return sendErrorResponse({
+            res,
+            statusCode: 400,
+            error: err.message,
+          });
+        }
+  
+        if (req.files && Array.isArray(req.files)) {
+          const uploadPromises = req.files.map((file: Express.Multer.File) => {
+            const fileName = `${Date.now()}-${file.originalname}`;
+            const params = {
+              Bucket: process.env.AWS_S3_BUCKET_NAME!,
+              Key: fileName,
+              Body: file.buffer,
+              ContentType: file.mimetype,
+            };
 
+            console.log("1")
+  
+            
+      return new Promise((resolve, reject) => {
+        s3.upload(params, (uploadError: Error | null, data: any) => {
+          if (uploadError) {
+            reject("Error uploading file to S3");
+          } else {
+            fileUrls.push(data.Location);
+            resolve(data.Location);
+          }
+        });
+      });
+    });
+    console.log("2")
+
+  
+          await Promise.all(uploadPromises);
+        }
+  
+        const { additionalInfo, medicalId,doctor,address=null } = req.body;
+  
+        // const latFloat = parseFloat(lat);
+        // const lngFloat = parseFloat(lng);
+  
+        // if (isNaN(latFloat) || isNaN(lngFloat)) {
+        //   console.error("Invalid lat or lng values");
+        //   return sendErrorResponse({
+        //     res,
+        //     statusCode: 400,
+        //     error: "Invalid latitude or longitude values",
+        //   });
+        // }
+  
+        if (!medicalId) {
+          console.error("Medical ID is missing");
+          throw new Error("Medical ID is required");
+        }
+      console.log("3",fileUrls)
+      console.log("Preparing to create request order...");
+      const orderData = {
+        additionalInfo,
+        user: {
+          connect: {
+            id: req.user._id,
+          },
+        },
+        fileUrl: fileUrls,
+        createdAt: new Date(),
+        orderDate: new Date(),
+        address,
+        // lat: latFloat,
+        // lng: lngFloat,
+        doctor,
+        medical: {
+          connect: {
+            id: parseInt(medicalId),
+          },
+        },
+      };
+
+      console.log("Order data:", orderData);  // Log the data to verify
+
+      try {
+        const requestOrder = await __db.order.create({
+          data: orderData,
+        });
+
+        console.log("Request order created:", requestOrder);  // Log the created order
+        return sendSuccessResponse({
+          res,
+          message: "Request order created successfully!",
+          data: requestOrder,
+        });
+      } catch (error) {
+        console.error("Error creating request order:", error);
+        return sendErrorResponse({
+          res,
+          statusCode: 400,
+          error: "Error creating request order",
+        });
+      }
+    });
+    } catch (error) {
+      console.error("Unexpected Error: ", error);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message || "Unexpected error occurred",
+      });
+    }
+  };
+  
+  // const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
+  //   try {
+  //     const limit = parseInt(req.query.limit as string) || 10;
+  //     const cursor = parseInt(req.query.cursor as string) || "";
+  //     const select = {
+  //       id: true,
+  //       name: true,
+  //       iconUrl: true,
+  //     };
+
+  //     logHttp("Fetching orders ==> ");
+  //     let orders = await __db.order.findMany({
+  //       where: {
+  //         userId: req.user._id,
+  //         orderStatus: req.query.status as string,
+  //       },
+  //       ...(cursor && { cursor: { id: cursor } }),
+  //       ...(cursor && { skip: 1 }),
+  //       take: limit,
+  //       include: {
+  //         service: {
+  //           select,
+  //         },
+  //         category: {
+  //           select,
+  //         },
+  //         subCategory: {
+  //           select,
+  //         },
+  //         medical: {
+  //           select: {
+  //             ...select,
+  //             lat: true,
+  //             lng: true,
+  //             address: true,
+  //           },
+  //         },
+  //       },
+  //       orderBy: {
+  //         orderDate: "desc",
+  //       },
+  //     });
+
+  //     logHttp("Fetched orders");
+
+  //     return sendSuccessResponse({
+  //       res,
+  //       data: {
+  //         orders,
+  //         cursor:
+  //           orders.length >= limit ? orders[orders.length - 1]["id"] : null,
+  //       },
+  //     });
+  //   } catch (error: any) {
+  //     logError(`Error while getMyOrder ==> `, error?.message);
+  //     return sendErrorResponse({
+  //       res,
+  //       statusCode: error?.statusCode || 400,
+  //       error: error?.message,
+  //     });
+  //   }
+  // };
   const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const cursor = parseInt(req.query.cursor as string) || "";
+      const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : null;
       const select = {
         id: true,
         name: true,
         iconUrl: true,
       };
-
-      logHttp("Fetching orders ==> ");
-      let orders = await __db.order.findMany({
+  
+      logHttp("Fetching orders ==> ", req.user._id);
+      const orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
           orderStatus: req.query.status as string,
+          startTime:{
+            not:null
+          }
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
@@ -124,8 +299,21 @@ const OrderController = () => {
           category: {
             select,
           },
-          subCategory: {
-            select,
+          orderSubCategories: {
+            include: {
+              subCategory: {
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                  medicalCatrgories: {
+                    select: {
+                      price: true, // Fetch price from MedicalCategory
+                    },
+                  },
+                },
+              },
+            },
           },
           medical: {
             select: {
@@ -140,27 +328,38 @@ const OrderController = () => {
           orderDate: "desc",
         },
       });
-
+  
+      // Format `orderSubCategories` into a flat array of subCategory objects
+      const formattedOrders = orders.map((order: any) => ({
+        ...order,
+        orderSubCategories: order.orderSubCategories.map((osc: any) => ({
+          id: osc.subCategory.id,
+          name: osc.subCategory.name,
+          iconUrl: osc.subCategory.iconUrl,
+          price: osc.subCategory.medicalCatrgories?.[0]?.price || 0,
+        })),
+      }));
+  
       logHttp("Fetched orders");
-
+  
       return sendSuccessResponse({
         res,
         data: {
-          orders,
+          orders: formattedOrders,
           cursor:
-            orders.length >= limit ? orders[orders.length - 1]["id"] : null,
+            orders.length >= limit ? orders[orders.length - 1].id : null,
         },
       });
     } catch (error: any) {
-      logError(`Error while getMyOrder ==> `, error?.message);
+      logError("Error while getMyOrder ==> ", error?.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
         error: error?.message,
       });
     }
-  };
-
+  };  
+  
   const acceptOrRejeectOrder = async (
     req: UserRequest,
     res: Response
@@ -233,11 +432,14 @@ const OrderController = () => {
           lte: endDate, // Less than or equal to end date
         };
       }
+      condition["startTime"] = {
+        not: null, // This filters for orders where startTime is not null
+      };
       condition["user"] = {
         isDeleted: false,
       };
 
-      logHttp("Counting orders");
+      logHttp("Counting orders",condition);
       const count = await __db.order.count({
         where: condition,
       });
@@ -245,6 +447,7 @@ const OrderController = () => {
       logHttp("Counted orders");
 
       logHttp("Fetching orders ==> ");
+      try{
       let orders = await __db.order.findMany({
         where: condition,
         skip: (page - 1) * limit,
@@ -256,8 +459,12 @@ const OrderController = () => {
           category: {
             select,
           },
-          subCategory: {
-            select,
+          orderSubCategories: {
+            include: {
+              subCategory: {
+                select,
+              },
+            },
           },
           medical: {
             select,
@@ -267,9 +474,103 @@ const OrderController = () => {
           orderDate: "desc",
         },
       });
-
       logHttp("Fetched orders");
 
+      // Format `orderSubCategories` into a flat array of subCategory objects
+      const formattedOrders = orders.map((order: any) => ({
+        ...order,
+        orderSubCategories: order.orderSubCategories.map((osc: any) => ({
+          id: osc.subCategory.id,
+          name: osc.subCategory.name,
+          iconUrl: osc.subCategory.iconUrl,
+        })),
+      }));
+
+      return sendSuccessResponse({
+        res,
+        data: {
+          formattedOrders,
+          meta: {
+            count,
+            limit: +limit,
+            page: +page,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating request order:", error);
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: "Error creating request order",
+      });
+    }
+    } catch (error: any) {
+      logError(`Error while getMyOrder ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+  const getRequestOrder = async (req: UserRequest, res: Response): Promise<any> => {
+    try {
+      console.log("in here")
+      const limit = parseInt(req.query.limit as string) || 10;
+      const page = parseInt(req.query.page as string) || 1;
+      const orderStatus = req.query.orderStatus;
+      const from = req.query.from;
+      const to = req.query.to;
+  
+      const condition: { [key: string]: any } = {};
+      if (orderStatus) condition["orderStatus"] = orderStatus;
+  
+      // Add date range condition if from and to are provided
+      if (from && to) {
+        const startDate = new Date(`${from}T00:00:00.000Z`); // Start date
+        const endDate = new Date(`${to}T23:59:59.999Z`);
+        condition["orderDate"] = {
+          gte: startDate, // Greater than or equal to start date
+          lte: endDate, // Less than or equal to end date
+        };
+      }
+  
+      // Fetch orders where startTime is null
+      condition["startTime"] = null;
+      condition["user"] = {
+        isDeleted: false,
+      };
+  
+      logHttp("condistions --->", condition);
+      const count = await __db.order.count({
+        where: condition,
+      });
+  
+      logHttp("Counted orders");
+  
+      logHttp("Fetching orders ==> ");
+      let orders = await __db.order.findMany({
+        where: condition,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          // Removed service and category as per the request
+          medical: {
+            select: {
+              id: true,
+              name: true,
+              iconUrl: true,
+            },
+          },
+        },
+        orderBy: {
+          orderDate: "desc",
+        },
+      });
+  
+      logHttp("Fetched orders");
+  
       return sendSuccessResponse({
         res,
         data: {
@@ -282,7 +583,7 @@ const OrderController = () => {
         },
       });
     } catch (error: any) {
-      logError(`Error while getMyOrder ==> `, error?.message);
+      logError(`Error while getRequestOrder ==> `, error?.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -290,64 +591,83 @@ const OrderController = () => {
       });
     }
   };
+  
+  
 
-  const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
-    try {
-      const orderId = Number(req.params.id);
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
+const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
+  try {
+    const orderId = Number(req.params.id);
+    const select = {
+      id: true,
+      name: true,
+      iconUrl: true,
+    };
 
-      logHttp("Fetching order");
-      let order = await __db.order.findFirst({
-        where: {
-          id: orderId,
+    logHttp("Fetching order");
+    let order = await __db.order.findFirst({
+      where: {
+        id: orderId,
+      },
+      include: {
+        service: {
+          select,
         },
-        include: {
-          service: {
-            select,
-          },
-          category: {
-            select,
-          },
-          subCategory: {
-            select,
-          },
-          medical: {
-            select,
-          },
-          user: {
-            select: {
-              name: true,
-              dob: true,
-              mobileNumber: true,
-              email: true,
+        category: {
+          select,
+        },
+        orderSubCategories: {
+          include: {
+            subCategory: {
+              select,
             },
           },
         },
-      });
-
-      logHttp("Fetched order");
-
-      if (!order) throw new Error("No order found");
-
-      return sendSuccessResponse({
-        res,
-        data: {
-          ...order,
+        medical: {
+          select,
         },
-      });
-    } catch (error: any) {
-      logError(`Error while getOrder ==> `, error?.message);
-      return sendErrorResponse({
-        res,
-        statusCode: error?.statusCode || 400,
-        error: error?.message,
-      });
-    }
-  };
+        user: {
+          select: {
+            name: true,
+            dob: true,
+            mobileNumber: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logHttp("Fetched order");
+
+    if (!order) throw new Error("No order found");
+
+   // Map over the orderSubCategories and preserve the original structure
+   const updatedOrderSubCategories = order.orderSubCategories.map((subCategoryObj: any) => ({
+    subCategoryId: subCategoryObj.subCategoryId,
+    orderId: subCategoryObj.orderId,
+    subCategory: {
+      id: subCategoryObj.subCategory.id,
+      name: subCategoryObj.subCategory.name,
+      iconUrl: subCategoryObj.subCategory.iconUrl,
+    },
+  }));
+
+    return sendSuccessResponse({
+      res,
+      data: {
+        ...order,
+        orderSubCategories: updatedOrderSubCategories,
+      },
+    });
+  } catch (error: any) {
+    logError(`Error while getOrder ==> `, error?.message);
+    return sendErrorResponse({
+      res,
+      statusCode: error?.statusCode || 400,
+      error: error?.message,
+    });
+  }
+};
+
 
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
@@ -361,6 +681,8 @@ const OrderController = () => {
     acceptOrRejeectOrder,
     getOrders,
     getOrder,
+    createRequestOrder,
+    getRequestOrder
   };
 };
 

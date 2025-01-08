@@ -13,6 +13,8 @@ const CategoryController = () => {
       const cursor = parseInt(req.query.cursor as string) || "";
       const serviceId = parseInt(req.query.service as string);
 
+      console.log("serviceId",serviceId)
+
       logHttp("Fetching categories ==> ");
       let categories = await __db.category.findMany({
         where: {
