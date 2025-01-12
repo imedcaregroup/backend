@@ -22,7 +22,7 @@ const fileFilter = (req: UserRequest, file: Express.Multer.File, cb: FileFilterC
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Max file size 10MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // Max file size 10MB
 }).array('files');
 
 const OrderController = () => {
