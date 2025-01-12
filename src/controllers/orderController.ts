@@ -27,7 +27,7 @@ const upload = multer({
 
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
-    console.log("asdasd")
+     
     try {
       const {
         serviceId,
@@ -93,11 +93,13 @@ const OrderController = () => {
   };
   const createRequestOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
+
+       logHttp("Creating Request Order ", req.body);
       const fileUrls: string[] = []; // Initialize an array to store file URLs
   
       upload(req, res, async (err) => {
         if (err) {
-          console.error("Multer Error: ", err);
+          logError("Multer Error: ", err);
           return sendErrorResponse({
             res,
             statusCode: 400,
@@ -121,7 +123,7 @@ const OrderController = () => {
       return new Promise((resolve, reject) => {
         s3.upload(params, (uploadError: Error | null, data: any) => {
           if (uploadError) {
-            console.error("Multer Error: ", uploadError);
+            logError("Multer Error: ", uploadError);
             reject("Error uploading file to S3");
           } else {
             fileUrls.push(data.Location);
@@ -154,8 +156,8 @@ const OrderController = () => {
           console.error("Medical ID is missing");
           throw new Error("Medical ID is required");
         }
-      console.log("3",fileUrls)
-      console.log("Preparing to create request order...");
+      logHttp("3",fileUrls)
+      logHttp("Preparing to create request order...");
       const orderData = {
         additionalInfo,
         user: {
@@ -177,21 +179,21 @@ const OrderController = () => {
         },
       };
 
-      console.log("Order data:", orderData);  // Log the data to verify
+      logHttp("Order data:", orderData);  // Log the data to verify
 
       try {
         const requestOrder = await __db.order.create({
           data: orderData,
         });
 
-        console.log("Request order created:", requestOrder);  // Log the created order
+        logHttp("Request order created:", requestOrder);  // Log the created order
         return sendSuccessResponse({
           res,
           message: "Request order created successfully!",
           data: requestOrder,
         });
       } catch (error) {
-        console.error("Error creating request order:", error);
+        logError("Error creating request order:", error);
         return sendErrorResponse({
           res,
           statusCode: 400,
