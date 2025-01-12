@@ -121,6 +121,7 @@ const OrderController = () => {
       return new Promise((resolve, reject) => {
         s3.upload(params, (uploadError: Error | null, data: any) => {
           if (uploadError) {
+            console.error("Multer Error: ", uploadError);
             reject("Error uploading file to S3");
           } else {
             fileUrls.push(data.Location);
