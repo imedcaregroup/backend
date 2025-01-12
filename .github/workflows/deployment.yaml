@@ -3,7 +3,7 @@ name: Deploy to EC2 Dev
 on:
   push:
     branches:
-      - main # This targets the main branch
+      - main
 
 jobs:
   deploy:
@@ -21,6 +21,8 @@ jobs:
         run: npm install
 
       - name: Build the project
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: npm run build
 
       - name: Setup SSH
@@ -61,7 +63,7 @@ jobs:
             npx prisma generate || exit 1 
 
             echo "Building Project."
-            npm run build || exit 1
+            NODE_OPTIONS="--max-old-space-size=4096" npm run build || exit 1
 
             echo "Running Migrations."
             npx prisma migrate deploy
@@ -69,7 +71,7 @@ jobs:
 
             echo "Stop the existing process if it exists"
             pm2 stop imed-backend-prod || true
-            pm2 delete imed-backend-prod|| true
+            pm2 delete imed-backend-prod || true
 
 
             echo "Start the process"

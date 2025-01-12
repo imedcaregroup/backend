@@ -8,7 +8,7 @@
     "build/**/*"
   ],
   "scripts": {
-    "build": "rm -rf ./build; npx tsc",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' rm -rf ./build && npx tsc",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --ignore-pattern \"src/seeders/**\" --fix",
     "dev": "npx nodemon",
