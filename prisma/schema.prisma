@@ -44,7 +44,7 @@ model Service{
    iconUrl String
    name    String
    categories   Category[]
-    orders Order[]
+   orders      OrderSubCategory[]
 }
 
 
@@ -56,20 +56,20 @@ model Category{
    serviceId   Int    
    service     Service   @relation(fields: [serviceId], references: [id]) 
    subcategories   SubCategory[]
-    orders Order[]
+   orders      OrderSubCategory[]
 }
 
 
 
-model SubCategory{
-   id      Int      @id @default(autoincrement())
-   iconUrl String
-   name    String
-   categoryId   Int    
-   category     Category   @relation(fields: [categoryId], references: [id]) 
-   medicalCatrgories MedicalCategory[]
-   orders          Order[]        @relation("OrderSubCategories")
-   orderSubCategories OrderSubCategory[]
+model SubCategory {
+  id                  Int                  @id @default(autoincrement())
+  iconUrl             String
+  name                String
+  categoryId          Int
+  category            Category             @relation(fields: [categoryId], references: [id])
+  medicalCategories   MedicalCategory[]
+   orders              OrderSubCategory[]   @relation("SubCategoryOrders")
+  orderSubCategories  OrderSubCategory[]   @relation("SubCategoryOrderSubCategories")
 }
 
 
@@ -100,36 +100,43 @@ model MedicalCategory{
 
 
 
-model Order{
-   id      Int      @id @default(autoincrement())
-   createdAt         DateTime         @default(now())
-   serviceId   Int?
-   categoryId Int?
-   medicalId Int
-   userId Int
-   price Float @default(0)
-   address String?
-   lat Float?
-   lng Float?
-   paymetStatus String @default("pending")
-   orderStatus String @default("pending")
-   declinedReason String?
-   additionalInfo String?
-   orderDate     DateTime
-   fileUrl        Json?
+model Order {
+  id                  Int                @id @default(autoincrement())
+  createdAt           DateTime           @default(now())
+  medicalId           Int
+  userId              Int
+  price               Float              @default(0)
+  address             String?
+  lat                 Float?
+  lng                 Float?
+  paymetStatus       String             @default("pending")
+  orderStatus         String             @default("pending")
+  declinedReason      String?
+  additionalInfo      String?
+  orderDate           DateTime
+  fileUrl             Json?
 
-   date String?
-   startTime Int?
-   endTime Int?
-   doctor String?
+  date                String?
+  startTime           Int?
+  endTime             Int?
+  doctor              String?
 
-   
-   medical           Medical          @relation(fields: [medicalId], references: [id])
-   service       Service?       @relation(fields: [serviceId], references: [id])
-   category       Category?       @relation(fields: [categoryId], references: [id])
-   user       User       @relation(fields: [userId], references: [id])
-   subCategories  SubCategory[] @relation("OrderSubCategories")
-   orderSubCategories OrderSubCategory[]
+  medical             Medical            @relation(fields: [medicalId], references: [id])
+  user                User               @relation(fields: [userId], references: [id])
+  orderSubCategories  OrderSubCategory[]
+}
+
+model OrderSubCategory {
+   id                Int          @id @default(autoincrement())
+   orderId           Int
+   serviceId         Int
+   categoryId        Int
+   subCategoryId     Int
+   subCategory       SubCategory  @relation("SubCategoryOrderSubCategories", fields: [subCategoryId], references: [id], map: "OrderSubCategory_subCategoryId_to_SubCategory") // Unique constraint name
+   orders            SubCategory  @relation("SubCategoryOrders", fields: [subCategoryId], references: [id], map: "OrderSubCategory_subCategoryId_to_Orders") // Unique constraint name
+   order             Order        @relation(fields: [orderId], references: [id]) // Relation with Order
+   service           Service      @relation(fields: [serviceId], references: [id]) // Relation with Service
+   category          Category     @relation(fields: [categoryId], references: [id]) // Relation with Category
 }
 
 
@@ -142,16 +149,6 @@ model Availability{
    medicalId Int
    medical Medical  @relation(fields: [medicalId], references: [id])
 }
-
-model OrderSubCategory {
- orderId      Int
-  subCategoryId Int
-  order        Order       @relation(fields: [orderId], references: [id])
-  subCategory  SubCategory @relation(fields: [subCategoryId], references: [id])
-
-  @@id([orderId, subCategoryId])
-}
-
 
 model Address{
    id  Int @id @default(autoincrement())

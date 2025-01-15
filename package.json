@@ -45,6 +45,7 @@
     "bcrypt": "^5.1.1",
     "chalk": "4.1.0",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-node": "^11.1.0",

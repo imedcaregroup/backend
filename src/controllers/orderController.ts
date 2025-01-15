@@ -6,6 +6,7 @@ import path from 'path';
 import s3 from '../utils/aws'; // Import the AWS S3 instance
 import { UserRequest } from "../types";
 import { formatTime } from "../utils/helpers";
+import dayjs from "dayjs";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -27,67 +28,92 @@ const upload = multer({
 
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
-    console.log("asdasd")
+    const { serviceCat, medicalId, address, date, startTime, lat, lng, price } = req.body;
     try {
-      const {
-        serviceId,
-        categoryId,
-        subCategoryId,  // Array of subCategoryIds to associate with the order
-        medicalId,
-        userId,
-        price,
-        address,
-        lat,
-        lng,
-        orderDate,
-        startTime,
-        endTime,
-        additionalInfo,
-        fileUrl,
-      } = req.body;
-  
-      // Validate required fields
-      if (!serviceId || !categoryId || !subCategoryId || !medicalId  ) {
-        return res.status(400).json({ error: "Missing required fields" });
+      // Validate that serviceCat is provided and is an array
+      if (!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) {
+        return res.status(400).json({
+          msg: 'Service categories are required.',
+          statusCode: 400,
+        });
       }
-
-      const formatedTime = formatTime(+req.body.startTime);
-  
-      // Create the order with associated subcategories
+      // Create the Order record
       const order = await __db.order.create({
         data: {
-          category: { connect: { id: categoryId } }, // Linking category
-        medical: { connect: { id: medicalId } },   // Linking medical
-        user: { connect: { id: req.user._id, } },         // Linking user
-        service: { connect: { id: serviceId } },  
           price,
           address,
           lat,
           lng,
-          orderDate: new Date(`${req.body.date} ${formatedTime}`),  // Convert to Date type
+          orderDate: new Date(date),
           startTime,
-          endTime,
-          additionalInfo,
-          fileUrl,
+          medical: { connect: { id: medicalId } },
+          user: { connect: { id: req.user._id } },
+        },
+        include: {
           orderSubCategories: {
-            create: subCategoryId.map((subCategoryId: number) => ({
-              subCategoryId,  // Link the subCategoryId to the OrderSubCategory
-            })),
+            include: {
+              service: true, // Include related services
+            },
           },
-          
         },
       });
   
-      return res.status(201).json({
-        status: true,
-        message: "Order created successfully",
-        data: order,
+      // Create OrderSubCategory records for each service category in the serviceCat array
+      const orderSubCategoriesPromises = serviceCat.map((serviceCategory: any) => {
+        const services = serviceCategory?.service || [];
+  
+        return services.map((service: any) => {
+          const serviceId = service.id;
+          const categories = service?.category || [];
+  
+          return categories.map((category: any) => {
+            const categoryId = category.id;
+            const subCategoryIds = category?.subCategoryId || [];
+  
+            // Validate extracted data
+            if (!serviceId || !categoryId || subCategoryIds.length === 0) {
+              return res.status(400).json({
+                msg: 'Service, Category, and SubCategories are required for each service category.',
+                statusCode: 400,
+              });
+            }
+            return subCategoryIds.map(async(subCategoryId: number) => {
+              console.log(serviceId,categoryId,subCategoryId,order.id)
+              // Create OrderSubCategory for each subCategoryId
+              try {
+                const orderSubCategory =await  __db.orderSubCategory.create({
+                  data: {
+                    orderId: order.id,
+                    serviceId,
+                    categoryId,
+                    subCategoryId,
+                  },
+                });
+                console.log("Created OrderSubCategory:", orderSubCategory);
+                return orderSubCategory
+              } catch (error) {
+                console.error("Error creating OrderSubCategory:", error);
+              }
+            });
+          });
+        });
+      });
+  
+      // Wait for all the promises to resolve
+      const orderSubCategories = await Promise.all(orderSubCategoriesPromises.flat(2)); // Flatten the array of arrays
+  
+      // Return the successful response
+      return res.json({
+        msg: 'Order and associated OrderSubCategories created successfully!',
+        data: { order, orderSubCategories },
+        statusCode: 200,
       });
     } catch (error) {
-      console.error("Error creating order:", error);
+      console.error(error);
       return res.status(500).json({
-        status: false,
-        error: "An error occurred while creating the order",
+        msg: 'Error creating order and order subcategories.',
+        statusCode: 500,
+        error: error.message,
       });
     }
   };
@@ -207,22 +233,25 @@ const OrderController = () => {
       });
     }
   };
-  
+
   // const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
   //   try {
   //     const limit = parseInt(req.query.limit as string) || 10;
-  //     const cursor = parseInt(req.query.cursor as string) || "";
+  //     const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : null;
   //     const select = {
   //       id: true,
   //       name: true,
   //       iconUrl: true,
   //     };
-
-  //     logHttp("Fetching orders ==> ");
-  //     let orders = await __db.order.findMany({
+  
+  //     logHttp("Fetching orders ==> ", req.user._id);
+  //     const orders = await __db.order.findMany({
   //       where: {
   //         userId: req.user._id,
   //         orderStatus: req.query.status as string,
+  //         startTime:{
+  //           not:null
+  //         }
   //       },
   //       ...(cursor && { cursor: { id: cursor } }),
   //       ...(cursor && { skip: 1 }),
@@ -234,8 +263,21 @@ const OrderController = () => {
   //         category: {
   //           select,
   //         },
-  //         subCategory: {
-  //           select,
+  //         orderSubCategories: {
+  //           include: {
+  //             subCategory: {
+  //               select: {
+  //                 id: true,
+  //                 name: true,
+  //                 iconUrl: true,
+  //                 medicalCatrgories: {
+  //                   select: {
+  //                     price: true, // Fetch price from MedicalCategory
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //           },
   //         },
   //         medical: {
   //           select: {
@@ -247,29 +289,47 @@ const OrderController = () => {
   //         },
   //       },
   //       orderBy: {
-  //         orderDate: "desc",
+  //         createdAt: "desc",
   //       },
   //     });
+  
+  //     // Format `orderSubCategories` into a flat array of subCategory objects
+  //     const formattedOrders = orders.map((order: any) => ({
+  //       ...order,
+  //       orderSubCategories: order.orderSubCategories.map((osc: any) => ({
+  //         id: osc.subCategory.id,
+  //         name: osc.subCategory.name,
+  //         iconUrl: osc.subCategory.iconUrl,
+  //         price: osc.subCategory.medicalCatrgories?.[0]?.price || 0,
+  //       })),
+  //     }));
 
+  //     const formattedOrder = formattedOrders.map(order => ({
+  //       ...order,
+  //       createdAt: dayjs(order.createdAt).format("YYYY-MM-DD HH:mm:ss.SSS"),
+  //     }));
+
+  //     console.log("formattedOrder",formattedOrder)
+  
   //     logHttp("Fetched orders");
-
+  
   //     return sendSuccessResponse({
   //       res,
   //       data: {
-  //         orders,
+  //         orders: formattedOrder,
   //         cursor:
-  //           orders.length >= limit ? orders[orders.length - 1]["id"] : null,
+  //           orders.length >= limit ? orders[orders.length - 1].id : null,
   //       },
   //     });
   //   } catch (error: any) {
-  //     logError(`Error while getMyOrder ==> `, error?.message);
+  //     logError("Error while getMyOrder ==> ", error?.message);
   //     return sendErrorResponse({
   //       res,
   //       statusCode: error?.statusCode || 400,
   //       error: error?.message,
   //     });
   //   }
-  // };
+  // };  
   const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -281,34 +341,44 @@ const OrderController = () => {
       };
   
       logHttp("Fetching orders ==> ", req.user._id);
+  
+      // Fetch orders with relations
       const orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
           orderStatus: req.query.status as string,
-          startTime:{
-            not:null
+          startTime: {
+            not: null
           }
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
         take: limit,
         include: {
-          service: {
-            select,
-          },
-          category: {
-            select,
-          },
           orderSubCategories: {
             include: {
+              service: {  // Include the related service
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                }
+              },
+              category: {  // Include the related category
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                }
+              },
               subCategory: {
                 select: {
                   id: true,
                   name: true,
                   iconUrl: true,
-                  medicalCatrgories: {
+                  medicalCategories: {
                     select: {
-                      price: true, // Fetch price from MedicalCategory
+                      price: true,  // Fetch price from MedicalCategory
                     },
                   },
                 },
@@ -317,7 +387,9 @@ const OrderController = () => {
           },
           medical: {
             select: {
-              ...select,
+              id: true,
+              name: true,
+              iconUrl: true,
               lat: true,
               lng: true,
               address: true,
@@ -325,7 +397,7 @@ const OrderController = () => {
           },
         },
         orderBy: {
-          orderDate: "desc",
+          createdAt: "desc",
         },
       });
   
@@ -336,18 +408,26 @@ const OrderController = () => {
           id: osc.subCategory.id,
           name: osc.subCategory.name,
           iconUrl: osc.subCategory.iconUrl,
-          price: osc.subCategory.medicalCatrgories?.[0]?.price || 0,
+          price: osc.subCategory.medicalCategories?.[0]?.price || 0,  // Ensure medicalCategories is correctly referenced
+          service: osc.service,  // Add service information
+          category: osc.category,  // Add category information
         })),
       }));
+  
+      const formattedOrder = formattedOrders.map(order => ({
+        ...order,
+        createdAt: dayjs(order.createdAt).format("YYYY-MM-DD HH:mm:ss.SSS"),
+      }));
+  
+      console.log("formattedOrder", formattedOrder);
   
       logHttp("Fetched orders");
   
       return sendSuccessResponse({
         res,
         data: {
-          orders: formattedOrders,
-          cursor:
-            orders.length >= limit ? orders[orders.length - 1].id : null,
+          orders: formattedOrder,
+          cursor: orders.length >= limit ? orders[orders.length - 1].id : null,
         },
       });
     } catch (error: any) {
@@ -358,8 +438,8 @@ const OrderController = () => {
         error: error?.message,
       });
     }
-  };  
-  
+  };
+
   const acceptOrRejeectOrder = async (
     req: UserRequest,
     res: Response
@@ -453,25 +533,49 @@ const OrderController = () => {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          service: {
-            select,
-          },
-          category: {
-            select,
-          },
           orderSubCategories: {
             include: {
+              service: {  // Include the related service
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                }
+              },
+              category: {  // Include the related category
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                }
+              },
               subCategory: {
-                select,
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                  medicalCategories: {
+                    select: {
+                      price: true,  // Fetch price from MedicalCategory
+                    },
+                  },
+                },
               },
             },
           },
           medical: {
-            select,
+            select: {
+              id: true,
+              name: true,
+              iconUrl: true,
+              lat: true,
+              lng: true,
+              address: true,
+            },
           },
         },
         orderBy: {
-          orderDate: "desc",
+          createdAt: "desc",
         },
       });
       logHttp("Fetched orders");
@@ -609,28 +713,44 @@ const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
         id: orderId,
       },
       include: {
-        service: {
-          select,
-        },
-        category: {
-          select,
-        },
         orderSubCategories: {
           include: {
+            service: {  // Include the related service
+              select: {
+                id: true,
+                name: true,
+                iconUrl: true,
+              }
+            },
+            category: {  // Include the related category
+              select: {
+                id: true,
+                name: true,
+                iconUrl: true,
+              }
+            },
             subCategory: {
-              select,
+              select: {
+                id: true,
+                name: true,
+                iconUrl: true,
+                medicalCategories: {
+                  select: {
+                    price: true,  // Fetch price from MedicalCategory
+                  },
+                },
+              },
             },
           },
         },
         medical: {
-          select,
-        },
-        user: {
           select: {
+            id: true,
             name: true,
-            dob: true,
-            mobileNumber: true,
-            email: true,
+            iconUrl: true,
+            lat: true,
+            lng: true,
+            address: true,
           },
         },
       },

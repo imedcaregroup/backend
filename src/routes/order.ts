@@ -12,7 +12,7 @@ const router = Router();
 
 router
   .route("/")
-  .post(createOrderValidation, validationWrapper(orderController.createOrder))
+  .post(validationWrapper(orderController.createOrder))
   .get(orderController.getOrders);
 router.route("/my").get(orderController.getMyOrders);
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
