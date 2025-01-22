@@ -28,6 +28,19 @@ const SubCategoryController = () => {
         orderBy: {
           name: "asc",
         },
+        include: {
+          category: {
+            select: {
+              name: true, // Include category name
+              serviceId: true, // Include serviceId
+              service: {
+                select: {
+                  name: true, // Include service name
+                },
+              },
+            },
+          },
+        },
       });
 
       logHttp("Fetched subCategories");
@@ -35,7 +48,15 @@ const SubCategoryController = () => {
       return sendSuccessResponse({
         res,
         data: {
-          subCategories,
+          subCategories: subCategories.map((obj: any) => ({
+            id: obj.id,
+            iconUrl: obj.iconUrl,
+            name: obj.name,
+            categoryId: obj.categoryId,
+            categoryName: obj.category?.name,
+            serviceId: obj.category?.serviceId,
+            serviceName: obj.category.service?.name,
+          })),
           cursor:
             subCategories.length >= limit
               ? subCategories[subCategories.length - 1]["id"]

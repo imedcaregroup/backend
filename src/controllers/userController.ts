@@ -4,6 +4,7 @@ import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { generateJWT } from "../utils/helpers";
 import { UserRequest } from "../types";
+import s3 from "../utils/aws"; // Import the AWS S3 instance
 
 const UserController = () => {
   const signUp = async (req: Request, res: Response): Promise<any> => {
@@ -18,7 +19,8 @@ const UserController = () => {
         },
       });
 
-      if (user && user.isDeleted !== false) throw new Error("Email already in use");
+      if (user && user.isDeleted !== false)
+        throw new Error("Email already in use");
 
       const hashPassword = await bcrypt.hash(password, 10);
 
@@ -184,6 +186,19 @@ const UserController = () => {
   const setMyProfile = async (req: UserRequest, res: Response) => {
     try {
       logHttp("Setting up user profile with body ", req.body);
+
+      if (req.file) {
+        const fileName = `${Date.now()}-${req.file.originalname}`;
+        const params = {
+          Bucket: process.env.AWS_S3_BUCKET_NAME!,
+          Key: fileName,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype,
+        };
+
+        const data = await s3.upload(params).promise();
+        req.body.imageUrl = data.Location;
+      }
 
       const user = await __db.user.update({
         where: {

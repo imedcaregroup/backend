@@ -8,6 +8,31 @@ import {
   updatePasswordValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
+import multer, { FileFilterCallback } from "multer";
+import { UserRequest } from "../types";
+
+// Set up Multer storage for S3 file upload
+const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
+
+const fileFilter = (
+  req: UserRequest,
+  file: Express.Multer.File,
+  cb: FileFilterCallback
+) => {
+  const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); // Accept file
+  } else {
+    cb(new Error("Invalid file type. Only JPEG, PNG, and PDF are allowed."));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 }, // Max file size 10MB
+});
+
 const userController = UserController();
 
 const router = Router();
@@ -26,6 +51,7 @@ router.route("/me").get(userController.getMyProfile);
 router
   .route("/profile")
   .patch(
+    upload.single("image"),
     setUserProfileValidation,
     validationWrapper(userController.setMyProfile)
   )
