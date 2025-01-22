@@ -18,7 +18,7 @@ const UserController = () => {
         },
       });
 
-      if (user) throw new Error("Email already in use");
+      if (user && user.isDeleted !== false) throw new Error("Email already in use");
 
       const hashPassword = await bcrypt.hash(password, 10);
 
