@@ -3,7 +3,7 @@ name: Deploy to EC2 Dev
 on:
   push:
     branches:
-      - main # This targets the main branch
+      - main
 
 jobs:
   deploy:
@@ -20,7 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Clean and Fix Permissions for Build Directory
+        run: |
+          sudo chmod -R u+w ./build || true
+          sudo rm -rf ./build || true
+
       - name: Build the project
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: npm run build
 
       - name: Setup SSH
@@ -69,7 +76,7 @@ jobs:
 
             echo "Stop the existing process if it exists"
             pm2 stop imed-backend-prod || true
-            pm2 delete imed-backend-prod|| true
+            pm2 delete imed-backend-prod || true
 
 
             echo "Start the process"

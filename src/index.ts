@@ -12,8 +12,8 @@ import errorMiddleware from "./middlewares/error";
 
 const app: express.Application = express();
 
-app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({ extended: true, limit: "100kb" }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(helmet());
 app.use(
   cors({
