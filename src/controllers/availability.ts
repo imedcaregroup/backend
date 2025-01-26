@@ -150,6 +150,127 @@ const AvailabilityController = () => {
     });
   };
 
+  // const getRemainingDaysAndSlots = async (
+  //   req: Request,
+  //   res: Response
+  // ): Promise<any> => {
+  //   try {
+  //     const today = new Date();
+  //     const currentDay = today.getDate();
+  //     const currentMonth = today.getMonth() + 1;
+  //     const currentYear = today.getFullYear();
+  
+  //     // Get month and year from the query (defaults to current month and year if not provided)
+  //     const month = parseInt(req.query.month as string) || currentMonth;
+  //     const year = parseInt(req.query.year as string) || currentYear;
+  
+  //     // Get the last day of the requested month
+  //     const lastDayOfMonth = new Date(year, month, 0).getDate();
+  
+  //     // Format the start and end of the month as strings
+  //     const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
+  //     const endDate = `${year}-${month.toString().padStart(2, "0")}-${lastDayOfMonth}`;
+  
+  //     // Fetch available slots for the entire month upfront
+  //     const availableSlots = await __db.availability.findMany({
+  //       where: {
+  //         medicalId: parseInt(req.query.medicalId as string),
+  //         day: { in: Array.from({ length: 7 }, (_, i) => i) },
+  //       },
+  //       select: {
+  //         id: true,
+  //         day: true,
+  //         startTime: true,
+  //       },
+  //     });
+  
+  //     // Fetch all orders for the month to check booked slots
+  //     const orders = await __db.order.findMany({
+  //       where: {
+  //         medicalId: parseInt(req.query.medicalId as string),
+  //         date: {
+  //           gte: startDate,
+  //           lte: endDate,
+  //         },
+  //         OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
+  //       },
+  //       select: {
+  //         date: true,
+  //         startTime: true,
+  //       },
+  //     });
+  
+  //     // Group orders by date for easy comparison
+  //     const groupedOrders: { [key: string]: number[] } = {};
+  //     orders.forEach((order: any) => {
+  //       const orderDate = order.date
+  //         ? new Date(order.date).toISOString().split("T")[0]
+  //         : null;
+  //       if (orderDate && order.startTime !== null) {
+  //         if (!groupedOrders[orderDate]) {
+  //           groupedOrders[orderDate] = [];
+  //         }
+  //         groupedOrders[orderDate].push(Number(order.startTime));
+  //       }
+  //     });
+  
+  //     // Calculate the remaining slots for each day of the month
+  //     const remainingDays = [];
+  
+  //     for (let day = 1; day <= lastDayOfMonth; day++) {
+  //       if (month === currentMonth && year === currentYear && day < currentDay) {
+  //         continue;
+  //       }
+  
+  //       const date = new Date(year, month - 1, day);
+  //       const dateString = date.toLocaleDateString("en-CA");
+  
+  //       // Filter available slots for this specific date
+  //       let availableSlotsForDate = availableSlots.filter((slot: any) => {
+  //         const slotDay = date.getDay();
+  //         return slot.day === slotDay;
+  //       });
+  
+  //       if (month === currentMonth && year === currentYear && day === currentDay) {
+  //         const now = new Date();
+  //         const currentTime = now.getHours() * 100 + now.getMinutes();
+  //         availableSlotsForDate = availableSlotsForDate.filter((slot: any) => {
+  //           return slot.startTime > currentTime;
+  //         });
+  //       }
+  
+  //       const bookedSlots = groupedOrders[dateString] || [];
+  
+  //       const remainingSlots = availableSlotsForDate.filter(
+  //         (slot: any) => !bookedSlots.includes(Number(slot.startTime))
+  //       );
+  
+  //       remainingDays.push({
+  //         day: date.toLocaleString("default", { weekday: "long" }),
+  //         date: dateString,
+  //         remainingSlotsCount: remainingSlots.length,
+  //         remainingSlots: remainingSlots.map((slot: any) => ({
+  //           startTime: slot.startTime,
+  //           displayTime: formatTime(slot.startTime),
+  //         })),
+  //       });
+  //     }
+  
+  //     return sendSuccessResponse({
+  //       res,
+  //       data: { remainingDays },
+  //     });
+  //   } catch (error: any) {
+  //     logError(`Error while getRemainingDaysAndSlots ==> `, error?.message);
+  //     return sendErrorResponse({
+  //       res,
+  //       statusCode: error?.statusCode || 400,
+  //       error,
+  //     });
+  //   }
+  // };
+  
+
   const getRemainingDaysAndSlots = async (
     req: Request,
     res: Response
@@ -159,22 +280,43 @@ const AvailabilityController = () => {
       const currentDay = today.getDate();
       const currentMonth = today.getMonth() + 1;
       const currentYear = today.getFullYear();
-  
-      // Get month and year from the query (defaults to current month and year if not provided)
+
       const month = parseInt(req.query.month as string) || currentMonth;
       const year = parseInt(req.query.year as string) || currentYear;
-  
-      // Get the last day of the requested month
+      const medicalId = parseInt(req.query.medicalId as string);
+
       const lastDayOfMonth = new Date(year, month, 0).getDate();
-  
-      // Format the start and end of the month as strings
-      const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
-      const endDate = `${year}-${month.toString().padStart(2, "0")}-${lastDayOfMonth}`;
-  
-      // Fetch available slots for the entire month upfront
+
+      // Fetch booked slots more precisely
+      const orders = await __db.order.findMany({
+        where: {
+          medicalId: medicalId,
+          orderDate: {
+            gte: new Date(year, month - 1, 1),
+            lte: new Date(year, month - 1, lastDayOfMonth),
+          },
+          OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
+        },
+        select: {
+          orderDate: true,
+          startTime: true,
+        },
+      });
+
+      // Group booked slots by date
+      const bookedSlotsByDate: { [key: string]: number[] } = {};
+      orders.forEach((order) => {
+        const dateKey = order.orderDate.toISOString().split("T")[0];
+        if (!bookedSlotsByDate[dateKey]) {
+          bookedSlotsByDate[dateKey] = [];
+        }
+        bookedSlotsByDate[dateKey].push(Number(order.startTime));
+      });
+
+      // Fetch available slots
       const availableSlots = await __db.availability.findMany({
         where: {
-          medicalId: parseInt(req.query.medicalId as string),
+          medicalId: medicalId,
           day: { in: Array.from({ length: 7 }, (_, i) => i) },
         },
         select: {
@@ -183,85 +325,60 @@ const AvailabilityController = () => {
           startTime: true,
         },
       });
-  
-      // Fetch all orders for the month to check booked slots
-      const orders = await __db.order.findMany({
-        where: {
-          medicalId: parseInt(req.query.medicalId as string),
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-          OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
-        },
-        select: {
-          date: true,
-          startTime: true,
-        },
-      });
-  
-      // Group orders by date for easy comparison
-      const groupedOrders: { [key: string]: number[] } = {};
-      orders.forEach((order: any) => {
-        const orderDate = order.date
-          ? new Date(order.date).toISOString().split("T")[0]
-          : null;
-        if (orderDate && order.startTime !== null) {
-          if (!groupedOrders[orderDate]) {
-            groupedOrders[orderDate] = [];
-          }
-          groupedOrders[orderDate].push(Number(order.startTime));
-        }
-      });
-  
-      // Calculate the remaining slots for each day of the month
+
       const remainingDays = [];
-  
+
       for (let day = 1; day <= lastDayOfMonth; day++) {
-        if (month === currentMonth && year === currentYear && day < currentDay) {
+        if (
+          month === currentMonth &&
+          year === currentYear &&
+          day < currentDay
+        ) {
           continue;
         }
-  
+
         const date = new Date(year, month - 1, day);
-        const dateString = date.toLocaleDateString("en-CA");
-  
-        // Filter available slots for this specific date
-        let availableSlotsForDate = availableSlots.filter((slot: any) => {
-          const slotDay = date.getDay();
-          return slot.day === slotDay;
-        });
-  
-        if (month === currentMonth && year === currentYear && day === currentDay) {
-          const now = new Date();
-          const currentTime = now.getHours() * 100 + now.getMinutes();
-          availableSlotsForDate = availableSlotsForDate.filter((slot: any) => {
-            return slot.startTime > currentTime;
-          });
-        }
-  
-        const bookedSlots = groupedOrders[dateString] || [];
-  
-        const remainingSlots = availableSlotsForDate.filter(
-          (slot: any) => !bookedSlots.includes(Number(slot.startTime))
+        const dateString = date.toISOString().split("T")[0];
+        const slotDay = date.getDay();
+
+        // Filter slots for this day of week
+        const availableSlotsForDate = availableSlots.filter(
+          (slot) => slot.day === slotDay
         );
-  
+
+        // Remove booked slots
+        const bookedSlotsOnDate = bookedSlotsByDate[dateString] || [];
+        const remainingSlots = availableSlotsForDate.filter(
+          (slot) => !bookedSlotsOnDate.includes(Number(slot.startTime))
+        );
+
+        // Current day additional filtering
+        const filteredSlots =
+          month === currentMonth && year === currentYear && day === currentDay
+            ? remainingSlots.filter((slot) => {
+                const now = new Date();
+                const currentTime = now.getHours() * 100 + now.getMinutes();
+                return slot.startTime > currentTime;
+              })
+            : remainingSlots;
+
         remainingDays.push({
           day: date.toLocaleString("default", { weekday: "long" }),
           date: dateString,
-          remainingSlotsCount: remainingSlots.length,
-          remainingSlots: remainingSlots.map((slot: any) => ({
+          remainingSlotsCount: filteredSlots.length,
+          remainingSlots: filteredSlots.map((slot) => ({
             startTime: slot.startTime,
             displayTime: formatTime(slot.startTime),
           })),
         });
       }
-  
+
       return sendSuccessResponse({
         res,
         data: { remainingDays },
       });
     } catch (error: any) {
-      logError(`Error while getRemainingDaysAndSlots ==> `, error?.message);
+      logError(`Error in getRemainingDaysAndSlots`, error?.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -269,7 +386,6 @@ const AvailabilityController = () => {
       });
     }
   };
-  
   // Utility function to format time as 'HH:MM AM/PM'
   const formatTime = (time: number): string => {
     const hours = Math.floor(time / 100);
