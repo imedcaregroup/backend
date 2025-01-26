@@ -46,6 +46,23 @@ const OrderController = () => {
           statusCode: 400,
         });
       }
+
+      // Check if the slot is already booked
+      const existingOrder = await __db.order.findFirst({
+        where: {
+          medicalId: medicalId,
+          orderDate: new Date(date),
+          startTime: startTime,
+        },
+      });
+
+      if (existingOrder) {
+        return res.status(400).json({
+          msg: "The selected slot is already booked. Please choose a different slot.",
+          statusCode: 400,
+        });
+      }
+
       // Create the Order record
       const order = await __db.order.create({
         data: {

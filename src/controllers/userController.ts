@@ -235,22 +235,48 @@ const UserController = () => {
 
   const deleteMyProfile = async (req: UserRequest, res: Response) => {
     try {
-      logHttp("Setting up user profile with body ", req.body);
+      logHttp("Deleting user profile with body ", req.body);
 
-      const user = await __db.user.update({
-        where: {
-          id: req.user._id,
-        },
-        data: {
-          isDeleted: true,
-        },
+      const userId = req.user._id;
+
+      // Delete related data
+      await __db.$transaction(async (transaction) => {
+        // Delete from OrderSubCategory (if related to User through orders)
+        await transaction.orderSubCategory.deleteMany({
+          where: {
+            order: {
+              userId: userId,
+            },
+          },
+        });
+
+        // Delete from Orders
+        await transaction.order.deleteMany({
+          where: {
+            userId: userId,
+          },
+        });
+
+        // Delete from Address
+        await transaction.address.deleteMany({
+          where: {
+            userId: userId,
+          },
+        });
+
+        // Delete user
+        await transaction.user.delete({
+          where: {
+            id: userId,
+          },
+        });
       });
 
-      logHttp("Deleted user profile");
+      logHttp("Deleted user and all related data");
 
       return sendSuccessResponse({
         res,
-        message: "Deleted user profile successfully!!!",
+        message: "Deleted user profile and all related data successfully!!!",
       });
     } catch (error) {
       logError(`Error while deleteProfile ==> `, error?.message);
@@ -261,6 +287,35 @@ const UserController = () => {
       });
     }
   };
+
+  // const deleteMyProfile = async (req: UserRequest, res: Response) => {
+  //   try {
+  //     logHttp("Setting up user profile with body ", req.body);
+
+  //     const user = await __db.user.update({
+  //       where: {
+  //         id: req.user._id,
+  //       },
+  //       data: {
+  //         isDeleted: true,
+  //       },
+  //     });
+
+  //     logHttp("Deleted user profile");
+
+  //     return sendSuccessResponse({
+  //       res,
+  //       message: "Deleted user profile successfully!!!",
+  //     });
+  //   } catch (error) {
+  //     logError(`Error while deleteProfile ==> `, error?.message);
+  //     return sendErrorResponse({
+  //       res,
+  //       statusCode: error?.statusCode || 400,
+  //       error,
+  //     });
+  //   }
+  // };
 
   const updatePassword = async (req: UserRequest, res: Response) => {
     try {
