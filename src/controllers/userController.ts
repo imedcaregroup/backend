@@ -95,44 +95,113 @@ const UserController = () => {
     }
   };
 
+  // const loginUserWithGoogle = async (
+  //   req: Request,
+  //   res: Response
+  // ): Promise<any> => {
+  //   try {
+  //     logHttp("Adding user with reqBody ==> ", req.body);
+  //     const { name, givenName, familyName, email, id, photo } = req.body;
+  //     let userExists = true;
+
+  //     logHttp("Finding user with email ==> ", email);
+  //     let user = await __db.user.findFirst({
+  //       where: {
+  //         googleId: id,
+  //         isDeleted: false,
+  //       },
+  //     });
+
+  //     if (!user) {
+  //       logHttp("Creating new user with email ", email);
+  //       user = await __db.user.create({
+  //         data: {
+  //           name,
+  //           surName: familyName || givenName,
+  //           googleId: id,
+  //           email,
+  //           authProvider: "GOOGLE",
+  //         },
+  //       });
+  //       logHttp("Created new user with email ", email);
+  //       userExists = false;
+  //     }
+
+  //     logHttp("Creating jwt");
+  //     const token = await generateJWT(
+  //       { _id: user?.id, tyep: "ACCESS_TOKEN" },
+  //       "365d"
+  //     );
+  //     logHttp("Created jwt");
+
+  //     return sendSuccessResponse({
+  //       res,
+  //       data: {
+  //         user,
+  //         token,
+  //         userExists,
+  //       },
+  //     });
+  //   } catch (error: any) {
+  //     logError(`Error while loginUserWithGoogle ==> `, error?.message);
+  //     return sendErrorResponse({
+  //       res,
+  //       statusCode: error?.statusCode || 400,
+  //       error,
+  //     });
+  //   }
+  // };
+
   const loginUserWithGoogle = async (
     req: Request,
     res: Response
   ): Promise<any> => {
     try {
-      logHttp("Adding user with reqBody ==> ", req.body);
-      const { name, givenName, familyName, email, id, photo } = req.body;
-      let userExists = true;
+      logHttp("Received OAuth login request with reqBody ==> ", req.body);
+      const { name, givenName, familyName, email, id, authProvider } = req.body;
 
-      logHttp("Finding user with email ==> ", email);
-      let user = await __db.user.findFirst({
+      if (!authProvider) {
+        throw {
+          statusCode: 400,
+          message: "authProvider is required (GOOGLE or APPLE)",
+        };
+      }
+
+      let userExists = true;
+      let user;
+
+      // Universal User Find Logic using ID and authProvider
+      logHttp(`Finding user with authProvider: ${authProvider} and ID: ${id}`);
+      user = await __db.user.findFirst({
         where: {
-          googleId: id,
+          authProvider: authProvider,
+          googleId: id, // googleId field used for both Google and Apple IDs
           isDeleted: false,
         },
       });
 
+      // Create user if not found
       if (!user) {
-        logHttp("Creating new user with email ", email);
+        logHttp(`Creating new user for authProvider: ${authProvider}`);
         user = await __db.user.create({
           data: {
-            name,
-            surName: familyName || givenName,
-            googleId: id,
-            email,
-            authProvider: "GOOGLE",
+            name: name || givenName || "Unknown",
+            surName: familyName || givenName || "",
+            googleId: id, // ID saved in googleId field
+            email: email || `${id}@appleid.com`, // Save email or fallback for Apple
+            authProvider,
           },
         });
-        logHttp("Created new user with email ", email);
+        logHttp("Created new user with", email || `ID: ${id}`);
         userExists = false;
       }
 
-      logHttp("Creating jwt");
+      // Generate JWT Token
+      logHttp("Generating JWT for user");
       const token = await generateJWT(
-        { _id: user?.id, tyep: "ACCESS_TOKEN" },
+        { _id: user.id, type: "ACCESS_TOKEN" },
         "365d"
       );
-      logHttp("Created jwt");
 
       return sendSuccessResponse({
         res,
@@ -143,11 +212,11 @@ const UserController = () => {
         },
       });
     } catch (error: any) {
-      logError(`Error while loginUserWithGoogle ==> `, error?.message);
+      logError(`Error in loginUserWithOAuth ==> `, error.message || error);
       return sendErrorResponse({
         res,
-        statusCode: error?.statusCode || 400,
-        error,
+        statusCode: error.statusCode || 500,
+        error: error.message || "Internal Server Error",
       });
     }
   };
