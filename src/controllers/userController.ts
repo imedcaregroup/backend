@@ -7,44 +7,177 @@ import { UserRequest } from "../types";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 
 const UserController = () => {
+  // const signUp = async (req: Request, res: Response): Promise<any> => {
+  //   try {
+  //     logHttp("Adding user with reqBody ==> ", req.body);
+  //     const {
+  //       name,
+  //       surName,
+  //       pytroNym,
+  //       email,
+  //       password,
+  //       address,
+  //       dob,
+  //       country,
+  //       gender,
+  //       mobileNumber,
+  //       lat,
+  //       lng,
+  //       notificationEnabled,
+  //     } = req.body;
+  //     console.log("R", req.body);
+  //     if (!email || !password) {
+  //       throw {
+  //         statusCode: 400,
+  //         message: "Email and password are required",
+  //       };
+  //     }
+
+  //     logHttp("Finding user with email ==> ", email);
+  //     let user = await __db.user.findFirst({
+  //       where: {
+  //         email,
+  //         isDeleted: false,
+  //       },
+  //     });
+
+  //     if (user) {
+  //       throw {
+  //         statusCode: 409,
+  //         message: "User already exists with this email",
+  //       };
+  //     }
+  //     const hashPassword = await bcrypt.hash(password, 10);
+
+  //     logHttp("Creating user");
+  //     await __db.user.create({
+  //       data: {
+  //         name,
+  //         surName,
+  //         pytroNym,
+  //         email,
+  //         mobileNumber,
+  //         address,
+  //         dob,
+  //         country,
+  //         gender,
+  //         lat,
+  //         lng,
+  //         password: hashPassword,
+  //         notificationEnabled,
+  //         authProvider: "PASSWORD",
+  //       },
+  //     });
+  //     logHttp("Created new user with email", email);
+  //     const token = await generateJWT(
+  //       { _id: user?.id, type: "ACCESS_TOKEN" },
+  //       "365d",
+  //     );
+
+  //     return sendSuccessResponse({
+  //       res,
+  //       message: "User created successfully!!!",
+  //       data: {
+  //         user,
+  //         token,
+  //         userExists: false,
+  //       },
+  //     });
+  //   } catch (error: any) {
+  //     logError(`Error while signUp ==> `, error?.message);
+
+  //     return sendErrorResponse({
+  //       res,
+  //       statusCode: error?.statusCode || 500,
+  //       error: error.message || "Internal Server Error",
+  //     });
+  //   }
+  // };
   const signUp = async (req: Request, res: Response): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
-      const { name, password, email } = req.body;
+      const {
+        name,
+        surName,
+        pytroNym,
+        email,
+        password,
+        address,
+        dob,
+        country,
+        gender,
+        mobileNumber,
+        lat,
+        lng,
+        notificationEnabled,
+      } = req.body;
+
+      if (!email || !password) {
+        throw {
+          statusCode: 400,
+          message: "Email and password are required",
+        };
+      }
 
       logHttp("Finding user with email ==> ", email);
-      let user = await __db.user.findFirst({
+      let existingUser = await __db.user.findFirst({
         where: {
           email,
+          isDeleted: false,
         },
       });
 
-      if (user && user.isDeleted !== false)
-        throw new Error("Email already in use");
+      if (existingUser) {
+        throw {
+          statusCode: 409,
+          message: "User already exists with this email",
+        };
+      }
 
       const hashPassword = await bcrypt.hash(password, 10);
 
       logHttp("Creating user");
-      await __db.user.create({
+      const newUser = await __db.user.create({
         data: {
           name,
+          surName,
+          pytroNym,
           email,
+          mobileNumber,
+          address,
+          dob: dob ? new Date(dob) : null,
+          country,
+          gender,
+          lat,
+          lng,
           password: hashPassword,
+          notificationEnabled,
           authProvider: "PASSWORD",
+          isDeleted: false,
         },
       });
-      logHttp("Created user");
+
+      logHttp("Created new user with email", email);
+      const token = await generateJWT(
+        { _id: newUser.id, type: "ACCESS_TOKEN" },
+        "365d",
+      );
 
       return sendSuccessResponse({
         res,
         message: "User created successfully!!!",
+        data: {
+          ...newUser,
+          token,
+          userExists: false,
+        },
       });
     } catch (error: any) {
       logError(`Error while signUp ==> `, error?.message);
       return sendErrorResponse({
         res,
-        statusCode: error?.statusCode || 400,
-        error,
+        statusCode: error?.statusCode || 500,
+        error: error.message || "Internal Server Error",
       });
     }
   };
