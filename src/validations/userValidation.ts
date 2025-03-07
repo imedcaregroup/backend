@@ -11,6 +11,9 @@ export const loginUserValidation = [
   check("password").notEmpty().withMessage("Please provide password"),
 ];
 
+export const VerifyEmailValidation = [
+  check("email").notEmpty().withMessage("Please provide the email"),
+];
 export const setUserProfileValidation = [
   check("mobileNumber")
     .optional()

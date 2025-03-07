@@ -6,6 +6,7 @@ import {
   createUserValidation,
   loginUserValidation,
   updatePasswordValidation,
+  VerifyEmailValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 import multer, { FileFilterCallback } from "multer";
@@ -50,7 +51,9 @@ router
 router
   .route("/login")
   .post(loginUserValidation, validationWrapper(userController.logIn));
-
+router
+  .route("/verify-email")
+  .post(VerifyEmailValidation, validationWrapper(userController.verifyEmail));
 router.use(authMiddleware);
 router.route("/me").get(userController.getMyProfile);
 router

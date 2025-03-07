@@ -195,27 +195,70 @@ const UserController = () => {
         },
       });
 
-      if (!user || !user?.password)
-        throw new Error("Invalid email or password");
+      if (!user) {
+        throw {
+          statusCode: 400,
+          message: "Invalid email or password",
+        };
+      }
 
-      const isMatched = await bcrypt.compare(password, user?.password);
+      // Check if user registered with OAuth and doesn't have a password set
+      if (!user.password) {
+        // Check if we're getting a new password to set
+        if (password) {
+          logHttp("User has no password set. Setting new password.");
+          // Hash and set the new password
+          const hashPassword = await bcrypt.hash(password, 10);
 
-      if (!isMatched) throw new Error("Invalid email or password");
+          // Update user with new password
+          user = await __db.user.update({
+            where: { id: user.id },
+            data: {
+              password: hashPassword,
+              // If they originally signed up with OAuth, we'll keep that provider
+              // but also allow password login now
+            },
+          });
+
+          logHttp("Password set successfully for user with email", email);
+        } else {
+          // No password provided and user doesn't have one
+          throw {
+            statusCode: 400,
+            message:
+              "This email was registered using social login. Please use Google/Apple login or set a password.",
+            authProvider: user.authProvider,
+          };
+        }
+      } else {
+        // User has a password, verify it
+        const isMatched = await bcrypt.compare(password, user.password);
+
+        if (!isMatched) {
+          throw {
+            statusCode: 400,
+            message: "Invalid email or password",
+          };
+        }
+      }
 
       logHttp("Creating jwt");
       const token = await generateJWT(
-        { _id: user?.id, tyep: "ACCESS_TOKEN" },
+        { _id: user.id, type: "ACCESS_TOKEN" },
         "365d"
       );
       logHttp("Created jwt");
 
-      user.password = null;
+      // Remove password from response
+      const userWithoutPassword = { ...user };
+      userWithoutPassword.password = null;
 
       return sendSuccessResponse({
         res,
         data: {
-          user,
+          ...userWithoutPassword,
           token,
+          userExists: true,
         },
       });
     } catch (error: any) {
@@ -223,11 +266,47 @@ const UserController = () => {
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
-        error,
+        error: error.message || error,
       });
     }
   };
 
+  const verifyEmail = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Verifying email with reqBody ==> ", req.body);
+      const { email } = req.body;
+
+      if (!email) {
+        throw {
+          statusCode: 400,
+          message: "Email is required",
+        };
+      }
+
+      logHttp("Finding user with email ==> ", email);
+      let existingUser = await __db.user.findFirst({
+        where: {
+          email,
+          isDeleted: false,
+        },
+      });
+      return sendSuccessResponse({
+        res,
+        message: existingUser ? "Email already exists" : "Email is available",
+        data: {
+          userExists: existingUser ? true : false,
+          ...existingUser
+        },
+      });
+    } catch (error: any) {
+      logError(`Error while verifying email ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 500,
+        error: error.message || "Internal Server Error",
+      });
+    }
+  };
   // const loginUserWithGoogle = async (
   //   req: Request,
   //   res: Response
@@ -303,26 +382,61 @@ const UserController = () => {
       let userExists = true;
       let user;
 
-      // Universal User Find Logic using ID and authProvider
+      // First, try to find user by OAuth ID and provider
       logHttp(`Finding user with authProvider: ${authProvider} and ID: ${id}`);
       user = await __db.user.findFirst({
         where: {
           authProvider: authProvider,
-          googleId: id, // googleId field used for both Google and Apple IDs
+          googleId: id,
           isDeleted: false,
         },
       });
 
-      // Create user if not found
+      // If not found by OAuth ID, check if the email already exists
+      if (!user && email) {
+        logHttp(
+          `User not found with OAuth ID. Checking if email exists: ${email}`
+        );
+        user = await __db.user.findFirst({
+          where: {
+            email: email,
+            isDeleted: false,
+          },
+        });
+
+        // If user exists with this email, update their record with OAuth info
+        if (user) {
+          logHttp(
+            `User found with email. Updating with OAuth provider details`
+          );
+          user = await __db.user.update({
+            where: { id: user.id },
+            data: {
+              googleId: id,
+              authProvider:
+                user.authProvider === "PASSWORD"
+                  ? authProvider
+                  : user.authProvider,
+              // Don't update other fields if they already exist
+              name: user.name || name || givenName || "Unknown",
+              surName: user.surName || familyName || "",
+            },
+          });
+          logHttp(`Updated existing user with OAuth details`);
+        }
+      }
+
+      // Create user if not found by either method
       if (!user) {
         logHttp(`Creating new user for authProvider: ${authProvider}`);
         user = await __db.user.create({
           data: {
             name: name || givenName || "Unknown",
-            surName: familyName || givenName || "",
-            googleId: id, // ID saved in googleId field
-            email: email || `${id}@appleid.com`, // Save email or fallback for Apple
+            surName: familyName || "",
+            googleId: id,
+            email: email || `${id}@appleid.com`,
             authProvider,
+            isDeleted: false,
           },
         });
         logHttp("Created new user with", email || `ID: ${id}`);
@@ -562,6 +676,7 @@ const UserController = () => {
   return {
     signUp,
     logIn,
+    verifyEmail,
     loginUserWithGoogle,
     getMyProfile,
     setMyProfile,
