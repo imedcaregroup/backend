@@ -29,6 +29,7 @@ model User {
   imageUrl            String?   @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
   addresses           Address[]
   orders              Order[]
+  tokens              FcmToken[]
 }
 
 model Service {
@@ -147,4 +148,13 @@ model Address {
   lat       Int
   lng       Int
   user      User     @relation(fields: [userId], references: [id])
+}
+
+
+
+model FcmToken{
+    id        Int      @id @default(autoincrement())
+    token String @unique
+    userId Int
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

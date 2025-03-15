@@ -2,10 +2,9 @@ import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
-import path from "path";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { UserRequest } from "../types";
-import { formatTime } from "../utils/helpers";
+import { sendPostNotifications } from "../utils/helpers";
 import dayjs from "dayjs";
 
 // Set up Multer storage for S3 file upload
@@ -239,7 +238,7 @@ const OrderController = () => {
 
         try {
           const requestOrder = await __db.order.create({
-            data: orderData,
+            data: orderData as any,
           });
 
           logHttp("Request order created:", requestOrder); // Log the created order
@@ -491,6 +490,7 @@ const OrderController = () => {
         },
         select: {
           id: true,
+          userId: true,
         },
       });
 
@@ -509,6 +509,27 @@ const OrderController = () => {
       });
 
       logHttp("Accepted or rejected order ==> ");
+
+      const tokens = await __db.fcmToken.findMany({
+        where: {
+          userId: order.userId,
+        },
+        select: {
+          token: true,
+        },
+      });
+
+      if (tokens)
+        await sendPostNotifications(
+          tokens,
+          req.body.orderStatus === "accepted"
+            ? "Your order has been accepted"
+            : "Your order has been rejected",
+          req.body.orderStatus === "accepted"
+            ? "You account has been accepted by admin"
+            : req.body.declinedReason,
+          {}
+        );
 
       return sendSuccessResponse({
         res,

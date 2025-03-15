@@ -2,6 +2,7 @@ import { sign, verify } from "jsonwebtoken";
 import { NextFunction, Request } from "express";
 import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
+import { messaging } from "../config/messaging";
 
 const SECRET_KEY = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
@@ -75,4 +76,67 @@ export const formatTime = (time: number) => {
 
   // Return formatted time
   return `${hours}:${minutes}:00`;
+};
+
+const sliceArrayIntoGroups = (tokenArr: any[]) => {
+  const arrays = [];
+  const size = 400;
+  while (tokenArr.length > 0) arrays.push(tokenArr.splice(0, size));
+  return arrays;
+};
+
+export const sendPostNotifications = async (
+  deviceTokens: any[],
+  title: string,
+  body: string,
+  payload: any
+): Promise<any> => {
+  try {
+    if (deviceTokens.length) {
+      const tokens = deviceTokens.map(({ token }) => token);
+      const slicedArray = sliceArrayIntoGroups(tokens);
+      if (slicedArray[0].length) {
+        const pendingPromiseArr = slicedArray.map((tokenArrGroup) => {
+          return messaging.sendEachForMulticast({
+            tokens: tokenArrGroup,
+            data: {
+              title,
+              body,
+              // payload: JSON.stringify(payload),
+            },
+            webpush: {
+              fcmOptions: {
+                link: payload?.webRedirectUrl || "",
+              },
+              data: {
+                title,
+                body,
+                payload: JSON.stringify(payload),
+              },
+            },
+            android: {
+              data: {
+                title,
+                body,
+                // payload: JSON.stringify(payload),
+              },
+            },
+            notification: {
+              body,
+              title,
+            },
+          });
+        });
+        const resolvedDeviceTokensArr =
+          await Promise.allSettled(pendingPromiseArr);
+
+        console.log(JSON.stringify(resolvedDeviceTokensArr));
+      }
+      return slicedArray[0];
+    }
+    return;
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    return;
+  }
 };

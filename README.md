@@ -65,6 +65,12 @@ npm run build
 npm run lint:fix
 ```
 
+## Generating Types For Prisma Client:
+
+```
+ npx prisma generate
+```
+
 ## Generate Migration And Apply To DB:
 
 ```

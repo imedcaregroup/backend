@@ -4,3 +4,6 @@ node_modules/
 deploy.sh
 logs/
 .DS_Store
+
+
+**/service-account.json
