@@ -494,8 +494,6 @@ const OrderController = () => {
         },
       });
 
-      console.log(order);
-
       if (!order) throw new Error("No order found");
 
       logHttp("Checked for order in db");
@@ -528,8 +526,8 @@ const OrderController = () => {
             ? "Your order has been accepted"
             : "Your order has been rejected",
           req.body.orderStatus === "accepted"
-            ? "Your order has been accepted"
-            : "Your order has been rejected",
+            ? "You account has been accepted by admin"
+            : req.body.declinedReason,
           {}
         );
 
