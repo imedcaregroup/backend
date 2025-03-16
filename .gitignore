@@ -4,6 +4,5 @@ node_modules/
 deploy.sh
 logs/
 .DS_Store
-.idea
 
 **/service-account.json
