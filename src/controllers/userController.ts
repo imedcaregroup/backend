@@ -637,10 +637,23 @@ const UserController = () => {
     try {
       logHttp("Updating password with body ", req.body);
 
-      if (req.body.password !== req.body.confirmPassword)
-        throw new Error("Password and confirm password mismatched");
+      const { password, confirmPassword } = req.body;
 
-      const hashPassword = await bcrypt.hash(req.body.password, 10);
+      if (!password || !confirmPassword) {
+        throw {
+          statusCode: 400,
+          message: "Both newPassword and confirmPassword are required",
+        };
+      }
+
+      if (password !== confirmPassword) {
+        throw {
+          statusCode: 400,
+          message: "New password and confirm password do not match",
+        };
+      }
+
+      const hashPassword = await bcrypt.hash(password, 10);
 
       await __db.user.update({
         where: {
@@ -651,18 +664,18 @@ const UserController = () => {
         },
       });
 
-      logHttp("Setted user profile");
+      logHttp("Password updated successfully for user", req.user._id);
 
       return sendSuccessResponse({
         res,
-        message: "Updated password successfully!!!",
+        message: "Password updated successfully",
       });
     } catch (error) {
       logError(`Error while updatePassword ==> `, error?.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
-        error,
+        error: error.message || "Internal Server Error",
       });
     }
   };
