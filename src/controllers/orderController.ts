@@ -31,8 +31,17 @@ const upload = multer({
 
 const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
-    const { serviceCat, medicalId, address, date, startTime, lat, lng, price } =
-      req.body;
+    const {
+      serviceCat,
+      medicalId,
+      address,
+      date,
+      startTime,
+      lat,
+      lng,
+      price,
+      additionalInfo,
+    } = req.body;
     try {
       // Validate that serviceCat is provided and is an array
       if (
@@ -73,6 +82,7 @@ const OrderController = () => {
           startTime,
           medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
+          additionalInfo,
         },
         include: {
           orderSubCategories: {
@@ -816,13 +826,33 @@ const OrderController = () => {
               address: true,
             },
           },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              surName: true,
+              email: true,
+              mobileNumber: true,
+              address: true,
+              dob: true,
+              gender: true,
+              country: true,
+              lat: true,
+              lng: true,
+              imageUrl: true,
+            },
+          },
         },
       });
 
       logHttp("Fetched order");
 
       if (!order) throw new Error("No order found");
-
+      const userOrderCount = await __db.order.count({
+        where: {
+          userId: order.user.id, // Assuming userId is the foreign key in the order table
+        },
+      });
       // Map over the orderSubCategories and preserve the original structure
       const updatedOrderSubCategories = order.orderSubCategories.map(
         (subCategoryObj: any) => ({
@@ -840,6 +870,10 @@ const OrderController = () => {
         res,
         data: {
           ...order,
+          user: {
+            ...order.user,
+            userOrderCount,
+          },
           orderSubCategories: updatedOrderSubCategories,
         },
       });
