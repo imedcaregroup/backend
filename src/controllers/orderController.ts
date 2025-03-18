@@ -565,7 +565,7 @@ const OrderController = () => {
       if (from && to) {
         const startDate = new Date(`${from}T00:00:00.000Z`); // Start date
         const endDate = new Date(`${to}T23:59:59.999Z`);
-        condition["orderDate"] = {
+        condition["createdAt"] = {
           gte: startDate, // Greater than or equal to start date
           lte: endDate, // Less than or equal to end date
         };

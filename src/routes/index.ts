@@ -9,7 +9,7 @@ import availbilityRoute from "./availability";
 import addressRoute from "./address";
 import fcmTokenRoute from "./fcmToken";
 import { authMiddleware } from "../middlewares/auth";
-import paymentRoute from './payment';
+import paymentRoute from "./payment";
 
 const router = Router();
 
@@ -24,5 +24,5 @@ router.use("/order", orderRoute);
 router.use("/availability", availbilityRoute);
 router.use("/address", addressRoute);
 router.use("/token", fcmTokenRoute);
-router.use("/payment", paymentRoute)
+router.use("/payment", paymentRoute);
 export default router;

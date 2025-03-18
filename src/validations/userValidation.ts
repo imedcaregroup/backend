@@ -41,3 +41,7 @@ export const updatePasswordValidation = [
     .notEmpty()
     .withMessage("Please provide confirmPassword"),
 ];
+export const resetPasswordValidation = [
+  check("email").isEmail().withMessage("Please provide a valid email address"),
+  check("password").notEmpty().withMessage("Please provide password"),
+];

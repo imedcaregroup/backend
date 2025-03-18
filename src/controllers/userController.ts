@@ -680,6 +680,59 @@ const UserController = () => {
     }
   };
 
+  const resetPassword = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Resetting password with body ==> ", req.body);
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        throw {
+          statusCode: 400,
+          message: "Email and password are required",
+        };
+      }
+
+      let user = await __db.user.findFirst({
+        where: {
+          email,
+          isDeleted: false,
+        },
+      });
+
+      if (!user) {
+        throw {
+          statusCode: 404,
+          message: "User not found",
+        };
+      }
+
+      const hashPassword = await bcrypt.hash(password, 10);
+
+      await __db.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          password: hashPassword,
+        },
+      });
+
+      logHttp("Password reset successfully for user with email ==> ", email);
+
+      return sendSuccessResponse({
+        res,
+        message: "Password reset successfully",
+      });
+    } catch (error: any) {
+      logError("Error while resetting password ==> ", error?.message);
+
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 500,
+        error: error.message || "Internal Server Error",
+      });
+    }
+  };
   const logHttp = (context: string, value?: any) =>
     logger.http(`User - ${context} => ${JSON.stringify(value)}`);
 
@@ -695,6 +748,7 @@ const UserController = () => {
     setMyProfile,
     updatePassword,
     deleteMyProfile,
+    resetPassword,
   };
 };
 

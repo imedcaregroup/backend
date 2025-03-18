@@ -7,6 +7,7 @@ import {
   loginUserValidation,
   updatePasswordValidation,
   VerifyEmailValidation,
+  resetPasswordValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 import multer, { FileFilterCallback } from "multer";
@@ -52,6 +53,12 @@ router
   .route("/login")
   .post(loginUserValidation, validationWrapper(userController.logIn));
 router
+  .route("/reset-password")
+  .post(
+    resetPasswordValidation,
+    validationWrapper(userController.resetPassword)
+  );
+router
   .route("/verify-email")
   .post(VerifyEmailValidation, validationWrapper(userController.verifyEmail));
 router.use(authMiddleware);
@@ -64,7 +71,6 @@ router
     validationWrapper(userController.setMyProfile)
   )
   .delete(userController.deleteMyProfile);
-
 router
   .route("/password")
   .patch(
