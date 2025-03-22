@@ -10,10 +10,13 @@ import addressRoute from "./address";
 import fcmTokenRoute from "./fcmToken";
 import { authMiddleware } from "../middlewares/auth";
 import paymentRoute from "./payment";
+import adminRoute from "./admin";
 
 const router = Router();
 
 router.use("/user", userrRoute);
+// Admin routes with their own authentication
+router.use("/admin", adminRoute);
 
 router.use(authMiddleware);
 router.use("/service", serviceRoute);

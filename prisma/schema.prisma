@@ -74,6 +74,8 @@ model Medical {
   availabilities    Availability[]
   medicalCatrgories MedicalCategory[]
   orders            Order[]
+  adminId           Int?
+  admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
 }
 
 model MedicalCategory {
@@ -112,6 +114,8 @@ model Order {
   Service            Service?           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   user               User               @relation(fields: [userId], references: [id])
   orderSubCategories OrderSubCategory[]
+  adminId            Int?
+  admin              Admin?             @relation("AdminOrder", fields: [adminId], references: [id])
 }
 
 model OrderSubCategory {
@@ -150,11 +154,27 @@ model Address {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-
-
 model FcmToken{
     id        Int      @id @default(autoincrement())
     token String @unique
     userId Int
     user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// New Admin model for admin panel authentication
+model Admin {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  password       String
+  name           String
+  role           AdminRole @default(ADMIN)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  medical        Medical[] @relation("AdminMedical")
+  orders         Order[]   @relation("AdminOrder")
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
 }

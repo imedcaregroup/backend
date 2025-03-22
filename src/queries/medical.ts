@@ -1,17 +1,17 @@
 export const getMedicalsBySubcategory = (
-    subCategoryIds: number[],
-    lastPrice: number | null,
-    lastMedicalId: number | null,
-    limit = 10,
-    sortOrder: string
-  ) => {
-    let query;
-  
-    const subCategoryArray = subCategoryIds.join(',');
-  
-    // Query to fetch medicals and subcategory details
-    if (!lastPrice || !lastMedicalId) {
-      query = `
+  subCategoryIds: number[],
+  lastPrice: number | null,
+  lastMedicalId: number | null,
+  limit = 10,
+  sortOrder: string,
+) => {
+  let query;
+
+  const subCategoryArray = subCategoryIds.join(",");
+
+  // Query to fetch medicals and subcategory details
+  if (!lastPrice || !lastMedicalId) {
+    query = `
         WITH subcategory_data AS (
           SELECT 
               "mc"."subCategoryId",
@@ -54,8 +54,8 @@ export const getMedicalsBySubcategory = (
             "price" ${sortOrder}, "m"."id" ${sortOrder}
         LIMIT ${limit};
       `;
-    } else {
-      query = `
+  } else {
+    query = `
         WITH subcategory_data AS (
           SELECT 
               "mc"."subCategoryId",
@@ -103,8 +103,7 @@ export const getMedicalsBySubcategory = (
             "price" ${sortOrder}, "m"."id" ${sortOrder}
         LIMIT ${limit};
       `;
-    }
-  
-    return query;
-  };
-  
+  }
+
+  return query;
+};
