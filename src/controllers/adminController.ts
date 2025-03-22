@@ -7,27 +7,38 @@ import { AdminRequest } from "../types";
 import { Prisma } from "@prisma/client";
 
 /**
- * NOTE: Several TypeScript errors are occurring because the Prisma client doesn't 
- * recognize the 'admin' model. This typically happens when the Prisma client 
+ * NOTE: Several TypeScript errors are occurring because the Prisma client doesn't
+ * recognize the 'admin' model. This typically happens when the Prisma client
  * hasn't been regenerated after schema changes.
- * 
+ *
  * To fix this, run:
  * npx prisma generate
- * 
+ *
  * This will update the Prisma client to include all models from your schema.
  */
 
 const AdminController = () => {
-  // Register a new admin (super admin only can create)
-  const createAdmin = async (req: AdminRequest, res: Response) => {
+
+
+  // SUPER_ADMIN: Create Admin + Medical in one go
+  const createAdminWithMedical = async (req: AdminRequest, res: Response) => {
     try {
-      const { name, email, password, role = "ADMIN" } = req.body;
+      const { name, email, password, role = "ADMIN", medical } = req.body;
 
-      // Check if admin with email already exists
-      const existingAdmin = await prisma.admin.findUnique({
-        where: { email },
-      });
+      if (
+        !medical?.name ||
+        !medical?.lat ||
+        !medical?.lng ||
+        !medical?.address
+      ) {
+        return sendErrorResponse({
+          res,
+          error: "Medical name, lat, lng, and address are required",
+          statusCode: 400,
+        });
+      }
 
+      const existingAdmin = await prisma.admin.findUnique({ where: { email } });
       if (existingAdmin) {
         return sendErrorResponse({
           res,
@@ -36,10 +47,8 @@ const AdminController = () => {
         });
       }
 
-      // Hash the password
       const hashedPassword = await hashPassword(password);
 
-      // Create new admin
       const newAdmin = await prisma.admin.create({
         data: {
           name,
@@ -49,16 +58,36 @@ const AdminController = () => {
         },
       });
 
-      // Remove password from response
-      const { password: _, ...adminData } = newAdmin;
+      const newMedical = await prisma.medical.create({
+        data: {
+          name: medical.name,
+          lat: medical.lat,
+          lng: medical.lng,
+          address: medical.address,
+          iconUrl: medical.iconUrl ?? "", // optional
+          contact: medical.contact ?? null,
+          services: medical.services ?? "",
+          admin: {
+            connect: { id: newAdmin.id },
+          },
+        },
+      });
 
       return sendSuccessResponse({
         res,
-        data: adminData,
-        message: "Admin created successfully",
+        data: {
+          admin: {
+            id: newAdmin.id,
+            name: newAdmin.name,
+            email: newAdmin.email,
+            role: newAdmin.role,
+          },
+          medical: newMedical,
+        },
+        message: "Admin and medical created successfully",
       });
-    } catch (error) {
-      logger.error(`Error creating admin: ${error.message}`);
+    } catch (error: any) {
+      logger.error(`Error creating admin with medical: ${error.message}`);
       return sendErrorResponse({
         res,
         error: error.message,
@@ -237,7 +266,7 @@ const AdminController = () => {
       // Verify current password
       const passwordMatch = await comparePasswords(
         currentPassword,
-        admin.password
+        admin.password,
       );
 
       if (!passwordMatch) {
@@ -315,12 +344,10 @@ const AdminController = () => {
 
       const adminId = req.admin._id;
       const adminRole = req.admin.role;
-      
+
       // Create where clause based on admin role
-      const whereClause = adminRole === "SUPER_ADMIN" 
-        ? {} 
-        : { adminId }; 
-      
+      const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
+
       const medicals = await prisma.medical.findMany({
         where: whereClause as Prisma.MedicalWhereInput,
         include: {
@@ -361,12 +388,10 @@ const AdminController = () => {
 
       const adminId = req.admin._id;
       const adminRole = req.admin.role;
-      
+
       // Create where clause based on admin role
-      const whereClause = adminRole === "SUPER_ADMIN"
-        ? {} 
-        : { adminId }; 
-      
+      const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
+
       const orders = await prisma.order.findMany({
         where: whereClause as Prisma.OrderWhereInput,
         include: {
@@ -516,7 +541,7 @@ const AdminController = () => {
   };
 
   return {
-    createAdmin,
+    createAdminWithMedical,
     loginAdmin,
     getProfile,
     updateProfile,
@@ -529,4 +554,4 @@ const AdminController = () => {
   };
 };
 
-export default AdminController; 
+export default AdminController;

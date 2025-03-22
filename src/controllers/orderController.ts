@@ -173,7 +173,6 @@ const OrderController = () => {
             error: err.message,
           });
         }
-
         if (req.files && Array.isArray(req.files)) {
           const uploadPromises = req.files.map((file: Express.Multer.File) => {
             const fileName = `${Date.now()}-${file.originalname}`;
@@ -230,7 +229,7 @@ const OrderController = () => {
               id: req.user._id,
             },
           },
-          fileUrl: fileUrls,
+          fileUrl: fileUrls.join(","),
           createdAt: new Date(),
           orderDate: new Date(),
           address,

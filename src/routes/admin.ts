@@ -43,9 +43,12 @@ router.route("/orders").get(adminController.getAllOrders);
 router.use(superAdminOnly);
 router
   .route("/")
-  .post(createAdminValidation, validationWrapper(adminController.createAdmin))
+  .post(
+    createAdminValidation,
+    validationWrapper(adminController.createAdminWithMedical)
+  )
   .get(adminController.getAllAdmins);
 router.route("/role").patch(adminController.updateAdminRole);
 router.route("/:adminId").delete(adminController.deleteAdmin);
 
-export default router; 
+export default router;
