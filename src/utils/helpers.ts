@@ -1,10 +1,10 @@
-import { sign, verify } from "jsonwebtoken";
+import { Secret, sign, SignOptions, verify } from "jsonwebtoken";
 import { NextFunction, Request } from "express";
 import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
 import { messaging } from "../config/messaging";
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY || "SECRET_KEY";
+const SECRET_KEY: Secret = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
   userId: string;
   iat: number;
@@ -46,12 +46,12 @@ export const validationWrapper = (callback: any): any => {
   };
 };
 
-export const generateJWT = (payload: object, expiresIn = "30d"): string => {
-  return sign(payload, SECRET_KEY, {
-    expiresIn,
-  });
+export const generateJWT = (
+  payload: object,
+  expiresIn: string | number = "30d",
+): string => {
+  return sign(payload, SECRET_KEY, { expiresIn: expiresIn } as SignOptions);
 };
-
 export const verifyJWT = (token: string): DecodedLoginTokenType => {
   const decode: DecodedLoginTokenType = verify(
     token,

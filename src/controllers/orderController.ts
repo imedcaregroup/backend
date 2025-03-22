@@ -230,7 +230,7 @@ const OrderController = () => {
               id: req.user._id,
             },
           },
-          fileUrl: fileUrls,
+          fileUrl: fileUrls.join(","),
           createdAt: new Date(),
           orderDate: new Date(),
           address,
