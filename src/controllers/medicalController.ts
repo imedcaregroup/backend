@@ -1,4 +1,4 @@
-import { Response,Request } from "express";
+import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -11,7 +11,9 @@ const MedicalController = () => {
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const subCategoryId = (req.query.subCategoryIds as string)?.split(',').map((id) => parseInt(id));
+      const subCategoryId = (req.query.subCategoryIds as string)
+        ?.split(",")
+        .map((id) => parseInt(id));
       const sortOrder = (req.query.sortOrder as string) || "ASC";
       const lastMedicalId = parseInt(req.query.lastMedicalId as string) || null;
       const lastPrice = parseInt(req.query.lastPrice as string) || null;
@@ -52,7 +54,7 @@ const MedicalController = () => {
     try {
       // Fetching all partners
       const topPartners = await global.__db.medical.findMany();
-      
+
       // Iterate through the results to ensure services are in JSON format
       // topPartners.forEach(partner => {
       //   // If the services field is stored as a string, parse it into an array
@@ -65,14 +67,17 @@ const MedicalController = () => {
       //     }
       //   }
       // });
-  
+
       return res.status(200).json({
         success: true,
         data: topPartners,
       });
     } catch (error: any) {
       console.error("Error in fetching top partners:", error);
-      logError(`Error while fetching top medical partners ==> `, error?.message);
+      logError(
+        `Error while fetching top medical partners ==> `,
+        error?.message,
+      );
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 500,
@@ -103,7 +108,10 @@ const MedicalController = () => {
         },
       });
     } catch (error) {
-      logError(`Error while fetching top medical partners ==> `, error?.message);
+      logError(
+        `Error while fetching top medical partners ==> `,
+        error?.message,
+      );
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 500,
@@ -112,31 +120,44 @@ const MedicalController = () => {
     }
   };
 
-  const getMedicalById = async (req: UserRequest, res: Response): Promise<any> => {
+  const getMedicalById = async (
+    req: UserRequest,
+    res: Response,
+  ): Promise<any> => {
     try {
       const { id } = req.params;
-  
+
       if (!id) {
         return res.status(400).json({
           success: false,
           message: "Medical ID is required.",
         });
       }
-  
+
       // Fetch the medical entry by ID
       const medical = await global.__db.medical.findUnique({
         where: {
           id: parseInt(id), // Ensure the ID is parsed to an integer
         },
+        select: {
+          adminId: true,
+          name: true,
+          address: true,
+          lat: true,
+          lng: true,
+          contact: true,
+          iconUrl: true,
+          services: true,
+        },
       });
-  
+
       if (!medical) {
         return res.status(404).json({
           success: false,
           message: "Medical entry not found.",
         });
       }
-  
+
       return res.status(200).json({
         success: true,
         data: medical,
@@ -161,7 +182,7 @@ const MedicalController = () => {
     getMedicalsBySubcategory,
     getTopMedicalPartners,
     getAll,
-    getMedicalById
+    getMedicalById,
   };
 };
 
