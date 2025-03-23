@@ -148,10 +148,11 @@ const UserController = () => {
           dob: dob ? new Date(dob) : null,
           country,
           gender,
-          lat,
-          lng,
+          lat: lat ? parseFloat(lat) : null,
+          lng: lng ? parseFloat(lng) : null,
           password: hashPassword,
-          notificationEnabled,
+          notificationEnabled:
+            notificationEnabled === "true" || notificationEnabled === true,
           authProvider: "PASSWORD",
           isDeleted: false,
         },
@@ -307,62 +308,6 @@ const UserController = () => {
       });
     }
   };
-  // const loginUserWithGoogle = async (
-  //   req: Request,
-  //   res: Response
-  // ): Promise<any> => {
-  //   try {
-  //     logHttp("Adding user with reqBody ==> ", req.body);
-  //     const { name, givenName, familyName, email, id, photo } = req.body;
-  //     let userExists = true;
-
-  //     logHttp("Finding user with email ==> ", email);
-  //     let user = await __db.user.findFirst({
-  //       where: {
-  //         googleId: id,
-  //         isDeleted: false,
-  //       },
-  //     });
-
-  //     if (!user) {
-  //       logHttp("Creating new user with email ", email);
-  //       user = await __db.user.create({
-  //         data: {
-  //           name,
-  //           surName: familyName || givenName,
-  //           googleId: id,
-  //           email,
-  //           authProvider: "GOOGLE",
-  //         },
-  //       });
-  //       logHttp("Created new user with email ", email);
-  //       userExists = false;
-  //     }
-
-  //     logHttp("Creating jwt");
-  //     const token = await generateJWT(
-  //       { _id: user?.id, tyep: "ACCESS_TOKEN" },
-  //       "365d"
-  //     );
-  //     logHttp("Created jwt");
-
-  //     return sendSuccessResponse({
-  //       res,
-  //       data: {
-  //         user,
-  //         token,
-  //         userExists,
-  //       },
-  //     });
-  //   } catch (error: any) {
-  //     logError(`Error while loginUserWithGoogle ==> `, error?.message);
-  //     return sendErrorResponse({
-  //       res,
-  //       statusCode: error?.statusCode || 400,
-  //       error,
-  //     });
-  //   }
-  // };
 
   const loginUserWithGoogle = async (
     req: Request,
@@ -479,9 +424,10 @@ const UserController = () => {
 
       logHttp("Got user profile with id ", req.user.id);
 
-      if (user?.password)
-        // @ts-ignore
-        delete user.password;
+      const userResponse = { ...user };
+      if (userResponse.password) {
+        delete userResponse.password;
+      }
 
       return sendSuccessResponse({
         res,
@@ -516,17 +462,24 @@ const UserController = () => {
         req.body.imageUrl = data.Location;
       }
 
+      // Create data object with type conversions
+      const updateData = {
+        ...req.body,
+        // Convert lat and lng from string to float if they exist
+        ...(req.body.lat && { lat: parseFloat(req.body.lat) }),
+        ...(req.body.lng && { lng: parseFloat(req.body.lng) }),
+        // Convert date string to Date object if it exists
+        ...(req.body.dob && { dob: new Date(req.body.dob) }),
+      };
+
       const user = await __db.user.update({
         where: {
           id: req.user._id,
         },
-        data: {
-          ...req.body,
-          ...(req.body.dob && { dob: new Date(req.body.dob) }),
-        },
+        data: updateData,
       });
 
-      logHttp("Setted user profile");
+      logHttp("Updated user profile");
 
       if (user?.password)
         // @ts-ignore
@@ -537,7 +490,7 @@ const UserController = () => {
         data: {
           ...user,
         },
-        message: "Setted user profile successfully!!!",
+        message: "User profile updated successfully!",
       });
     } catch (error) {
       logError(`Error while setMyProfile ==> `, error?.message);
