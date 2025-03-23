@@ -145,8 +145,8 @@ model Address {
   district  String
   address   String
   userId    Int
-  lat       Int
-  lng       Int
+  lat       Float?
+  lng       Float?
   user      User     @relation(fields: [userId], references: [id])
 }
 
