@@ -328,29 +328,47 @@ const UserController = () => {
       let user;
 
       // First, try to find user by OAuth ID and provider
-      logHttp(`Checking if email exists: ${email}`);
+      logHttp(`Finding user with authProvider: ${authProvider} and ID: ${id}`);
       user = await __db.user.findFirst({
         where: {
-          email: email,
+          authProvider: authProvider,
+          googleId: id,
           isDeleted: false,
         },
       });
-      // If user exists with this email, update their record with OAuth info
-      if (user) {
-        logHttp(`User found with email. Updating with OAuth provider details`);
-        user = await __db.user.update({
-          where: { id: user.id },
-          data: {
-            googleId: id,
-            authProvider:
-              user.authProvider === "PASSWORD"
-                ? authProvider
-                : user.authProvider,
-            name: user.name || name || givenName || "Unknown",
-            surName: user.surName || familyName || "",
+
+      // If not found by OAuth ID, check if the email already exists
+      if (!user && email) {
+        logHttp(
+          `User not found with OAuth ID. Checking if email exists: ${email}`
+        );
+        user = await __db.user.findFirst({
+          where: {
+            email: email,
+            isDeleted: false,
           },
         });
-        logHttp(`Updated existing user with OAuth details`);
+
+        // If user exists with this email, update their record with OAuth info
+        if (user) {
+          logHttp(
+            `User found with email. Updating with OAuth provider details`
+          );
+          user = await __db.user.update({
+            where: { id: user.id },
+            data: {
+              googleId: id,
+              authProvider:
+                user.authProvider === "PASSWORD"
+                  ? authProvider
+                  : user.authProvider,
+              // Don't update other fields if they already exist
+              name: user.name || name || givenName || "Unknown",
+              surName: user.surName || familyName || "",
+            },
+          });
+          logHttp(`Updated existing user with OAuth details`);
+        }
       }
 
       // Create user if not found by either method
