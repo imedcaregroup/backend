@@ -3,6 +3,7 @@ import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
 import { getMedicalsBySubcategory as getMedicalsBySubcategoryQuery } from "../queries/medical";
+import { AdminRequest } from "../types";
 
 const MedicalController = () => {
   const getMedicalsBySubcategory = async (
@@ -172,6 +173,54 @@ const MedicalController = () => {
     }
   };
 
+  const searchMedicalSubCategories = async (
+    req: AdminRequest,
+    res: Response,
+  ): Promise<any> => {
+    try {
+      const adminId = req?.admin?._id;
+      console.log("adminId", adminId);
+
+      const query = (req.query.query as string) || "";
+
+      const medical = await global.__db.medical.findFirst({
+        where: { adminId },
+        include: {
+          medicalCatrgories: {
+            include: {
+              subCategory: {
+                include: {
+                  category: {
+                    include: {
+                      service: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const result =
+        medical?.medicalCatrgories.filter((mc) =>
+          mc.subCategory.name.toLowerCase().includes(query.toLowerCase()),
+        ) || [];
+
+      return sendSuccessResponse({
+        res,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error("Medical - searchMedicalSubCategories => ", error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: 500,
+        error,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`Medical - ${context} => ${JSON.stringify(value)}`);
 
@@ -183,6 +232,7 @@ const MedicalController = () => {
     getTopMedicalPartners,
     getAll,
     getMedicalById,
+    searchMedicalSubCategories,
   };
 };
 
