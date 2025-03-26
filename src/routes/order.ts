@@ -17,6 +17,7 @@ router
 router.route("/my").get(orderController.getMyOrders);
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
 router.route("/getRequestOrder").get(orderController.getRequestOrder);
+router.route("/calculateDistanceFee").post(orderController.calculateDistanceFee);
 
 router
   .route("/:id")
