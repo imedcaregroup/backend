@@ -887,6 +887,32 @@ const OrderController = () => {
     }
   };
 
+  const calculateDistanceFee = async (
+      req: UserRequest,
+      res: Response
+  ): Promise<any> => {
+    try {
+      //need to add logic
+      const data = {
+        distanceFee: 5
+      }
+
+      return sendSuccessResponse({
+        res,
+        data: {
+          data,
+        },
+      });
+    } catch (error: any) {
+
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
 
@@ -901,6 +927,7 @@ const OrderController = () => {
     getOrder,
     createRequestOrder,
     getRequestOrder,
+    calculateDistanceFee
   };
 };
 
