@@ -18,8 +18,6 @@ import { Prisma } from "@prisma/client";
  */
 
 const AdminController = () => {
-
-
   // SUPER_ADMIN: Create Admin + Medical in one go
   const createAdminWithMedical = async (req: AdminRequest, res: Response) => {
     try {
@@ -344,12 +342,27 @@ const AdminController = () => {
 
       const adminId = req.admin._id;
       const adminRole = req.admin.role;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const searchQuery = (req.query.query as string)?.trim()?.toLowerCase();
 
-      // Create where clause based on admin role
-      const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
+      const whereClause: Prisma.MedicalWhereInput = {
+        ...(adminRole !== "SUPER_ADMIN" && { adminId }),
+        ...(searchQuery && {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" } },
+            { address: { contains: searchQuery, mode: "insensitive" } },
+          ],
+        }),
+      };
+
+      const total = await prisma.medical.count({ where: whereClause });
 
       const medicals = await prisma.medical.findMany({
-        where: whereClause as Prisma.MedicalWhereInput,
+        where: whereClause,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { id: "desc" }, // fallback since `createdAt` doesn't exist
         include: {
           availabilities: true,
           medicalCatrgories: {
@@ -362,10 +375,17 @@ const AdminController = () => {
 
       return sendSuccessResponse({
         res,
-        data: medicals,
+        data: {
+          medicals,
+          meta: {
+            total,
+            page,
+            limit,
+          },
+        },
         message: "Medicals retrieved successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Error getting medicals: ${error.message}`);
       return sendErrorResponse({
         res,
@@ -389,38 +409,77 @@ const AdminController = () => {
       const adminId = req.admin._id;
       const adminRole = req.admin.role;
 
-      // Create where clause based on admin role
-      const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
+      const limit = parseInt(req.query.limit as string) || 10;
+      const page = parseInt(req.query.page as string) || 1;
+      const orderStatus = req.query.orderStatus as string;
+
+      const whereClause: Prisma.OrderWhereInput = {
+        ...(adminRole === "SUPER_ADMIN" ? {} : { adminId }),
+        ...(orderStatus ? { orderStatus } : {}),
+        startTime: {
+          not: null,
+        },
+      };
+
+      const count = await prisma.order.count({
+        where: whereClause,
+      });
 
       const orders = await prisma.order.findMany({
-        where: whereClause as Prisma.OrderWhereInput,
+        where: whereClause,
+        skip: (page - 1) * limit,
+        take: limit,
         include: {
-          user: {
+          medical: {
             select: {
               id: true,
               name: true,
-              email: true,
-              mobileNumber: true,
+              iconUrl: true,
+              lat: true,
+              lng: true,
+              address: true,
             },
           },
-          medical: true,
-          Category: true,
-          Service: true,
           orderSubCategories: {
             include: {
-              subCategory: true,
+              subCategory: {
+                select: {
+                  id: true,
+                  name: true,
+                  iconUrl: true,
+                },
+              },
             },
           },
         },
+        orderBy: {
+          createdAt: "desc",
+        },
       });
+
+      const formattedOrders = orders.map((order) => ({
+        ...order,
+        orderSubCategories: order.orderSubCategories.map((osc) => ({
+          id: osc.subCategory.id,
+          name: osc.subCategory.name,
+          iconUrl: osc.subCategory.iconUrl,
+        })),
+      }));
 
       return sendSuccessResponse({
         res,
-        data: orders,
-        message: "Orders retrieved successfully",
+        message: "Success",
+        data: {
+          formattedOrders,
+          meta: {
+            count,
+            limit,
+            page,
+          },
+        },
       });
-    } catch (error) {
-      logger.error(`Error getting orders: ${error.message}`);
+    } catch (error: any) {
+      logger.error(`Error getting admin orders => ${error.message}`);
       return sendErrorResponse({
         res,
         error: error.message,

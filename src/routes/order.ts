@@ -45,13 +45,13 @@ const adminRouter = Router();
 
 adminRouter.use(adminAuthMiddleware);
 
-adminRouter.get("/orders", orderController.getOrders);
-adminRouter.get("/orders/:id", orderController.getOrder);
-adminRouter.patch(
-  "/orders/:id",
-  acceptOrRejectOrderValidation,
-  validationWrapper(orderController.acceptOrRejeectOrder)
-);
+// adminRouter.get("/orders", orderController.getOrders);
+// adminRouter.get("/orders/:id", orderController.getOrder);
+// adminRouter.patch(
+//   "/orders/:id",
+//   acceptOrRejectOrderValidation,
+//   validationWrapper(orderController.acceptOrRejeectOrder)
+// );
 
 // Mount adminRouter on /admin/orders
 router.use("/admin", adminRouter);

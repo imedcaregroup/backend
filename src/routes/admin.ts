@@ -8,11 +8,14 @@ import {
   updateAdminValidation,
   changePasswordValidation,
 } from "../validations/adminValidation";
+import OrderController from "../controllers/orderController";
+import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
 
 const adminController = AdminController();
+const orderController = OrderController();
 const router = Router();
 
-// Public routes (no authentication required)
+// Public routes
 router
   .route("/login")
   .post(loginAdminValidation, validationWrapper(adminController.loginAdmin));
@@ -20,7 +23,7 @@ router
 // Admin authenticated routes
 router.use(adminAuthMiddleware);
 
-// Profile routes (available to all authenticated admins)
+// ✅ These should be available to both ADMIN and SUPER_ADMIN
 router.route("/me").get(adminController.getProfile);
 router
   .route("/profile")
@@ -32,20 +35,29 @@ router
   .route("/password")
   .patch(
     changePasswordValidation,
-    validationWrapper(adminController.changePassword)
+    validationWrapper(adminController.changePassword),
   );
 
-// Data access routes (filtered based on admin role)
-router.route("/medicals").get(adminController.getAllMedicals);
-router.route("/orders").get(adminController.getAllOrders);
+// Admin & Super Admin order access
+router.get("/orders", orderController.getOrders);
+router.get("/orders/:id", orderController.getOrder);
+router.patch(
+  "/orders/:id",
+  acceptOrRejectOrderValidation,
+  validationWrapper(orderController.acceptOrRejeectOrder),
+);
 
-// Super admin only routes
+// Admin medicals
+router.route("/medicals").get(adminController.getAllMedicals);
+
+// ✅ Super admin-only routes after this point
 router.use(superAdminOnly);
+
 router
   .route("/")
   .post(
     createAdminValidation,
-    validationWrapper(adminController.createAdminWithMedical)
+    validationWrapper(adminController.createAdminWithMedical),
   )
   .get(adminController.getAllAdmins);
 router.route("/role").patch(adminController.updateAdminRole);

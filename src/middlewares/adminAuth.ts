@@ -9,7 +9,7 @@ import { AdminRequest } from "../types";
 export const adminAuthMiddleware = async (
   req: AdminRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (
@@ -36,7 +36,7 @@ export const adminAuthMiddleware = async (
         _id: admin.id,
         email: admin.email,
         name: admin.name,
-        role: admin.role as 'ADMIN' | 'SUPER_ADMIN',
+        role: admin.role as "ADMIN" | "SUPER_ADMIN",
       };
 
       next();
@@ -45,7 +45,7 @@ export const adminAuthMiddleware = async (
     }
   } catch (error) {
     logger.error(
-      `Error while authenticating admin ==> ${JSON.stringify(error.message)}`
+      `Error while authenticating admin ==> ${JSON.stringify(error.message)}`,
     );
     sendErrorResponse({
       res,
@@ -59,21 +59,21 @@ export const adminAuthMiddleware = async (
 export const superAdminOnly = (
   req: AdminRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.admin) {
       throw new Error("Not authenticated");
     }
-    
-    if (req.admin.role !== 'SUPER_ADMIN') {
+
+    if (req.admin.role !== "SUPER_ADMIN") {
       throw new Error("Access denied. Super admin privileges required");
     }
-    
+
     next();
   } catch (error) {
     logger.error(
-      `Super admin access denied ==> ${JSON.stringify(error.message)}`
+      `Super admin access denied ==> ${JSON.stringify(error.message)}`,
     );
     sendErrorResponse({
       res,
@@ -81,4 +81,4 @@ export const superAdminOnly = (
       statusCode: 403,
     });
   }
-}; 
+};
