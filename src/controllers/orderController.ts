@@ -583,7 +583,11 @@ const OrderController = () => {
         iconUrl: true,
       };
 
-      const condition: { [key: string]: any } = {};
+      const condition: { [key: string]: any } = {
+        startTime: { not: null },
+        user: { isDeleted: false },
+        adminId: req.admin?._id, // 👈 Only show orders for logged-in admin
+      };
       if (orderStatus) condition["orderStatus"] = orderStatus;
 
       //

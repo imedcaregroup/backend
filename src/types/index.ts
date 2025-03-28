@@ -8,6 +8,7 @@ interface IUser {
 }
 
 export interface UserRequest extends Request {
+  admin: any;
   user: IUser | null | any;
 }
 
