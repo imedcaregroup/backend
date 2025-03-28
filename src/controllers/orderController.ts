@@ -892,23 +892,39 @@ const OrderController = () => {
       res: Response
   ): Promise<any> => {
     try {
-      //need to add logic
-      const data = {
-        distanceFee: 5
+
+
+      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${'AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o'}`;
+
+      const response = await fetch(endpoint);
+      const data = await response.json();
+
+      if (data.status !== 'OK') {
+        throw new Error(data.error_message || 'Failed to fetch distance data');
+      }
+      //
+      console.log("data:",JSON.stringify(data));
+
+      const distanceInKm  = data.rows[0]?.elements[0]?.distance?.value / 1000;
+
+      let distanceFee = 25;
+
+      if (distanceInKm > 20) {
+        distanceFee = 50;
+      } else if (distanceInKm > 15) {
+        distanceFee = 35;
       }
 
       return sendSuccessResponse({
         res,
-        data: {
-          data,
-        },
+        data: { distanceFee },
       });
     } catch (error: any) {
-
+      console.log("errrr:", error)
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
-        error,
+        error: error.message || error,
       });
     }
   };
