@@ -342,27 +342,12 @@ const AdminController = () => {
 
       const adminId = req.admin._id;
       const adminRole = req.admin.role;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const searchQuery = (req.query.query as string)?.trim()?.toLowerCase();
 
-      const whereClause: Prisma.MedicalWhereInput = {
-        ...(adminRole !== "SUPER_ADMIN" && { adminId }),
-        ...(searchQuery && {
-          OR: [
-            { name: { contains: searchQuery, mode: "insensitive" } },
-            { address: { contains: searchQuery, mode: "insensitive" } },
-          ],
-        }),
-      };
-
-      const total = await prisma.medical.count({ where: whereClause });
+      // Create where clause based on admin role
+      const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
 
       const medicals = await prisma.medical.findMany({
-        where: whereClause,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { id: "desc" }, // fallback since `createdAt` doesn't exist
+        where: whereClause as Prisma.MedicalWhereInput,
         include: {
           availabilities: true,
           medicalCatrgories: {
@@ -375,17 +360,10 @@ const AdminController = () => {
 
       return sendSuccessResponse({
         res,
-        data: {
-          medicals,
-          meta: {
-            total,
-            page,
-            limit,
-          },
-        },
+        data: medicals,
         message: "Medicals retrieved successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error(`Error getting medicals: ${error.message}`);
       return sendErrorResponse({
         res,
@@ -394,6 +372,7 @@ const AdminController = () => {
       });
     }
   };
+
 
   // Get all orders with admin filtering based on role
   const getAllOrders = async (req: AdminRequest, res: Response) => {
