@@ -13,7 +13,7 @@ const storage = multer.memoryStorage(); // Store the file in memory before uploa
 const fileFilter = (
   req: UserRequest,
   file: Express.Multer.File,
-  cb: FileFilterCallback
+  cb: FileFilterCallback,
 ) => {
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -71,6 +71,19 @@ const OrderController = () => {
         });
       }
 
+      const medical = await __db.medical.findUnique({
+        where: { id: parseInt(medicalId) },
+        select: { adminId: true },
+      });
+
+      if (!medical) {
+        return sendErrorResponse({
+          res,
+          statusCode: 404,
+          error: "Medical not found",
+        });
+      }
+
       // Create the Order record
       const order = await __db.order.create({
         data: {
@@ -83,6 +96,9 @@ const OrderController = () => {
           medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
           additionalInfo,
+          admin: medical.adminId
+            ? { connect: { id: medical.adminId } }
+            : undefined,
         },
         include: {
           orderSubCategories: {
@@ -133,12 +149,12 @@ const OrderController = () => {
               });
             });
           });
-        }
+        },
       );
 
       // Wait for all the promises to resolve
       const orderSubCategories = await Promise.all(
-        orderSubCategoriesPromises.flat(2)
+        orderSubCategoriesPromises.flat(2),
       ); // Flatten the array of arrays
 
       // Return the successful response
@@ -158,7 +174,7 @@ const OrderController = () => {
   };
   const createRequestOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Creating Request Order ", req.body);
@@ -173,7 +189,6 @@ const OrderController = () => {
             error: err.message,
           });
         }
-
         if (req.files && Array.isArray(req.files)) {
           const uploadPromises = req.files.map((file: Express.Multer.File) => {
             const fileName = `${Date.now()}-${file.originalname}`;
@@ -488,7 +503,7 @@ const OrderController = () => {
 
   const acceptOrRejeectOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const orderId = +req.params.id;
@@ -538,7 +553,7 @@ const OrderController = () => {
           req.body.orderStatus === "accepted"
             ? "You account has been accepted by admin"
             : req.body.declinedReason,
-          {}
+          {},
         );
 
       return sendSuccessResponse({
@@ -568,7 +583,11 @@ const OrderController = () => {
         iconUrl: true,
       };
 
-      const condition: { [key: string]: any } = {};
+      const condition: { [key: string]: any } = {
+        startTime: { not: null },
+        user: { isDeleted: false },
+        adminId: req.admin?._id, // 👈 Only show orders for logged-in admin
+      };
       if (orderStatus) condition["orderStatus"] = orderStatus;
 
       //
@@ -690,7 +709,7 @@ const OrderController = () => {
   };
   const getRequestOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       console.log("in here");
@@ -863,7 +882,7 @@ const OrderController = () => {
             name: subCategoryObj.subCategory.name,
             iconUrl: subCategoryObj.subCategory.iconUrl,
           },
-        })
+        }),
       );
 
       return sendSuccessResponse({

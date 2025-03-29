@@ -8,7 +8,21 @@ interface IUser {
 }
 
 export interface UserRequest extends Request {
+  admin: any;
   user: IUser | null | any;
+}
+
+// Admin interface for authentication
+interface IAdmin {
+  _id: number;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'SUPER_ADMIN';
+}
+
+// Request with admin context
+export interface AdminRequest extends Request {
+  admin: IAdmin | null;
 }
 
 export interface IjwtPayLoad {
