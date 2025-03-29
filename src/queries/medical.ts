@@ -31,6 +31,8 @@ export const getMedicalsBySubcategory = (
             "m"."iconUrl",
             "m"."name",
             "m"."address",
+            "m"."lat",
+            "m"."lng",
             SUM("mc"."price") AS "price",
             ARRAY_AGG(
               JSON_BUILD_OBJECT(
@@ -47,7 +49,7 @@ export const getMedicalsBySubcategory = (
         WHERE 
             "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}])
         GROUP BY 
-            "m"."id", "m"."iconUrl", "m"."name", "m"."address"
+            "m"."id", "m"."iconUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
         HAVING 
             ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 
@@ -75,6 +77,8 @@ export const getMedicalsBySubcategory = (
             "m"."iconUrl",
             "m"."name",
             "m"."address",
+            "m"."lat",
+            "m"."lng",
             SUM("mc"."price") AS "price",
             ARRAY_AGG(
               JSON_BUILD_OBJECT(
@@ -96,7 +100,7 @@ export const getMedicalsBySubcategory = (
                 ELSE "mc"."price" < ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" < ${lastMedicalId}) END
             )
         GROUP BY 
-            "m"."id", "m"."iconUrl", "m"."name", "m"."address"
+            "m"."id", "m"."iconUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
         HAVING 
             ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 
