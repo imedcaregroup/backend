@@ -13,7 +13,7 @@ const storage = multer.memoryStorage(); // Store the file in memory before uploa
 const fileFilter = (
   req: UserRequest,
   file: Express.Multer.File,
-  cb: FileFilterCallback,
+  cb: FileFilterCallback
 ) => {
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -149,12 +149,12 @@ const OrderController = () => {
               });
             });
           });
-        },
+        }
       );
 
       // Wait for all the promises to resolve
       const orderSubCategories = await Promise.all(
-        orderSubCategoriesPromises.flat(2),
+        orderSubCategoriesPromises.flat(2)
       ); // Flatten the array of arrays
 
       // Return the successful response
@@ -174,7 +174,7 @@ const OrderController = () => {
   };
   const createRequestOrder = async (
     req: UserRequest,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       logHttp("Creating Request Order ", req.body);
@@ -219,18 +219,18 @@ const OrderController = () => {
         }
 
         const { additionalInfo, medicalId, doctor, address = null } = req.body;
+        const medical = await __db.medical.findUnique({
+          where: { id: parseInt(medicalId) },
+          select: { adminId: true, lat: true, lng: true },
+        });
 
-        // const latFloat = parseFloat(lat);
-        // const lngFloat = parseFloat(lng);
-
-        // if (isNaN(latFloat) || isNaN(lngFloat)) {
-        //   console.error("Invalid lat or lng values");
-        //   return sendErrorResponse({
-        //     res,
-        //     statusCode: 400,
-        //     error: "Invalid latitude or longitude values",
-        //   });
-        // }
+        if (!medical) {
+          return sendErrorResponse({
+            res,
+            statusCode: 404,
+            error: "Medical not found",
+          });
+        }
 
         if (!medicalId) {
           console.error("Medical ID is missing");
@@ -240,17 +240,20 @@ const OrderController = () => {
         logHttp("Preparing to create request order...");
         const orderData = {
           additionalInfo,
+          admin: medical.adminId
+            ? { connect: { id: medical.adminId } }
+            : undefined,
           user: {
             connect: {
               id: req.user._id,
             },
           },
+          lat: medical.lat,
+          lng: medical.lng,
           fileUrl: fileUrls.join(","),
           createdAt: new Date(),
           orderDate: new Date(),
           address,
-          // lat: latFloat,
-          // lng: lngFloat,
           doctor,
           medical: {
             connect: {
@@ -503,7 +506,7 @@ const OrderController = () => {
 
   const acceptOrRejeectOrder = async (
     req: UserRequest,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       const orderId = +req.params.id;
@@ -553,7 +556,7 @@ const OrderController = () => {
           req.body.orderStatus === "accepted"
             ? "You account has been accepted by admin"
             : req.body.declinedReason,
-          {},
+          {}
         );
 
       return sendSuccessResponse({
@@ -709,7 +712,7 @@ const OrderController = () => {
   };
   const getRequestOrder = async (
     req: UserRequest,
-    res: Response,
+    res: Response
   ): Promise<any> => {
     try {
       console.log("in here");
@@ -882,7 +885,7 @@ const OrderController = () => {
             name: subCategoryObj.subCategory.name,
             iconUrl: subCategoryObj.subCategory.iconUrl,
           },
-        }),
+        })
       );
 
       return sendSuccessResponse({
@@ -907,24 +910,22 @@ const OrderController = () => {
   };
 
   const calculateDistanceFee = async (
-      req: UserRequest,
-      res: Response
+    req: UserRequest,
+    res: Response
   ): Promise<any> => {
     try {
-
-
-      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${'AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o'}`;
+      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${"AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o"}`;
 
       const response = await fetch(endpoint);
       const data = await response.json();
 
-      if (data.status !== 'OK') {
-        throw new Error(data.error_message || 'Failed to fetch distance data');
+      if (data.status !== "OK") {
+        throw new Error(data.error_message || "Failed to fetch distance data");
       }
       //
-      console.log("data:",JSON.stringify(data));
+      console.log("data:", JSON.stringify(data));
 
-      const distanceInKm  = data.rows[0]?.elements[0]?.distance?.value / 1000;
+      const distanceInKm = data.rows[0]?.elements[0]?.distance?.value / 1000;
 
       let distanceFee = 25;
 
@@ -939,7 +940,7 @@ const OrderController = () => {
         data: { distanceFee },
       });
     } catch (error: any) {
-      console.log("errrr:", error)
+      console.log("errrr:", error);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -962,7 +963,7 @@ const OrderController = () => {
     getOrder,
     createRequestOrder,
     getRequestOrder,
-    calculateDistanceFee
+    calculateDistanceFee,
   };
 };
 
