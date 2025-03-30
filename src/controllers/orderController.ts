@@ -223,6 +223,10 @@ const OrderController = () => {
           where: { id: parseInt(medicalId) },
           select: { adminId: true, lat: true, lng: true },
         });
+        const user = await __db.user.findUnique({
+          where: { id: parseInt(req.user._id) },
+          select: { lat: true, lng: true },
+        });
 
         if (!medical) {
           return sendErrorResponse({
@@ -248,8 +252,8 @@ const OrderController = () => {
               id: req.user._id,
             },
           },
-          lat: medical.lat,
-          lng: medical.lng,
+          lat: user?.lat,
+          lng: user?.lng,
           fileUrl: fileUrls.join(","),
           createdAt: new Date(),
           orderDate: new Date(),
