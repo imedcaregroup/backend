@@ -56,6 +56,9 @@ model SubCategory {
   id                 Int                @id @default(autoincrement())
   iconUrl            String
   name               String
+  name_en            String?
+  name_az            String?
+  name_ru            String?
   categoryId         Int
   medicalCategories  MedicalCategory[]
   orderSubCategories OrderSubCategory[] @relation("SubCategoryOrderSubCategories")

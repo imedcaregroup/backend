@@ -40,6 +40,7 @@ router
 
 // Admin & Super Admin order access
 router.get("/orders", orderController.getOrders);
+router.route("/getRequestOrder").get(orderController.getRequestOrder);
 router.get("/orders/:id", orderController.getOrder);
 router.patch(
   "/orders/:id",
