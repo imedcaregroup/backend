@@ -19,7 +19,26 @@ const SubCategoryController = () => {
         where: {
           ...(categoryId && { categoryId }),
           ...(searchText && {
-            name: { contains: searchText as string, mode: "insensitive" },
+            OR: [
+              {
+                name_en: {
+                  contains: searchText as string,
+                  mode: "insensitive",
+                },
+              },
+              {
+                name_az: {
+                  contains: searchText as string,
+                  mode: "insensitive",
+                },
+              },
+              {
+                name_ru: {
+                  contains: searchText as string,
+                  mode: "insensitive",
+                },
+              },
+            ],
           }),
         },
         ...(cursor && { cursor: { id: cursor } }),
@@ -52,6 +71,9 @@ const SubCategoryController = () => {
             id: obj.id,
             iconUrl: obj.iconUrl,
             name: obj.name,
+            en: obj.name_en,
+            az: obj.name_az,
+            ru: obj.name_ru,
             categoryId: obj.categoryId,
             categoryName: obj.category?.name,
             serviceId: obj.category?.serviceId,
