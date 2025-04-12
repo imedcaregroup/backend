@@ -35,6 +35,10 @@ const OrderController = () => {
       serviceCat,
       medicalId,
       address,
+      entrance,
+      floor,
+      intercom,
+      apartment,
       date,
       startTime,
       lat,
@@ -58,9 +62,9 @@ const OrderController = () => {
       // Check if the slot is already booked
       const existingOrder = await __db.order.findFirst({
         where: {
-          medicalId: medicalId,
+          medicalId: +medicalId,
           orderDate: new Date(date),
-          startTime: startTime,
+          startTime: +startTime,
         },
       });
 
@@ -89,11 +93,15 @@ const OrderController = () => {
         data: {
           price,
           address,
-          lat,
-          lng,
+          lat: +lat,
+          lng: +lng,
+          entrance,
+          intercom,
+          floor: +floor,
+          apartment,
           orderDate: new Date(date),
-          startTime,
-          medical: { connect: { id: medicalId } },
+          startTime: +startTime,
+          medical: { connect: { id: +medicalId } },
           user: { connect: { id: req.user._id } },
           additionalInfo,
           admin: medical.adminId

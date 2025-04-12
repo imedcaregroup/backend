@@ -13,6 +13,9 @@ const AddressController = () => {
       const address = await __db.address.create({
         data: {
           ...req.body,
+          floor: +req.body.floor,
+          lat: +req.body.lat,
+          lng: +req.body.lng,
           userId: req.user._id,
         },
       });

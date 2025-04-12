@@ -5,6 +5,10 @@ export const createAddressValidation = [
   check("city").notEmpty().withMessage("Please provide city"),
   check("district").notEmpty().withMessage("Please provide district"),
   check("address").notEmpty().withMessage("Please provide address"),
+  check("entrance").notEmpty().withMessage("Please provide entrance"),
+  check("intercom").notEmpty().withMessage("Please provide intercom"),
+  check("floor").notEmpty().withMessage("Please provide floor"),
+  check("apartment").notEmpty().withMessage("Please provide apartment"),
   check("lat").notEmpty().withMessage("Please provide latitude"),
   check("lng").notEmpty().withMessage("Please provide longitude"),
 ];
