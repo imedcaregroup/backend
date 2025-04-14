@@ -2,6 +2,7 @@ import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
+import {floatOr, intOr} from "../utils/helpers";
 
 const AddressController = () => {
   const createAddress = async (
@@ -13,9 +14,9 @@ const AddressController = () => {
       const address = await __db.address.create({
         data: {
           ...req.body,
-          floor: +req.body.floor,
-          lat: +req.body.lat,
-          lng: +req.body.lng,
+          floor: intOr(req.body.floor),
+          lat: floatOr(req.body.lat, 0),
+          lng: floatOr(req.body.lat, 0),
           userId: req.user._id,
         },
       });

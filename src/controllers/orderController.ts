@@ -4,7 +4,7 @@ import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { UserRequest } from "../types";
-import { sendPostNotifications } from "../utils/helpers";
+import {floatOr, intOr, sendPostNotifications} from "../utils/helpers";
 import dayjs from "dayjs";
 
 // Set up Multer storage for S3 file upload
@@ -93,11 +93,11 @@ const OrderController = () => {
         data: {
           price,
           address,
-          lat: +lat,
-          lng: +lng,
+          lat: floatOr(lat, 0),
+          lng: floatOr(lng, 0),
           entrance,
           intercom,
-          floor: +floor,
+          floor: intOr(floor),
           apartment,
           orderDate: new Date(date),
           startTime: +startTime,

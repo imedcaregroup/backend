@@ -102,8 +102,8 @@ model Order {
   address            String?
   lat                Float?
   lng                Float?
-  entrance           String
-  floor              Int
+  entrance           String?
+  floor              Int?
   apartment          String?
   intercom           String?
   paymetStatus       String             @default("pending")
@@ -158,8 +158,8 @@ model Address {
   userId    Int
   lat       Float?
   lng       Float?
-  entrance  String
-  floor     Int
+  entrance  String?
+  floor     Int?
   apartment String?
   intercom  String?
   user      User     @relation(fields: [userId], references: [id])

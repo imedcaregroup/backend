@@ -4,6 +4,7 @@ import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
 import { messaging } from "../config/messaging";
 import * as bcrypt from 'bcrypt';
+import {int} from "aws-sdk/clients/datapipeline";
 
 const SECRET_KEY: Secret = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
@@ -152,4 +153,20 @@ export const comparePasswords = async (
   hashedPassword: string
 ): Promise<boolean> => {
   return await bcrypt.compare(plainTextPassword, hashedPassword);
+};
+
+export const intOr = (value: any, defaultValue: int|null = null) => {
+  if (value !== undefined && value !== null) {
+    const parsedValue = parseInt(value);
+    return isNaN(parsedValue) ? defaultValue : parsedValue;
+  }
+  return defaultValue;
+};
+
+export const floatOr = (value: any, defaultValue: number|null = null) => {
+  if (value !== undefined && value !== null) {
+    const parsedValue = parseFloat(value);
+    return isNaN(parsedValue) ? defaultValue : parsedValue;
+  }
+  return defaultValue;
 };
