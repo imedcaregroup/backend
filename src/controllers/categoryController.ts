@@ -1,7 +1,8 @@
 import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import { UserRequest } from "../types";
+import {AdminRequest, UserRequest} from "../types";
+import prisma from "../config/db";
 
 const CategoryController = () => {
   const getCategories = async (
@@ -50,6 +51,129 @@ const CategoryController = () => {
     }
   };
 
+  const createCategory = async (
+      req: AdminRequest,
+      res: Response,
+  ): Promise<any> => {
+
+      const {
+          iconUrl,
+          name,
+          serviceId
+      } = req.body;
+
+      try {
+        const category = await prisma.category.create({
+          data: {
+            iconUrl: iconUrl ?? '',
+            name,
+            serviceId: +serviceId
+          }
+        });
+
+        return sendSuccessResponse({
+          res,
+          data: {
+            category
+          },
+        });
+      } catch (error) {
+        console.error("Error creating category:", error);
+      }
+
+  };
+
+  const updateCategory = async (
+      req: AdminRequest,
+      res: Response,
+  ): Promise<any> => {
+
+    const categoryId = parseInt(req.params.id);
+
+    const {
+      iconUrl,
+      name,
+      serviceId
+    } = req.body;
+
+    try {
+      const category = await prisma.category.update({
+        data: {
+          iconUrl: iconUrl ?? '',
+          name,
+          serviceId: +serviceId
+        },
+        where: {
+          id: categoryId
+        }
+      });
+
+      return sendSuccessResponse({
+        res,
+        data: {
+          category
+        },
+      });
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
+
+  };
+
+  const deleteCategory = async (
+      req: AdminRequest,
+      res: Response,
+  ): Promise<any> => {
+
+    const categoryId = parseInt(req.params.id);
+
+    if (!categoryId) {
+      return sendErrorResponse({
+        res,
+        error: "Category id is required",
+        statusCode: 400,
+      });
+    }
+
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!categoryExists) {
+      return sendErrorResponse({
+        res,
+        error: "Category not found",
+        statusCode: 404,
+      });
+    }
+
+    const orderExists = await prisma.order
+        .findFirst({
+          where: {categoryId}
+        });
+
+    if (orderExists) {
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: 'Cannot delete this category'
+      });
+    }
+
+    try {
+      await prisma.category.delete({
+        where: {
+          id: categoryId
+        }
+      });
+
+      return sendSuccessResponse({res,});
+    } catch (error) {
+      return sendErrorResponse({res, statusCode: 500, error: 'Could not delete category'});
+    }
+
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`Category - ${context} => ${JSON.stringify(value)}`);
 
@@ -58,6 +182,9 @@ const CategoryController = () => {
 
   return {
     getCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
   };
 };
 
