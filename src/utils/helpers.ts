@@ -154,19 +154,3 @@ export const comparePasswords = async (
 ): Promise<boolean> => {
   return await bcrypt.compare(plainTextPassword, hashedPassword);
 };
-
-export const intOr = (value: any, defaultValue: int|null = null) => {
-  if (value !== undefined && value !== null) {
-    const parsedValue = parseInt(value);
-    return isNaN(parsedValue) ? defaultValue : parsedValue;
-  }
-  return defaultValue;
-};
-
-export const floatOr = (value: any, defaultValue: number|null = null) => {
-  if (value !== undefined && value !== null) {
-    const parsedValue = parseFloat(value);
-    return isNaN(parsedValue) ? defaultValue : parsedValue;
-  }
-  return defaultValue;
-};

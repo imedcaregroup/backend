@@ -4,7 +4,7 @@ import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { UserRequest } from "../types";
-import {floatOr, intOr, sendPostNotifications} from "../utils/helpers";
+import {sendPostNotifications} from "../utils/helpers";
 import dayjs from "dayjs";
 
 // Set up Multer storage for S3 file upload
@@ -62,9 +62,9 @@ const OrderController = () => {
       // Check if the slot is already booked
       const existingOrder = await __db.order.findFirst({
         where: {
-          medicalId: +medicalId,
+          medicalId: medicalId,
           orderDate: new Date(date),
-          startTime: +startTime,
+          startTime: startTime,
         },
       });
 
@@ -93,15 +93,15 @@ const OrderController = () => {
         data: {
           price,
           address,
-          lat: floatOr(lat, 0),
-          lng: floatOr(lng, 0),
+          lat,
+          lng,
           entrance,
           intercom,
-          floor: intOr(floor),
+          floor,
           apartment,
           orderDate: new Date(date),
-          startTime: +startTime,
-          medical: { connect: { id: +medicalId } },
+          startTime: startTime,
+          medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
           additionalInfo,
           admin: medical.adminId
