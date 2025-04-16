@@ -45,3 +45,8 @@ export const resetPasswordValidation = [
   check("email").isEmail().withMessage("Please provide a valid email address"),
   check("password").notEmpty().withMessage("Please provide password"),
 ];
+
+export const updateLocationValidation = [
+  check("lat").notEmpty().withMessage("Please provide lat"),
+  check("lng").notEmpty().withMessage("Please provide lng"),
+];

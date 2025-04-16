@@ -30,6 +30,7 @@ model User {
   addresses           Address[]
   orders              Order[]
   tokens              FcmToken[]
+  employee Employee?
 }
 
 model Service {
@@ -180,4 +181,14 @@ model Admin {
 enum AdminRole {
   ADMIN
   SUPER_ADMIN
+}
+
+model Employee {
+  id        Int    @id @default(autoincrement())
+  name      String
+  surName   String
+  position  String
+  userId    Int    @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

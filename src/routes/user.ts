@@ -7,7 +7,7 @@ import {
   loginUserValidation,
   updatePasswordValidation,
   VerifyEmailValidation,
-  resetPasswordValidation,
+  resetPasswordValidation, updateLocationValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 import multer, { FileFilterCallback } from "multer";
@@ -19,7 +19,7 @@ const storage = multer.memoryStorage(); // Store the file in memory before uploa
 const fileFilter = (
   req: UserRequest,
   file: Express.Multer.File,
-  cb: FileFilterCallback
+  cb: FileFilterCallback,
 ) => {
   const allowedTypes = [
     "image/jpeg",
@@ -56,7 +56,7 @@ router
   .route("/reset-password")
   .post(
     resetPasswordValidation,
-    validationWrapper(userController.resetPassword)
+    validationWrapper(userController.resetPassword),
   );
 router
   .route("/verify-email")
@@ -68,14 +68,23 @@ router
   .patch(
     upload.single("image"),
     setUserProfileValidation,
-    validationWrapper(userController.setMyProfile)
+    validationWrapper(userController.setMyProfile),
   )
   .delete(userController.deleteMyProfile);
 router
   .route("/password")
   .patch(
     updatePasswordValidation,
-    validationWrapper(userController.updatePassword)
+    validationWrapper(userController.updatePassword),
   );
+
+router
+  .route("/update-location")
+  .put(
+    updateLocationValidation,
+    validationWrapper(userController.updateLocation),
+  );
+
+router.route("/get-location").get(userController.getLocation);
 
 export default router;

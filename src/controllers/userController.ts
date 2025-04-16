@@ -686,6 +686,64 @@ const UserController = () => {
       });
     }
   };
+
+  const updateLocation = async (req: UserRequest, res: Response) => {
+    const { lat, lng } = req.body;
+
+    if (!lat || !lng) {
+      throw {
+        statusCode: 400,
+        message: "Both lat and lng are required",
+      };
+    }
+
+    await __db.user.update({
+      where: {
+        id: req.user._id,
+      },
+      data: {
+        lat: lat,
+        lng: lng,
+      },
+    });
+
+    logHttp("Updated user location successfully");
+
+    return sendSuccessResponse({
+      res,
+      message: "Location updated successfully",
+    });
+  };
+
+  const getLocation = async (req: UserRequest, res: Response) => {
+    const userCoords = await __db.user.findFirst({
+      where: {
+        id: req.user._id,
+        isDeleted: false,
+      },
+      select: {
+        lat: true,
+        lng: true,
+      },
+    });
+
+    if (!userCoords) {
+      throw {
+        statusCode: 404,
+        message: "User not found",
+      };
+    }
+
+    return sendSuccessResponse({
+      res,
+      message: "Location updated successfully",
+      data: {
+        lat: userCoords.lat,
+        lng: userCoords.lng,
+      },
+    });
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`User - ${context} => ${JSON.stringify(value)}`);
 
@@ -702,6 +760,8 @@ const UserController = () => {
     updatePassword,
     deleteMyProfile,
     resetPassword,
+    updateLocation,
+    getLocation,
   };
 };
 
