@@ -4,7 +4,6 @@ import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
 import { messaging } from "../config/messaging";
 import * as bcrypt from 'bcrypt';
-import {int} from "aws-sdk/clients/datapipeline";
 
 const SECRET_KEY: Secret = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
