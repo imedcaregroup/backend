@@ -55,10 +55,10 @@ router.patch(
 router.route("/medicals").get(adminController.getAllMedicals);
 
 // category
-router.route('/category')
+router.route('/categories')
     .post(createCategoryValidation, validationWrapper(categoryController.createCategory));
 router
-    .route('/category/:id')
+    .route('/categories/:id')
     .patch(updateCategoryValidation, validationWrapper(categoryController.updateCategory))
     .delete(categoryController.deleteCategory);
 
