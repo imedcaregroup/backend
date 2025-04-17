@@ -9,10 +9,13 @@ import {
   changePasswordValidation,
 } from "../validations/adminValidation";
 import OrderController from "../controllers/orderController";
+import CategoryController from "../controllers/categoryController";
 import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
+import {createCategoryValidation, updateCategoryValidation} from "../validations/categoryValidation";
 
 const adminController = AdminController();
 const orderController = OrderController();
+const categoryController = CategoryController();
 const router = Router();
 
 // Public routes
@@ -50,6 +53,14 @@ router.patch(
 
 // Admin medicals
 router.route("/medicals").get(adminController.getAllMedicals);
+
+// category
+router.route('/categories')
+    .post(createCategoryValidation, validationWrapper(categoryController.createCategory));
+router
+    .route('/categories/:id')
+    .patch(updateCategoryValidation, validationWrapper(categoryController.updateCategory))
+    .delete(categoryController.deleteCategory);
 
 // ✅ Super admin-only routes after this point
 router.use(superAdminOnly);
