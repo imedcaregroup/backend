@@ -30,6 +30,7 @@ model User {
   addresses           Address[]
   orders              Order[]
   tokens              FcmToken[]
+  employee Employee?
 }
 
 model Service {
@@ -102,6 +103,10 @@ model Order {
   address            String?
   lat                Float?
   lng                Float?
+  entrance           String?
+  floor              Int?
+  apartment          String?
+  intercom           String?
   paymetStatus       String             @default("pending")
   orderStatus        String             @default("pending")
   declinedReason     String?
@@ -154,6 +159,10 @@ model Address {
   userId    Int
   lat       Float?
   lng       Float?
+  entrance  String?
+  floor     Int?
+  apartment String?
+  intercom  String?
   user      User     @relation(fields: [userId], references: [id])
 }
 
@@ -180,4 +189,14 @@ model Admin {
 enum AdminRole {
   ADMIN
   SUPER_ADMIN
+}
+
+model Employee {
+  id        Int    @id @default(autoincrement())
+  name      String
+  surName   String
+  position  String
+  userId    Int    @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
