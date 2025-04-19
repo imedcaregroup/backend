@@ -8,8 +8,8 @@ datasource db {
 }
 
 model User {
-  id                  Int       @id @default(autoincrement())
-  email               String?   @unique
+  id                  Int        @id @default(autoincrement())
+  email               String?    @unique
   password            String?
   mobileNumber        String?
   otp                 Int?
@@ -17,20 +17,20 @@ model User {
   surName             String?
   pytroNym            String?
   dob                 DateTime?
-  address             String?   @default("None")
+  address             String?    @default("None")
   authProvider        String
   googleId            String?
-  notificationEnabled Boolean   @default(false)
+  notificationEnabled Boolean    @default(false)
   country             String?
   gender              String?
   lat                 Float?
   lng                 Float?
-  isDeleted           Boolean?  @default(false)
-  imageUrl            String?   @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
+  isDeleted           Boolean?   @default(false)
+  imageUrl            String?    @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
   addresses           Address[]
   orders              Order[]
   tokens              FcmToken[]
-  employee Employee?
+  employee            Employee?
 }
 
 model Service {
@@ -80,7 +80,7 @@ model Medical {
   orders            Order[]
   adminId           Int?
   admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
-  employees  Employee[]
+  employees         Employee[]
 }
 
 model MedicalCategory {
@@ -106,6 +106,7 @@ model Order {
   lng                Float?
   paymetStatus       String             @default("pending")
   orderStatus        String             @default("pending")
+  employeeStatus     String             @default("pending")
   declinedReason     String?
   orderDate          DateTime
   additionalInfo     String?
@@ -121,6 +122,8 @@ model Order {
   orderSubCategories OrderSubCategory[]
   adminId            Int?
   admin              Admin?             @relation("AdminOrder", fields: [adminId], references: [id])
+  employeeId         Int?
+  employee           Employee?          @relation(fields: [employeeId], references: [id])
 }
 
 model OrderSubCategory {
@@ -159,24 +162,24 @@ model Address {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model FcmToken{
-    id        Int      @id @default(autoincrement())
-    token String @unique
-    userId Int
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model FcmToken {
+  id     Int    @id @default(autoincrement())
+  token  String @unique
+  userId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // New Admin model for admin panel authentication
 model Admin {
-  id             Int       @id @default(autoincrement())
-  email          String    @unique
-  password       String
-  name           String
-  role           AdminRole @default(ADMIN)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  medical        Medical[] @relation("AdminMedical")
-  orders         Order[]   @relation("AdminOrder")
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  role      AdminRole @default(ADMIN)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  medical   Medical[] @relation("AdminMedical")
+  orders    Order[]   @relation("AdminOrder")
 }
 
 enum AdminRole {
@@ -185,13 +188,15 @@ enum AdminRole {
 }
 
 model Employee {
-  id        Int    @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
   surName   String
   position  String
-  userId    Int    @unique
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  medicalId  Int?
-  medical    Medical? @relation(fields: [medicalId], references: [id])
+  medicalId Int?
+  medical   Medical? @relation(fields: [medicalId], references: [id])
+
+  Order Order[]
 }

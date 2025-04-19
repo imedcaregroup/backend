@@ -953,6 +953,135 @@ const OrderController = () => {
     }
   };
 
+  async function startOrder(req: UserRequest, res: Response) {
+    const orderId = +req.params.id;
+    const employee = await __db.employee.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!employee) throw new Error("Employee not found");
+
+    const order = await __db.order.findFirst({
+      where: { id: orderId },
+      select: { id: true, userId: true },
+    });
+
+    if (!order) throw new Error("No order found");
+
+    await __db.order.update({
+      where: { id: orderId },
+      data: {
+        employeeStatus: "processing",
+      },
+    });
+
+    const tokens = await __db.fcmToken.findMany({
+      where: { userId: order.userId },
+      select: { token: true },
+    });
+
+    if (tokens.length) {
+      await sendPostNotifications(
+        tokens,
+        "Order on the way",
+        "Your order is being delivered now.",
+        {},
+      );
+    }
+    return sendSuccessResponse({
+      res,
+      message: "Order started successfully",
+    });
+  }
+
+  const completeOrder = async (req: UserRequest, res: Response) => {
+    try {
+      const orderId = +req.params.id;
+
+      const order = await __db.order.findUnique({
+        where: { id: orderId },
+        include: { user: true },
+      });
+
+      if (!order) throw new Error("Order not found");
+
+      await __db.order.update({
+        where: { id: orderId },
+        data: {
+          employeeStatus: "completed",
+        },
+      });
+
+      const tokens = await __db.fcmToken.findMany({
+        where: { userId: order.userId },
+        select: { token: true },
+      });
+      if (tokens.length) {
+        await sendPostNotifications(
+          tokens,
+          "Order Completed",
+          "Your order has been completed successfully.",
+          {},
+        );
+      }
+
+      return sendSuccessResponse({
+        res,
+        message: "Order started successfully",
+      });
+    } catch (error) {
+      logError(`Error while completing order ==>`, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+
+  const assignEmployeeToOrder = async (req: UserRequest, res: Response) => {
+    try {
+      const orderId = +req.params.id;
+
+      const employee = await __db.employee.findFirst({
+        where: {
+          userId: req.user.id,
+        },
+      });
+
+      if (!employee) {
+        throw new Error("Employee not found");
+      }
+
+      const order = await __db.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      await __db.order.update({
+        where: { id: orderId },
+        data: {
+          employeeId: employee.id,
+        },
+      });
+
+      return sendSuccessResponse({
+        res,
+        message: "Employee assigned to order",
+      });
+    } catch (error) {
+      logError("Error in assignEmployeeToOrder", error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
 
@@ -968,6 +1097,9 @@ const OrderController = () => {
     createRequestOrder,
     getRequestOrder,
     calculateDistanceFee,
+    startOrder,
+    completeOrder,
+    assignEmployeeToOrder,
   };
 };
 
