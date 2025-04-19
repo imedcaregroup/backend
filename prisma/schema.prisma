@@ -80,6 +80,7 @@ model Medical {
   orders            Order[]
   adminId           Int?
   admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
+  employees  Employee[]
 }
 
 model MedicalCategory {
@@ -191,4 +192,6 @@ model Employee {
   userId    Int    @unique
   user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  medicalId  Int?
+  medical    Medical? @relation(fields: [medicalId], references: [id])
 }
