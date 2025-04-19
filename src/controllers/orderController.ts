@@ -1027,7 +1027,7 @@ const OrderController = () => {
 
       return sendSuccessResponse({
         res,
-        message: "Order started successfully",
+        message: "Order completed successfully",
       });
     } catch (error) {
       logError(`Error while completing order ==>`, error?.message);
