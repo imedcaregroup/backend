@@ -41,6 +41,7 @@ const OrderController = () => {
       lng,
       price,
       additionalInfo,
+      paymentMethod,
     } = req.body;
     try {
       // Validate that serviceCat is provided and is an array
@@ -51,6 +52,13 @@ const OrderController = () => {
       ) {
         return res.status(400).json({
           msg: "Service categories are required.",
+          statusCode: 400,
+        });
+      }
+
+      if (!["COD", "Card"].includes(paymentMethod)) {
+        return res.status(400).json({
+          msg: "Invalid payment method. Must be 'COD' or 'Card'",
           statusCode: 400,
         });
       }
@@ -76,6 +84,7 @@ const OrderController = () => {
         select: { adminId: true },
       });
 
+
       if (!medical) {
         return sendErrorResponse({
           res,
@@ -83,6 +92,8 @@ const OrderController = () => {
           error: "Medical not found",
         });
       }
+
+
 
       // Create the Order record
       const order = await __db.order.create({
@@ -93,6 +104,7 @@ const OrderController = () => {
           lng,
           orderDate: new Date(date),
           startTime,
+          paymentMethod,
           medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
           additionalInfo,

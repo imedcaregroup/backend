@@ -124,6 +124,12 @@ model Order {
   admin              Admin?             @relation("AdminOrder", fields: [adminId], references: [id])
   employeeId         Int?
   employee           Employee?          @relation(fields: [employeeId], references: [id])
+  paymentMethod      PaymentMethod?     @default(COD)
+}
+
+enum PaymentMethod {
+  COD
+  Card
 }
 
 model OrderSubCategory {
