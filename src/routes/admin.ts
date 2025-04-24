@@ -11,11 +11,17 @@ import {
 import OrderController from "../controllers/orderController";
 import CategoryController from "../controllers/categoryController";
 import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
-import {createCategoryValidation, updateCategoryValidation} from "../validations/categoryValidation";
+import {
+  createCategoryValidation,
+  createSubCategoryValidation,
+  updateCategoryValidation, updateSubCategoryValidation
+} from "../validations/categoryValidation";
+import SubCategoryController from "../controllers/subCategoryController";
 
 const adminController = AdminController();
 const orderController = OrderController();
 const categoryController = CategoryController();
+const subCategoryController = SubCategoryController();
 const router = Router();
 
 // Public routes
@@ -55,12 +61,21 @@ router.patch(
 router.route("/medicals").get(adminController.getAllMedicals);
 
 // category
-router.route('/categories')
+router
+    .route('/categories')
     .post(createCategoryValidation, validationWrapper(categoryController.createCategory));
 router
     .route('/categories/:id')
     .patch(updateCategoryValidation, validationWrapper(categoryController.updateCategory))
     .delete(categoryController.deleteCategory);
+
+router
+    .route('/subcategories')
+    .post(createSubCategoryValidation, validationWrapper(subCategoryController.createSubCategory));
+router
+    .route('/subcategories/:id')
+    .patch(updateSubCategoryValidation, validationWrapper(subCategoryController.updateSubCategory))
+    .delete(subCategoryController.deleteSubCategory);
 
 // ✅ Super admin-only routes after this point
 router.use(superAdminOnly);
