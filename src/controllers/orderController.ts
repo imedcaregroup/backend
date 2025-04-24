@@ -647,6 +647,14 @@ const OrderController = () => {
           skip: (page - 1) * limit,
           take: limit,
           include: {
+            employee: {
+              select: {
+                id: true,
+                name: true,
+                surName: true,
+                position: true,
+              },
+            },
             orderSubCategories: {
               include: {
                 service: {
@@ -830,6 +838,14 @@ const OrderController = () => {
           id: orderId,
         },
         include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              surName: true,
+              position: true,
+            },
+          },
           orderSubCategories: {
             include: {
               service: {
