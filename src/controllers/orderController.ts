@@ -45,6 +45,7 @@ const OrderController = () => {
       lng,
       price,
       additionalInfo,
+      paymentMethod,
     } = req.body;
     try {
       // Validate that serviceCat is provided and is an array
@@ -55,6 +56,13 @@ const OrderController = () => {
       ) {
         return res.status(400).json({
           msg: "Service categories are required.",
+          statusCode: 400,
+        });
+      }
+
+      if (!["COD", "Card"].includes(paymentMethod)) {
+        return res.status(400).json({
+          msg: "Invalid payment method. Must be 'COD' or 'Card'",
           statusCode: 400,
         });
       }
@@ -80,6 +88,7 @@ const OrderController = () => {
         select: { adminId: true },
       });
 
+
       if (!medical) {
         return sendErrorResponse({
           res,
@@ -87,6 +96,8 @@ const OrderController = () => {
           error: "Medical not found",
         });
       }
+
+
 
       // Create the Order record
       const order = await __db.order.create({
@@ -101,6 +112,7 @@ const OrderController = () => {
           apartment,
           orderDate: new Date(date),
           startTime: startTime,
+          paymentMethod,
           medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
           additionalInfo,
@@ -635,6 +647,14 @@ const OrderController = () => {
           skip: (page - 1) * limit,
           take: limit,
           include: {
+            employee: {
+              select: {
+                id: true,
+                name: true,
+                surName: true,
+                position: true,
+              },
+            },
             orderSubCategories: {
               include: {
                 service: {
@@ -818,6 +838,14 @@ const OrderController = () => {
           id: orderId,
         },
         include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              surName: true,
+              position: true,
+            },
+          },
           orderSubCategories: {
             include: {
               service: {
@@ -961,6 +989,135 @@ const OrderController = () => {
     }
   };
 
+  async function startOrder(req: UserRequest, res: Response) {
+    const orderId = +req.params.id;
+    const employee = await __db.employee.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!employee) throw new Error("Employee not found");
+
+    const order = await __db.order.findFirst({
+      where: { id: orderId },
+      select: { id: true, userId: true },
+    });
+
+    if (!order) throw new Error("No order found");
+
+    await __db.order.update({
+      where: { id: orderId },
+      data: {
+        employeeStatus: "processing",
+      },
+    });
+
+    const tokens = await __db.fcmToken.findMany({
+      where: { userId: order.userId },
+      select: { token: true },
+    });
+
+    if (tokens.length) {
+      await sendPostNotifications(
+        tokens,
+        "Order on the way",
+        "Your order is being delivered now.",
+        {},
+      );
+    }
+    return sendSuccessResponse({
+      res,
+      message: "Order started successfully",
+    });
+  }
+
+  const completeOrder = async (req: UserRequest, res: Response) => {
+    try {
+      const orderId = +req.params.id;
+
+      const order = await __db.order.findUnique({
+        where: { id: orderId },
+        include: { user: true },
+      });
+
+      if (!order) throw new Error("Order not found");
+
+      await __db.order.update({
+        where: { id: orderId },
+        data: {
+          employeeStatus: "completed",
+        },
+      });
+
+      const tokens = await __db.fcmToken.findMany({
+        where: { userId: order.userId },
+        select: { token: true },
+      });
+      if (tokens.length) {
+        await sendPostNotifications(
+          tokens,
+          "Order Completed",
+          "Your order has been completed successfully.",
+          {},
+        );
+      }
+
+      return sendSuccessResponse({
+        res,
+        message: "Order completed successfully",
+      });
+    } catch (error) {
+      logError(`Error while completing order ==>`, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+
+  const assignEmployeeToOrder = async (req: UserRequest, res: Response) => {
+    try {
+      const orderId = +req.params.id;
+
+      const employee = await __db.employee.findFirst({
+        where: {
+          userId: req.user.id,
+        },
+      });
+
+      if (!employee) {
+        throw new Error("Employee not found");
+      }
+
+      const order = await __db.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      await __db.order.update({
+        where: { id: orderId },
+        data: {
+          employeeId: employee.id,
+        },
+      });
+
+      return sendSuccessResponse({
+        res,
+        message: "Employee assigned to order",
+      });
+    } catch (error) {
+      logError("Error in assignEmployeeToOrder", error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
+
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
 
@@ -976,6 +1133,9 @@ const OrderController = () => {
     createRequestOrder,
     getRequestOrder,
     calculateDistanceFee,
+    startOrder,
+    completeOrder,
+    assignEmployeeToOrder,
   };
 };
 
