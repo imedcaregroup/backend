@@ -4,7 +4,7 @@ import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { UserRequest } from "../types";
-import { sendPostNotifications } from "../utils/helpers";
+import {sendPostNotifications} from "../utils/helpers";
 import dayjs from "dayjs";
 
 // Set up Multer storage for S3 file upload
@@ -35,6 +35,10 @@ const OrderController = () => {
       serviceCat,
       medicalId,
       address,
+      entrance,
+      floor,
+      intercom,
+      apartment,
       date,
       startTime,
       lat,
@@ -102,8 +106,12 @@ const OrderController = () => {
           address,
           lat,
           lng,
+          entrance,
+          intercom,
+          floor,
+          apartment,
           orderDate: new Date(date),
-          startTime,
+          startTime: startTime,
           paymentMethod,
           medical: { connect: { id: medicalId } },
           user: { connect: { id: req.user._id } },
