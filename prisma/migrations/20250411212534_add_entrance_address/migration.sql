@@ -7,6 +7,6 @@
 */
 -- AlterTable
 ALTER TABLE "Address" ADD COLUMN     "apartment" TEXT,
-ADD COLUMN     "entrance" TEXT NOT NULL,
-ADD COLUMN     "floor" INTEGER NOT NULL,
+ADD COLUMN     "entrance" TEXT,
+ADD COLUMN     "floor" INTEGER,
 ADD COLUMN     "intercom" TEXT;
