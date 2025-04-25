@@ -36,9 +36,12 @@ router
   .get(orderController.getOrder)
   .patch(
     acceptOrRejectOrderValidation,
-    validationWrapper(orderController.acceptOrRejeectOrder)
+    validationWrapper(orderController.acceptOrRejeectOrder),
   );
 
+router.route("/:id/start").post(orderController.startOrder);
+router.route("/:id/complete").post(orderController.completeOrder);
+router.route("/:id/assign").post(orderController.assignEmployeeToOrder);
 //
 // 🛡️ Admin-Protected Routes for ONLY 3 APIs
 //
