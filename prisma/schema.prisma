@@ -149,13 +149,15 @@ model OrderSubCategory {
 }
 
 model Availability {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  day       Int
-  startTime Int
-  endTime   Int
-  medicalId Int
-  medical   Medical  @relation(fields: [medicalId], references: [id])
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  day        Int
+  startTime  Int
+  endTime    Int
+  medicalId  Int?
+  employeeId Int?
+  medical    Medical?  @relation(fields: [medicalId], references: [id])
+  employee   Employee? @relation(fields: [employeeId], references: [id])
 }
 
 model Address {
@@ -211,6 +213,7 @@ model Employee {
   createdAt DateTime @default(now())
   medicalId Int?
   medical   Medical? @relation(fields: [medicalId], references: [id])
+  availabilities Availability[]
 
   Order Order[]
 }
