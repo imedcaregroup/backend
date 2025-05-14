@@ -34,6 +34,7 @@ const OrderController = () => {
     const {
       serviceCat,
       medicalId,
+      employeeId,
       address,
       entrance,
       floor,
@@ -97,8 +98,6 @@ const OrderController = () => {
         });
       }
 
-
-
       // Create the Order record
       const order = await __db.order.create({
         data: {
@@ -114,6 +113,9 @@ const OrderController = () => {
           startTime: startTime,
           paymentMethod,
           medical: { connect: { id: medicalId } },
+          employee: employeeId
+            ? { connect: { id: employeeId }}
+            : undefined,
           user: { connect: { id: req.user._id } },
           additionalInfo,
           admin: medical.adminId
