@@ -103,6 +103,7 @@ export const sendPostNotifications = async (
             data: {
               title,
               body,
+              deepLink: payload?.deepLink || "imedapp://default-path",
               // payload: JSON.stringify(payload),
             },
             webpush: {
@@ -119,6 +120,7 @@ export const sendPostNotifications = async (
               data: {
                 title,
                 body,
+                deepLink: payload?.deepLink || "imedapp://default-path",
                 // payload: JSON.stringify(payload),
               },
             },

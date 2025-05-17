@@ -582,7 +582,9 @@ const OrderController = () => {
           req.body.orderStatus === "accepted"
             ? "You account has been accepted by admin"
             : req.body.declinedReason,
-          {}
+          {
+            deepLink: "imedapp://orders/"+orderId
+          }
         );
 
       return sendSuccessResponse({
@@ -1023,7 +1025,9 @@ const OrderController = () => {
         tokens,
         "Order on the way",
         "Your order is being delivered now.",
-        {},
+        {
+          deepLink: "imedapp://orders/"+orderId
+        },
       );
     }
     return sendSuccessResponse({
@@ -1059,7 +1063,9 @@ const OrderController = () => {
           tokens,
           "Order Completed",
           "Your order has been completed successfully.",
-          {},
+          {
+            deepLink: "imedapp://orders/"+orderId
+          },
         );
       }
 
