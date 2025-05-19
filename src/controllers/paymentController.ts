@@ -3,6 +3,7 @@ dotenv.config();
 import {UserRequest} from "index";
 import {Response} from "express";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
+import prisma from "../config/db";
 
 
 const PaymentController = () => {
@@ -23,10 +24,10 @@ const PaymentController = () => {
                 language: 'AZ',
                 currency: 'AZN',
                 description: 'Order Payment',
-                callbackUrl: 'https://api.caregroup.tech/api/v1/payriff-callback',
+                callbackUrl: 'http://127.0.0.1:4000/api/v1/payriff-callback',
                 cardSave: false,
                 operation: 'PURCHASE',
-                metadata: { orderId: '123123' },
+                metadata: { orderId: '1' },
             };
 
 
@@ -58,17 +59,52 @@ const PaymentController = () => {
         try {
             const { metadata, status, orderId } = req.body;
 
-            console.log(`Payment callback received for order ${orderId}`);
-            console.log(`Payment status: ${status}`);
-            console.log(`Metadata:`, metadata);
-            console.log(req.body);
+            let orderRecordID = parseInt(metadata.orderId as string) || null;
+            if (!orderRecordID) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 400,
+                    error: "Invalid order id"
+                });
+            }
 
             // db
+            let order = await prisma.order.findFirst({
+                select: {id: true},
+                where: {
+                    id: orderRecordID
+                }
+            });
+
+            if (!order) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 400,
+                    error: "Invalid order"
+                });
+            }
+
+            const paymentIsSuccessful = (status === "00000");
+
+            try {
+                await __db.order.update({
+                    data: {
+                        paymetStatus: paymentIsSuccessful ? 'success' : 'failed'
+                    },
+                    where: {id: order.id},
+                });
+            } catch (error) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 500,
+                    error
+                });
+            }
 
             return sendSuccessResponse({
                 res,
                 data: {
-                    message: 'Callback processed successfully',
+                    message: paymentIsSuccessful ? 'Payment completed successfully' : 'There is an error on payment',
                     orderId,
                     status,
                 },
