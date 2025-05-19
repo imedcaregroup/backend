@@ -19,17 +19,18 @@ const PaymentController = () => {
     ): Promise<any> => {
         try {
 
+            const orderId = 1;
+
             const body = {
                 amount: req.body.amount,
                 language: 'AZ',
                 currency: 'AZN',
                 description: 'Order Payment',
-                callbackUrl: 'http://127.0.0.1:4000/api/v1/payriff-callback',
+                callbackUrl: 'https://api.caregroup.tech/api/v1/payriff-callback',
                 cardSave: false,
                 operation: 'PURCHASE',
-                metadata: { orderId: '1' },
+                metadata: { orderId },
             };
-
 
             const response = await fetch(`https://api.payriff.com/api/v3/orders`, {
                 method: 'POST',
@@ -38,6 +39,18 @@ const PaymentController = () => {
             });
 
             const data = await response.json();
+
+            // if (data.status === '00000') {
+                await prisma.order.update({
+                    data: {
+                        payment_order_id: data.payload.orderId
+                    },
+                    where: {
+                        id: orderId
+                    }
+                });
+            // }
+
             return sendSuccessResponse({
                 res,
                 data: {
@@ -57,10 +70,10 @@ const PaymentController = () => {
 
     const callbackPayment = async (req: UserRequest, res: Response): Promise<any> => {
         try {
-            const { metadata, status, orderId } = req.body;
+            const { code, payload } = req.body;
 
-            let orderRecordID = parseInt(metadata.orderId as string) || null;
-            if (!orderRecordID) {
+            const paymentOrderId = payload.orderId || null;
+            if (!paymentOrderId) {
                 return sendErrorResponse({
                     res,
                     statusCode: 400,
@@ -72,19 +85,19 @@ const PaymentController = () => {
             let order = await prisma.order.findFirst({
                 select: {id: true},
                 where: {
-                    id: orderRecordID
+                    payment_order_id: paymentOrderId
                 }
             });
 
             if (!order) {
                 return sendErrorResponse({
                     res,
-                    statusCode: 400,
-                    error: "Invalid order"
+                    statusCode: 404,
+                    error: "Order not found"
                 });
             }
 
-            const paymentIsSuccessful = (status === "00000");
+            const paymentIsSuccessful = (code === "00000");
 
             try {
                 await __db.order.update({
@@ -105,8 +118,6 @@ const PaymentController = () => {
                 res,
                 data: {
                     message: paymentIsSuccessful ? 'Payment completed successfully' : 'There is an error on payment',
-                    orderId,
-                    status,
                 },
             });
         } catch (error: any) {
