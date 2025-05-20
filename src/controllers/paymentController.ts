@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import {UserRequest} from "index";
+import {Payriff, UserRequest} from "../types/index";
 import {Response} from "express";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
 import prisma from "../config/db";
@@ -32,7 +32,7 @@ const PaymentController = () => {
                 metadata: { orderId },
             };
 
-            const response = await fetch(`https://api.payriff.com/api/v3/orders`, {
+            const response = await fetch(Payriff.BASE_URL + `/orders`, {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(body),
@@ -85,6 +85,7 @@ const PaymentController = () => {
             let order = await prisma.order.findFirst({
                 select: {id: true},
                 where: {
+                    paymetStatus: 'pending',
                     payment_order_id: paymentOrderId
                 }
             });
@@ -97,7 +98,20 @@ const PaymentController = () => {
                 });
             }
 
-            const paymentIsSuccessful = (code === "00000");
+            const response = await fetch(Payriff.BASE_URL + '/orders/' + paymentOrderId, {
+                headers: getHeaders()
+            });
+            const data = await response.json();
+
+            if (data.code != Payriff.SUCCESS) {
+                return sendErrorResponse({
+                        res,
+                        statusCode: 404,
+                        error: "Payment order not found"
+                    });
+            }
+
+            const paymentIsSuccessful = (code === Payriff.SUCCESS);
 
             try {
                 await __db.order.update({

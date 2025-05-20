@@ -42,6 +42,11 @@ export interface ValidationError {
   location: string;
 }
 
+export const Payriff = {
+  BASE_URL: "https://api.payriff.com/api/v3",
+  SUCCESS: "00000"
+}
+
 // export interface IRequestHandler {
 //   (req: Request | UserRequest, res: Response, next: NextFunction): Promise<any>;
 // }
