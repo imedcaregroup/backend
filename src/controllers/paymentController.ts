@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
-import {UserRequest} from "index";
+import {Payriff, UserRequest} from "../types/index";
 import {Response} from "express";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
+import prisma from "../config/db";
 
 
 const PaymentController = () => {
@@ -18,6 +19,8 @@ const PaymentController = () => {
     ): Promise<any> => {
         try {
 
+            const orderId = 1;
+
             const body = {
                 amount: req.body.amount,
                 language: 'AZ',
@@ -26,17 +29,28 @@ const PaymentController = () => {
                 callbackUrl: 'https://api.caregroup.tech/api/v1/payriff-callback',
                 cardSave: false,
                 operation: 'PURCHASE',
-                metadata: { orderId: '123123' },
+                metadata: { orderId },
             };
 
-
-            const response = await fetch(`https://api.payriff.com/api/v3/orders`, {
+            const response = await fetch(Payriff.BASE_URL + `/orders`, {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(body),
             });
 
             const data = await response.json();
+
+            // if (data.status === '00000') {
+                await prisma.order.update({
+                    data: {
+                        payment_order_id: data.payload.orderId
+                    },
+                    where: {
+                        id: orderId
+                    }
+                });
+            // }
+
             return sendSuccessResponse({
                 res,
                 data: {
@@ -56,21 +70,68 @@ const PaymentController = () => {
 
     const callbackPayment = async (req: UserRequest, res: Response): Promise<any> => {
         try {
-            const { metadata, status, orderId } = req.body;
+            const { code, payload } = req.body;
 
-            console.log(`Payment callback received for order ${orderId}`);
-            console.log(`Payment status: ${status}`);
-            console.log(`Metadata:`, metadata);
-            console.log(req.body);
+            const paymentOrderId = payload.orderId || null;
+            if (!paymentOrderId) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 400,
+                    error: "Invalid order id"
+                });
+            }
 
             // db
+            let order = await prisma.order.findFirst({
+                select: {id: true},
+                where: {
+                    paymetStatus: 'pending',
+                    payment_order_id: paymentOrderId
+                }
+            });
+
+            if (!order) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 404,
+                    error: "Order not found"
+                });
+            }
+
+            const response = await fetch(Payriff.BASE_URL + '/orders/' + paymentOrderId, {
+                headers: getHeaders()
+            });
+            const data = await response.json();
+
+            if (data.code != Payriff.SUCCESS) {
+                return sendErrorResponse({
+                        res,
+                        statusCode: 404,
+                        error: "Payment order not found"
+                    });
+            }
+
+            const paymentIsSuccessful = (code === Payriff.SUCCESS);
+
+            try {
+                await __db.order.update({
+                    data: {
+                        paymetStatus: paymentIsSuccessful ? 'success' : 'failed'
+                    },
+                    where: {id: order.id},
+                });
+            } catch (error) {
+                return sendErrorResponse({
+                    res,
+                    statusCode: 500,
+                    error
+                });
+            }
 
             return sendSuccessResponse({
                 res,
                 data: {
-                    message: 'Callback processed successfully',
-                    orderId,
-                    status,
+                    message: paymentIsSuccessful ? 'Payment completed successfully' : 'There is an error on payment',
                 },
             });
         } catch (error: any) {
