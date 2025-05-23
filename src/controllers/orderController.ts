@@ -530,6 +530,41 @@ const OrderController = () => {
     }
   };
 
+  const changeEmployeeStatus = async (
+    req: UserRequest,
+    res: Response
+  ): Promise<any> => {
+    const orderId = parseInt(req.params.id as string);
+
+    logHttp("Checking for order in db");
+    const order = await __db.order.findFirst({
+      where: {
+        id: +orderId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!order) throw new Error("No order found");
+
+    logHttp("Changing employee status of order ==> ");
+    await __db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        ...req.body,
+      },
+    });
+
+    return sendSuccessResponse({
+      res,
+      message: "Employee status of order has been changed successfully",
+    });
+  };
+
   const acceptOrRejeectOrder = async (
     req: UserRequest,
     res: Response
@@ -1144,6 +1179,7 @@ const OrderController = () => {
     startOrder,
     completeOrder,
     assignEmployeeToOrder,
+    changeEmployeeStatus
   };
 };
 
