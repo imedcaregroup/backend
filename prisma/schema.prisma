@@ -109,6 +109,7 @@ model Order {
   apartment          String?
   intercom           String?
   paymetStatus       String             @default("pending")
+  payment_order_id   String?
   orderStatus        String             @default("pending")
   employeeStatus     String             @default("pending")
   declinedReason     String?
