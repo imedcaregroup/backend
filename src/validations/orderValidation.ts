@@ -36,3 +36,7 @@ export const acceptOrRejectOrderValidation = [
   check("orderStatus").notEmpty().withMessage("Please provide orderStatus"),
   check("declinedReason").optional({ nullable: true, checkFalsy: true }),
 ];
+
+export const employeeStatusChangingValidation = [
+    check("employeeStatus").notEmpty().withMessage("Please provide employeeStatus")
+];

@@ -10,7 +10,7 @@ import {
 } from "../validations/adminValidation";
 import OrderController from "../controllers/orderController";
 import CategoryController from "../controllers/categoryController";
-import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
+import {acceptOrRejectOrderValidation, employeeStatusChangingValidation} from "../validations/orderValidation";
 import {
   createCategoryValidation,
   createSubCategoryValidation,
@@ -55,6 +55,11 @@ router.patch(
   "/orders/:id",
   acceptOrRejectOrderValidation,
   validationWrapper(orderController.acceptOrRejeectOrder),
+);
+router.patch(
+    "/orders/:id/change-employee-status",
+    employeeStatusChangingValidation,
+    validationWrapper(orderController.changeEmployeeStatus),
 );
 
 // Admin medicals
