@@ -6,6 +6,8 @@ import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { UserRequest } from "../types";
 import {sendPostNotifications} from "../utils/helpers";
 import dayjs from "dayjs";
+import {OrderService} from "../services/orderService";
+import {OrderException} from "../utils/exception";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -29,7 +31,10 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // Max file size 10MB
 }).array("files");
 
+let orderService= new OrderService();
+
 const OrderController = () => {
+
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
     const {
       serviceCat,
@@ -1108,35 +1113,7 @@ const OrderController = () => {
   const completeOrder = async (req: UserRequest, res: Response) => {
     try {
       const orderId = +req.params.id;
-
-      const order = await __db.order.findUnique({
-        where: { id: orderId },
-        include: { user: true },
-      });
-
-      if (!order) throw new Error("Order not found");
-
-      await __db.order.update({
-        where: { id: orderId },
-        data: {
-          employeeStatus: "completed",
-        },
-      });
-
-      const tokens = await __db.fcmToken.findMany({
-        where: { userId: order.userId },
-        select: { token: true },
-      });
-      if (tokens.length) {
-        await sendPostNotifications(
-          tokens,
-          "Order Completed",
-          "Your order has been completed successfully.",
-          {
-            deepLink: "imedapp://orders/"+orderId
-          },
-        );
-      }
+      await orderService.completeOrder(orderId);
 
       return sendSuccessResponse({
         res,
