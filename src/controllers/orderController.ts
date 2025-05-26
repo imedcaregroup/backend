@@ -31,7 +31,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // Max file size 10MB
 }).array("files");
 
-let orderService= new OrderService();
+const orderService= new OrderService();
 
 const OrderController = () => {
 
