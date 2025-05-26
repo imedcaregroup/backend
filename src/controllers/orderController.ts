@@ -535,6 +535,7 @@ const OrderController = () => {
     res: Response
   ): Promise<any> => {
     const orderId = parseInt(req.params.id as string);
+    const employeeStatus = req.body.employeeStatus;
 
     logHttp("Checking for order in db");
     const order = await __db.order.findFirst({
@@ -544,12 +545,24 @@ const OrderController = () => {
       select: {
         id: true,
         userId: true,
+        employeeStatus: true
       },
     });
 
     if (!order) throw new Error("No order found");
 
-    logHttp("Changing employee status of order ==> ");
+    switch (employeeStatus) {
+      case 'processing':
+        if (order.employeeStatus != 'pending') {
+          return sendErrorResponse({
+            res,
+            error: "Employee status can only be changed to 'processing' from 'pending'",
+            statusCode: 400
+          });
+        }
+    }
+
+    logHttp("Changing employee status of order ==> " + employeeStatus);
     await __db.order.update({
       where: {
         id: orderId,
@@ -565,12 +578,13 @@ const OrderController = () => {
     });
   };
 
-  const acceptOrRejeectOrder = async (
+  const acceptOrRejectOrder = async (
     req: UserRequest,
     res: Response
   ): Promise<any> => {
     try {
       const orderId = +req.params.id;
+      const status = req.body.orderStatus;
 
       logHttp("Checking for order in db");
       const order = await __db.order.findFirst({
@@ -580,12 +594,32 @@ const OrderController = () => {
         select: {
           id: true,
           userId: true,
+          orderStatus: true
         },
       });
 
       if (!order) throw new Error("No order found");
 
       logHttp("Checked for order in db");
+
+      switch (status) {
+        case 'accepted':
+        case 'rejected':
+          if (order.orderStatus != 'pending') {
+            return sendErrorResponse({
+              res,
+              error: "Order status can be changed to 'accepted' or 'rejected' only from 'pending'",
+            });
+          }
+          break;
+        case 'completed':
+          if (order.orderStatus != 'accepted') {
+            return sendErrorResponse({
+              res,
+              error: "Order status can only be changed to 'completed' from 'accepted'",
+            });
+          }
+      }
 
       logHttp("Accepting or rejecting order ==> ");
       await __db.order.update({
@@ -627,7 +661,7 @@ const OrderController = () => {
         message: "Sucess!!!",
       });
     } catch (error: any) {
-      logError(`Error while acceptOrRejeectOrder ==> `, error?.message);
+      logError(`Error while acceptOrRejectOrder ==> `, error?.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -1170,7 +1204,7 @@ const OrderController = () => {
   return {
     createOrder,
     getMyOrders,
-    acceptOrRejeectOrder,
+    acceptOrRejectOrder,
     getOrders,
     getOrder,
     createRequestOrder,

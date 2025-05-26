@@ -36,7 +36,7 @@ router
   .get(orderController.getOrder)
   .patch(
     acceptOrRejectOrderValidation,
-    validationWrapper(orderController.acceptOrRejeectOrder),
+    validationWrapper(orderController.acceptOrRejectOrder),
   );
 
 router.route("/:id/start").post(orderController.startOrder);
@@ -54,7 +54,7 @@ adminRouter.use(adminAuthMiddleware);
 // adminRouter.patch(
 //   "/orders/:id",
 //   acceptOrRejectOrderValidation,
-//   validationWrapper(orderController.acceptOrRejeectOrder)
+//   validationWrapper(orderController.acceptOrRejectOrder)
 // );
 
 // Mount adminRouter on /admin/orders

@@ -54,7 +54,7 @@ router.get("/orders/:id", orderController.getOrder);
 router.patch(
   "/orders/:id",
   acceptOrRejectOrderValidation,
-  validationWrapper(orderController.acceptOrRejeectOrder),
+  validationWrapper(orderController.acceptOrRejectOrder),
 );
 router.patch(
     "/orders/:id/change-employee-status",
