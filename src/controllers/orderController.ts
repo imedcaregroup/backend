@@ -1189,8 +1189,7 @@ const OrderController = () => {
     calculateDistanceFee,
     startOrder,
     completeOrder,
-    assignEmployeeToOrder,
-    changeEmployeeStatus
+    assignEmployeeToOrder
   };
 };
 

@@ -13,7 +13,7 @@ import {sendPostNotifications} from "../utils/helpers";
             throw OrderException.orderNotFound();
         }
 
-        if (order.orderStatus !== 'processing') {
+        if (order.orderStatus !== 'accepted') {
             throw OrderException.cannotBeCompleted();
         }
 
@@ -21,7 +21,8 @@ import {sendPostNotifications} from "../utils/helpers";
             await __db.order.update({
                 where : { id: orderId },
                 data  : {
-                    employeeStatus: "completed",
+                    orderStatus     : "completed",
+                    employeeStatus  : "completed",
                 },
             });
         } catch (error) {
