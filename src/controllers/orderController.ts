@@ -693,7 +693,15 @@ const OrderController = () => {
         user: { isDeleted: false },
         adminId: req.admin?._id, // 👈 Only show orders for logged-in admin
       };
-      if (orderStatus) condition["orderStatus"] = orderStatus;
+
+      if (orderStatus) {
+        // here we temporarily show pending orders also if accepted status is chosen
+        if (orderStatus === 'accepted') {
+          condition['orderStatus'] = {in: ['accepted', 'pending']};
+        } else {
+          condition['orderStatus'] = orderStatus;
+        }
+      }
 
       //
       if (from && to) {
