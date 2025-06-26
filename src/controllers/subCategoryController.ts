@@ -60,6 +60,10 @@ const SubCategoryController = () => {
               },
             },
           },
+          medicalCategories: {
+            select: {price: true},
+            orderBy: {price: "asc"}
+          }
         },
       });
 
@@ -69,16 +73,19 @@ const SubCategoryController = () => {
         res,
         data: {
           subCategories: subCategories.map((obj: any) => ({
-            id: obj.id,
-            iconUrl: obj.iconUrl,
-            name: obj.name,
-            en: obj.name_en,
-            az: obj.name_az,
-            ru: obj.name_ru,
-            categoryId: obj.categoryId,
-            categoryName: obj.category?.name,
-            serviceId: obj.category?.serviceId,
-            serviceName: obj.category.service?.name,
+              id: obj.id,
+              iconUrl: obj.iconUrl,
+              name: obj.name,
+              en: obj.name_en,
+              az: obj.name_az,
+              ru: obj.name_ru,
+              categoryId: obj.categoryId,
+              categoryName: obj.category?.name,
+              serviceId: obj.category?.serviceId,
+              serviceName: obj.category.service?.name,
+              price: obj.medicalCategories.map((medCategory: any) => {
+                return Math.ceil(medCategory.price)
+              }).join('-')
           })),
           cursor:
             subCategories.length >= limit
