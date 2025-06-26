@@ -72,7 +72,8 @@ const SubCategoryController = () => {
       return sendSuccessResponse({
         res,
         data: {
-          subCategories: subCategories.map((obj: any) => ({
+          subCategories: subCategories.map((obj: any) => {
+            let item = {
               id: obj.id,
               iconUrl: obj.iconUrl,
               name: obj.name,
@@ -83,10 +84,20 @@ const SubCategoryController = () => {
               categoryName: obj.category?.name,
               serviceId: obj.category?.serviceId,
               serviceName: obj.category.service?.name,
-              price: obj.medicalCategories.map((medCategory: any) => {
-                return Math.ceil(medCategory.price)
-              }).join('-')
-          })),
+              price: "0"
+            };
+
+            if (obj.medicalCategories.length > 1) {
+              const minPrice = Math.ceil(obj.medicalCategories[0].price);
+              const maxPrice = Math.ceil(obj.medicalCategories[obj.medicalCategories.length - 1].price);
+
+              item.price = `${minPrice}-${maxPrice}`;
+            } else if (obj.medicalCategories.length === 1) {
+              item.price = Math.ceil(obj.medicalCategories[0].price).toString();
+            }
+
+            return item;
+          }),
           cursor:
             subCategories.length >= limit
               ? subCategories[subCategories.length - 1]["id"]
