@@ -1,6 +1,5 @@
 import {OrderException} from "../utils/exception";
 import {sendPostNotifications} from "../utils/helpers";
-import {sendSuccessResponse} from "../utils/response";
 
  export class OrderService {
 
@@ -38,27 +37,31 @@ import {sendSuccessResponse} from "../utils/response";
         );
     }
 
-     public async startOrder(orderId: number) {
-         const order = await __db.order.findFirst({
-             where: {id: orderId},
-             select: {id: true, userId: true},
-         });
+     public async startOrder(order: any) {
+        if (order.employeeStatus != "pending") {
+            throw new Error("Order can start only from status 'pending'");
+        }
 
-         if (!order) throw new Error("No order found");
+        await __db.order.update({
+            where: {id: order.id},
+            data: {
+                employeeStatus: "processing",
+            },
+        });
 
-         await __db.order.update({
-             where: {id: orderId},
-             data: {
-                 employeeStatus: "processing",
-             },
-         });
-
-         await this.sendPostNotification(
+        await this.sendPostNotification(
              order.userId,
              order.id,
              "Order on the way",
              "Your order is being delivered now."
-         );
+        );
+     }
+
+     public async getOrder(id: number): Promise<any> {
+        return await __db.order.findFirst({
+            where: {id: id},
+            select: {id: true, userId: true, employeeId: true, employeeStatus: true},
+        });
      }
 
      private async sendPostNotification(userId: number, orderId: number, title: string, body: string): Promise<void> {

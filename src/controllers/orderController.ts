@@ -1078,12 +1078,36 @@ const OrderController = () => {
   async function startOrder(req: UserRequest, res: Response) {
     const orderId = +req.params.id;
     const employee = await __db.employee.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.user._id },
     });
 
-    if (!employee) throw new Error("Employee not found");
+    if (!employee) {
+      return sendErrorResponse({res, error: "Employee not found", statusCode: 404});
+    }
 
-    await orderService.startOrder(orderId);
+    const order = await orderService.getOrder(orderId);
+
+    if (!order) {
+      return sendErrorResponse({res, error: "Order not found", statusCode: 404});
+    }
+
+    if (order.employeeId != employee.id) {
+      return sendErrorResponse({
+        res,
+        error: "This order is not associated with employee",
+        statusCode: 400
+      });
+    }
+
+   try {
+     await orderService.startOrder(order);
+   } catch (error: any) {
+      return sendErrorResponse({
+        res,
+        error: error,
+        statusCode: error.statusCode ?? 400
+      });
+   }
 
     return sendSuccessResponse({
       res,
@@ -1092,7 +1116,22 @@ const OrderController = () => {
   }
 
   async function startOrderForAdmin(req: AdminRequest, res: Response) {
-    await orderService.startOrder(parseInt(req.params.id));
+    const orderId = +req.params.id;
+    const order = await orderService.getOrder(orderId);
+
+    if (!order) {
+      return sendErrorResponse({res, error: "Order not found", statusCode: 404});
+    }
+
+    try {
+      await orderService.startOrder(order);
+    } catch (error: any) {
+      return sendErrorResponse({
+        res,
+        error: error,
+        statusCode: error.statusCode ?? 400
+      });
+    }
 
     return sendSuccessResponse({
       res,
