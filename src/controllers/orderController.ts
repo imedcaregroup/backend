@@ -3,7 +3,7 @@ import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
-import { UserRequest } from "../types";
+import {AdminRequest, UserRequest} from "../types";
 import {sendPostNotifications} from "../utils/helpers";
 import dayjs from "dayjs";
 import {OrderService} from "../services/orderService";
@@ -1077,42 +1077,23 @@ const OrderController = () => {
 
   async function startOrder(req: UserRequest, res: Response) {
     const orderId = +req.params.id;
-
-    const order = await __db.order.findFirst({
-      where: { id: orderId },
-      select: { id: true, userId: true },
-    });
-
-    if (!order) throw new Error("No order found");
-
     const employee = await __db.employee.findUnique({
-      where: { userId: order.userId },
+      where: { userId: req.user.id },
     });
 
     if (!employee) throw new Error("Employee not found");
 
-    await __db.order.update({
-      where: { id: orderId },
-      data: {
-        employeeStatus: "processing",
-      },
-    });
+    await orderService.startOrder(orderId);
 
-    const tokens = await __db.fcmToken.findMany({
-      where: { userId: order.userId },
-      select: { token: true },
+    return sendSuccessResponse({
+      res,
+      message: "Order started successfully",
     });
+  }
 
-    if (tokens.length) {
-      await sendPostNotifications(
-        tokens,
-        "Order on the way",
-        "Your order is being delivered now.",
-        {
-          deepLink: "imedapp://orders/"+orderId
-        },
-      );
-    }
+  async function startOrderForAdmin(req: AdminRequest, res: Response) {
+    await orderService.startOrder(parseInt(req.params.id));
+
     return sendSuccessResponse({
       res,
       message: "Order started successfully",
@@ -1197,6 +1178,7 @@ const OrderController = () => {
     getRequestOrder,
     calculateDistanceFee,
     startOrder,
+    startOrderForAdmin,
     completeOrder,
     assignEmployeeToOrder
   };

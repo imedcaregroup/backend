@@ -56,7 +56,7 @@ router.patch(
   acceptOrRejectOrderValidation,
   validationWrapper(orderController.acceptOrRejectOrder),
 );
-router.route("/orders/:id/start").patch(orderController.startOrder);
+router.route("/orders/:id/start").patch(orderController.startOrderForAdmin);
 router.route("/orders/:id/complete").patch(orderController.completeOrder);
 
 // Admin medicals
