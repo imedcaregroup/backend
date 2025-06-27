@@ -1077,11 +1077,6 @@ const OrderController = () => {
 
   async function startOrder(req: UserRequest, res: Response) {
     const orderId = +req.params.id;
-    const employee = await __db.employee.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!employee) throw new Error("Employee not found");
 
     const order = await __db.order.findFirst({
       where: { id: orderId },
@@ -1089,6 +1084,12 @@ const OrderController = () => {
     });
 
     if (!order) throw new Error("No order found");
+
+    const employee = await __db.employee.findUnique({
+      where: { userId: order.userId },
+    });
+
+    if (!employee) throw new Error("Employee not found");
 
     await __db.order.update({
       where: { id: orderId },
