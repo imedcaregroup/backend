@@ -84,16 +84,16 @@ const SubCategoryController = () => {
               categoryName: obj.category?.name,
               serviceId: obj.category?.serviceId,
               serviceName: obj.category.service?.name,
-              price: "0"
+              price: "0 AZN"
             };
 
             if (obj.medicalCategories.length > 1) {
               const minPrice = Math.ceil(obj.medicalCategories[0].price);
               const maxPrice = Math.ceil(obj.medicalCategories[obj.medicalCategories.length - 1].price);
 
-              item.price = `${minPrice}-${maxPrice}`;
+              item.price = `${minPrice}-${maxPrice} AZN`;
             } else if (obj.medicalCategories.length === 1) {
-              item.price = Math.ceil(obj.medicalCategories[0].price).toString();
+              item.price = Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
             }
 
             return item;
