@@ -29,24 +29,55 @@ import {sendPostNotifications} from "../utils/helpers";
             throw OrderException.couldNotSave();
         }
 
-        await this.sendPostNotification(order.userId, order.id);
+        await this.sendPostNotification(
+            order.userId,
+            order.id,
+            "Order Completed",
+            "Your order has been completed successfully."
+        );
     }
 
-    private async sendPostNotification(userId: number, orderId: number): Promise<void> {
-        const tokens = await __db.fcmToken.findMany({
-            where  : { userId: userId },
-            select : { token: true },
-        });
-        if (tokens.length) {
-            await sendPostNotifications(
-                tokens,
-                "Order Completed",
-                "Your order has been completed successfully.",
-                {
-                    deepLink: "imedapp://orders/" + orderId
-                },
-            );
+     public async startOrder(order: any) {
+        if (order.employeeStatus != "pending") {
+            throw new Error("Order can start only from status 'pending'");
         }
-    }
 
-}
+        await __db.order.update({
+            where: {id: order.id},
+            data: {
+                employeeStatus: "processing",
+            },
+        });
+
+        await this.sendPostNotification(
+             order.userId,
+             order.id,
+             "Order on the way",
+             "Your order is being delivered now."
+        );
+     }
+
+     public async getOrder(id: number): Promise<any> {
+        return await __db.order.findFirst({
+            where: {id: id},
+            select: {id: true, userId: true, employeeId: true, employeeStatus: true},
+        });
+     }
+
+     private async sendPostNotification(userId: number, orderId: number, title: string, body: string): Promise<void> {
+         const tokens = await __db.fcmToken.findMany({
+             where  : { userId: userId },
+             select : { token: true },
+         });
+         if (tokens.length) {
+             await sendPostNotifications(
+                 tokens,
+                 title,
+                 body,
+                 {
+                     deepLink: "imedapp://orders/" + orderId
+                 },
+             );
+         }
+     }
+ }
