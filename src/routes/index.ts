@@ -19,6 +19,7 @@ const router = Router();
 router.use("/user", userrRoute);
 router.use("/admin", adminRoute);
 router.use("/medical", medicalRoute);
+router.use("/payment", paymentRoute);
 
 // 🔐 Auth-protected user routes
 router.use(authMiddleware);
@@ -30,6 +31,5 @@ router.use("/order", orderRoute);
 router.use("/availability", availbilityRoute);
 router.use("/address", addressRoute);
 router.use("/token", fcmTokenRoute);
-router.use("/payment", paymentRoute);
 
 export default router;

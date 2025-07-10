@@ -4,7 +4,7 @@ import {Payriff, UserRequest} from "../types/index";
 import {Response} from "express";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
 import prisma from "../config/db";
-
+import {EmailJsService} from "../services/emailJsService";
 
 const PaymentController = () => {
     const getHeaders = () => {
@@ -83,10 +83,12 @@ const PaymentController = () => {
 
             // db
             let order = await prisma.order.findFirst({
-                select: {id: true},
                 where: {
                     paymetStatus: 'pending',
                     payment_order_id: paymentOrderId
+                },
+                include: {
+                    user: true
                 }
             });
 
@@ -120,6 +122,13 @@ const PaymentController = () => {
                     },
                     where: {id: order.id},
                 });
+
+                const mailService = new EmailJsService();
+                await mailService.sendMessage(
+                    order.user.email as string,
+                    'payment_successful',
+                    {name: order.user.name as string}
+                );
             } catch (error) {
                 return sendErrorResponse({
                     res,
