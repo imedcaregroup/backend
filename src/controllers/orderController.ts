@@ -3,11 +3,11 @@ import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import multer, { FileFilterCallback } from "multer";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
-import {AdminRequest, UserRequest} from "../types";
-import {sendPostNotifications} from "../utils/helpers";
+import { AdminRequest, UserRequest } from "../types";
+import { sendPostNotifications } from "../utils/helpers";
 import dayjs from "dayjs";
-import {OrderService} from "../services/orderService";
-import {OrderException} from "../utils/exception";
+import { OrderService } from "../services/orderService";
+import { OrderException } from "../utils/exception";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -31,134 +31,365 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // Max file size 10MB
 }).array("files");
 
-const orderService= new OrderService();
+const orderService = new OrderService();
 
 const OrderController = () => {
 
+  // const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
+  //   try {
+  //     const fileUrls: string[] = []; // Initialize an array to store file URLs
+
+  //     upload(req, res, async (err) => {
+  //       if (err) {
+  //         logError("Multer Error: ", err);
+  //         return sendErrorResponse({
+  //           res,
+  //           statusCode: 400,
+  //           error: err.message,
+  //         });
+  //       }
+  //       if (req.files && Array.isArray(req.files)) {
+  //         const uploadPromises = req.files.map((file: Express.Multer.File) => {
+  //           const fileName = `${Date.now()}-${file.originalname}`;
+  //           const params = {
+  //             Bucket: process.env.AWS_S3_BUCKET_NAME!,
+  //             Key: fileName,
+  //             Body: file.buffer,
+  //             ContentType: file.mimetype,
+  //           };
+
+  //           return new Promise((resolve, reject) => {
+  //             s3.upload(params, (uploadError: Error | null, data: any) => {
+  //               if (uploadError) {
+  //                 logError("Multer Error: ", uploadError);
+  //                 reject("Error uploading file to S3");
+  //               } else {
+  //                 fileUrls.push(data.Location);
+  //                 resolve(data.Location);
+  //               }
+  //             });
+  //           });
+  //         });
+
+  //         await Promise.all(uploadPromises);
+  //       }
+
+  //       const {
+  //         serviceCat,
+  //         medicalId,
+  //         employeeId,
+  //         address,
+  //         entrance,
+  //         floor,
+  //         intercom,
+  //         apartment,
+  //         date,
+  //         startTime,
+  //         lat,
+  //         lng,
+  //         price,
+  //         additionalInfo,
+  //         paymentMethod,
+  //       } = req.body;
+
+  //       try {
+  //         // Validate that serviceCat is provided and is an array
+  //         if (
+  //           !serviceCat ||
+  //           !Array.isArray(serviceCat) ||
+  //           serviceCat.length === 0
+  //         ) {
+  //           return res.status(400).json({
+  //             msg: "Service categories are required.",
+  //             statusCode: 400,
+  //           });
+  //         }
+
+  //         if (!["COD", "Card"].includes(paymentMethod)) {
+  //           return res.status(400).json({
+  //             msg: "Invalid payment method. Must be 'COD' or 'Card'",
+  //             statusCode: 400,
+  //           });
+  //         }
+
+  //         // Check if the slot is already booked
+  //         const existingOrder = await __db.order.findFirst({
+  //           where: {
+  //             medicalId: medicalId,
+  //             orderDate: new Date(date),
+  //             startTime: startTime,
+  //           },
+  //         });
+
+  //         if (existingOrder) {
+  //           return res.status(400).json({
+  //             msg: "The selected slot is already booked. Please choose a different slot.",
+  //             statusCode: 400,
+  //           });
+  //         }
+
+  //         const medical = await __db.medical.findUnique({
+  //           where: { id: parseInt(medicalId) },
+  //           select: { adminId: true },
+  //         });
+
+  //         if (!medical) {
+  //           return sendErrorResponse({
+  //             res,
+  //             statusCode: 404,
+  //             error: "Medical not found",
+  //           });
+  //         }
+
+  //         // Create the Order record
+  //         const order = await __db.order.create({
+  //           data: {
+  //             price,
+  //             address,
+  //             lat,
+  //             lng,
+  //             entrance,
+  //             intercom,
+  //             floor,
+  //             apartment,
+  //             orderDate: new Date(date),
+  //             startTime: startTime,
+  //             paymentMethod,
+  //             medical: { connect: { id: medicalId } },
+  //             employee: employeeId
+  //               ? { connect: { id: employeeId } }
+  //               : undefined,
+  //             user: { connect: { id: req.user._id } },
+  //             additionalInfo,
+  //             admin: medical.adminId
+  //               ? { connect: { id: medical.adminId } }
+  //               : undefined,
+  //             fileUrl: fileUrls.join(","),
+  //           },
+  //           include: {
+  //             orderSubCategories: {
+  //               include: {
+  //                 service: true, // Include related services
+  //               },
+  //             },
+  //           },
+  //         });
+
+  //         // Create OrderSubCategory records for each service category in the serviceCat array
+  //         const orderSubCategoriesPromises = serviceCat.map(
+  //           (serviceCategory: any) => {
+  //             const services = serviceCategory?.service || [];
+
+  //             return services.map((service: any) => {
+  //               const serviceId = service.id;
+  //               const categories = service?.category || [];
+
+  //               return categories.map((category: any) => {
+  //                 const categoryId = category.id;
+  //                 const subCategoryIds = category?.subCategoryId || [];
+
+  //                 // Validate extracted data
+  //                 if (!serviceId || !categoryId || subCategoryIds.length === 0) {
+  //                   return res.status(400).json({
+  //                     msg: "Service, Category, and SubCategories are required for each service category.",
+  //                     statusCode: 400,
+  //                   });
+  //                 }
+  //                 return subCategoryIds.map(async (subCategoryId: number) => {
+  //                   console.log(serviceId, categoryId, subCategoryId, order.id);
+  //                   // Create OrderSubCategory for each subCategoryId
+  //                   try {
+  //                     const orderSubCategory = await __db.orderSubCategory.create({
+  //                       data: {
+  //                         orderId: order.id,
+  //                         serviceId,
+  //                         categoryId,
+  //                         subCategoryId,
+  //                       },
+  //                     });
+  //                     console.log("Created OrderSubCategory:", orderSubCategory);
+  //                     return orderSubCategory;
+  //                   } catch (error) {
+  //                     console.error("Error creating OrderSubCategory:", error);
+  //                   }
+  //                 });
+  //               });
+  //             });
+  //           }
+  //         );
+
+  //         // Wait for all the promises to resolve
+  //         const orderSubCategories = await Promise.all(
+  //           orderSubCategoriesPromises.flat(2)
+  //         ); // Flatten the array of arrays
+
+  //         // Return the successful response
+  //         return res.json({
+  //           msg: "Order and associated OrderSubCategories created successfully!",
+  //           data: { order, orderSubCategories },
+  //           statusCode: 200,
+  //         });
+
+  //       });
+
+  //   } catch (error) {
+  //     console.error(error);
+  //     return res.status(500).json({
+  //       msg: "Error creating order and order subcategories.",
+  //       statusCode: 500,
+  //       error: error.message,
+  //     });
+  //   }
+  // };
+
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
-    const {
-      serviceCat,
-      medicalId,
-      employeeId,
-      address,
-      entrance,
-      floor,
-      intercom,
-      apartment,
-      date,
-      startTime,
-      lat,
-      lng,
-      price,
-      additionalInfo,
-      paymentMethod,
-    } = req.body;
     try {
-      // Validate that serviceCat is provided and is an array
-      if (
-        !serviceCat ||
-        !Array.isArray(serviceCat) ||
-        serviceCat.length === 0
-      ) {
-        return res.status(400).json({
-          msg: "Service categories are required.",
-          statusCode: 400,
-        });
-      }
+      const fileUrls: string[] = []; // Initialize an array to store file URLs
 
-      if (!["COD", "Card"].includes(paymentMethod)) {
-        return res.status(400).json({
-          msg: "Invalid payment method. Must be 'COD' or 'Card'",
-          statusCode: 400,
-        });
-      }
+      upload(req, res, async (err) => {
+        if (err) {
+          logError("Multer Error: ", err);
+          return sendErrorResponse({
+            res,
+            statusCode: 400,
+            error: err.message,
+          });
+        }
 
-      // Check if the slot is already booked
-      const existingOrder = await __db.order.findFirst({
-        where: {
-          medicalId: medicalId,
-          orderDate: new Date(date),
-          startTime: startTime,
-        },
-      });
+        if (req.files && Array.isArray(req.files)) {
+          const uploadPromises = req.files.map((file: Express.Multer.File) => {
+            const fileName = `${Date.now()}-${file.originalname}`;
+            const params = {
+              Bucket: process.env.AWS_S3_BUCKET_NAME!,
+              Key: fileName,
+              Body: file.buffer,
+              ContentType: file.mimetype,
+            };
 
-      if (existingOrder) {
-        return res.status(400).json({
-          msg: "The selected slot is already booked. Please choose a different slot.",
-          statusCode: 400,
-        });
-      }
+            return new Promise((resolve, reject) => {
+              s3.upload(params, (uploadError: Error | null, data: any) => {
+                if (uploadError) {
+                  logError("Multer Error: ", uploadError);
+                  reject("Error uploading file to S3");
+                } else {
+                  fileUrls.push(data.Location);
+                  resolve(data.Location);
+                }
+              });
+            });
+          });
 
-      const medical = await __db.medical.findUnique({
-        where: { id: parseInt(medicalId) },
-        select: { adminId: true },
-      });
+          await Promise.all(uploadPromises);
+        }
 
-
-      if (!medical) {
-        return sendErrorResponse({
-          res,
-          statusCode: 404,
-          error: "Medical not found",
-        });
-      }
-
-      // Create the Order record
-      const order = await __db.order.create({
-        data: {
-          price,
+        const {
+          serviceCat,
+          medicalId,
+          employeeId,
           address,
+          entrance,
+          floor,
+          intercom,
+          apartment,
+          date,
+          startTime,
           lat,
           lng,
-          entrance,
-          intercom,
-          floor,
-          apartment,
-          orderDate: new Date(date),
-          startTime: startTime,
-          paymentMethod,
-          medical: { connect: { id: medicalId } },
-          employee: employeeId
-            ? { connect: { id: employeeId }}
-            : undefined,
-          user: { connect: { id: req.user._id } },
+          price,
           additionalInfo,
-          admin: medical.adminId
-            ? { connect: { id: medical.adminId } }
-            : undefined,
-        },
-        include: {
-          orderSubCategories: {
-            include: {
-              service: true, // Include related services
+          paymentMethod,
+        } = req.body;
+
+        // Validate inputs
+        if (!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) {
+          return res.status(400).json({
+            msg: "Service categories are required.",
+            statusCode: 400,
+          });
+        }
+
+        if (!["COD", "Card"].includes(paymentMethod)) {
+          return res.status(400).json({
+            msg: "Invalid payment method. Must be 'COD' or 'Card'",
+            statusCode: 400,
+          });
+        }
+
+        const existingOrder = await __db.order.findFirst({
+          where: {
+            medicalId: medicalId,
+            orderDate: new Date(date),
+            startTime: startTime,
+          },
+        });
+
+        if (existingOrder) {
+          return res.status(400).json({
+            msg: "The selected slot is already booked. Please choose a different slot.",
+            statusCode: 400,
+          });
+        }
+
+        const medical = await __db.medical.findUnique({
+          where: { id: parseInt(medicalId) },
+          select: { adminId: true },
+        });
+
+        if (!medical) {
+          return sendErrorResponse({
+            res,
+            statusCode: 404,
+            error: "Medical not found",
+          });
+        }
+
+        const order = await __db.order.create({
+          data: {
+            price,
+            address,
+            lat,
+            lng,
+            entrance,
+            intercom,
+            floor,
+            apartment,
+            orderDate: new Date(date),
+            startTime: startTime,
+            paymentMethod,
+            medical: { connect: { id: medicalId } },
+            employee: employeeId ? { connect: { id: employeeId } } : undefined,
+            user: { connect: { id: req.user._id } },
+            additionalInfo,
+            admin: medical.adminId ? { connect: { id: medical.adminId } } : undefined,
+            fileUrl: fileUrls.join(","),
+          },
+          include: {
+            orderSubCategories: {
+              include: {
+                service: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      // Create OrderSubCategory records for each service category in the serviceCat array
-      const orderSubCategoriesPromises = serviceCat.map(
-        (serviceCategory: any) => {
+        const orderSubCategoriesPromises = serviceCat.map((serviceCategory: any) => {
           const services = serviceCategory?.service || [];
-
-          return services.map((service: any) => {
+          return services.flatMap((service: any) => {
             const serviceId = service.id;
             const categories = service?.category || [];
 
-            return categories.map((category: any) => {
+            return categories.flatMap((category: any) => {
               const categoryId = category.id;
               const subCategoryIds = category?.subCategoryId || [];
 
-              // Validate extracted data
               if (!serviceId || !categoryId || subCategoryIds.length === 0) {
                 return res.status(400).json({
                   msg: "Service, Category, and SubCategories are required for each service category.",
                   statusCode: 400,
                 });
               }
+
               return subCategoryIds.map(async (subCategoryId: number) => {
-                console.log(serviceId, categoryId, subCategoryId, order.id);
-                // Create OrderSubCategory for each subCategoryId
                 try {
                   const orderSubCategory = await __db.orderSubCategory.create({
                     data: {
@@ -168,7 +399,6 @@ const OrderController = () => {
                       subCategoryId,
                     },
                   });
-                  console.log("Created OrderSubCategory:", orderSubCategory);
                   return orderSubCategory;
                 } catch (error) {
                   console.error("Error creating OrderSubCategory:", error);
@@ -176,21 +406,17 @@ const OrderController = () => {
               });
             });
           });
-        }
-      );
+        });
 
-      // Wait for all the promises to resolve
-      const orderSubCategories = await Promise.all(
-        orderSubCategoriesPromises.flat(2)
-      ); // Flatten the array of arrays
+        const orderSubCategories = await Promise.all(orderSubCategoriesPromises.flat(2));
 
-      // Return the successful response
-      return res.json({
-        msg: "Order and associated OrderSubCategories created successfully!",
-        data: { order, orderSubCategories },
-        statusCode: 200,
+        return res.json({
+          msg: "Order and associated OrderSubCategories created successfully!",
+          data: { order, orderSubCategories },
+          statusCode: 200,
+        });
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       return res.status(500).json({
         msg: "Error creating order and order subcategories.",
@@ -199,6 +425,7 @@ const OrderController = () => {
       });
     }
   };
+
   const createRequestOrder = async (
     req: UserRequest,
     res: Response
@@ -509,7 +736,7 @@ const OrderController = () => {
         })),
       }));
 
-      const formattedOrder = formattedOrders.map((order) => ({
+      const formattedOrder = formattedOrders.map((order: any) => ({
         ...order,
         createdAt: dayjs(order.createdAt).format("YYYY-MM-DD HH:mm:ss.SSS"),
       }));
@@ -657,7 +884,7 @@ const OrderController = () => {
             ? "You account has been accepted by admin"
             : req.body.declinedReason,
           {
-            deepLink: "imedapp://orders/"+orderId
+            deepLink: "imedapp://orders/" + orderId
           }
         );
 
@@ -697,7 +924,7 @@ const OrderController = () => {
       if (orderStatus) {
         // here we temporarily show pending orders also if accepted status is chosen
         if (orderStatus === 'accepted') {
-          condition['orderStatus'] = {in: ['accepted', 'pending']};
+          condition['orderStatus'] = { in: ['accepted', 'pending'] };
         } else {
           condition['orderStatus'] = orderStatus;
         }
@@ -1082,13 +1309,13 @@ const OrderController = () => {
     });
 
     if (!employee) {
-      return sendErrorResponse({res, error: "Employee not found", statusCode: 404});
+      return sendErrorResponse({ res, error: "Employee not found", statusCode: 404 });
     }
 
     const order = await orderService.getOrder(orderId);
 
     if (!order) {
-      return sendErrorResponse({res, error: "Order not found", statusCode: 404});
+      return sendErrorResponse({ res, error: "Order not found", statusCode: 404 });
     }
 
     if (order.employeeId != employee.id) {
@@ -1099,15 +1326,15 @@ const OrderController = () => {
       });
     }
 
-   try {
-     await orderService.startOrder(order);
-   } catch (error: any) {
+    try {
+      await orderService.startOrder(order);
+    } catch (error: any) {
       return sendErrorResponse({
         res,
         error: error,
         statusCode: error.statusCode ?? 400
       });
-   }
+    }
 
     return sendSuccessResponse({
       res,
@@ -1120,7 +1347,7 @@ const OrderController = () => {
     const order = await orderService.getOrder(orderId);
 
     if (!order) {
-      return sendErrorResponse({res, error: "Order not found", statusCode: 404});
+      return sendErrorResponse({ res, error: "Order not found", statusCode: 404 });
     }
 
     try {
