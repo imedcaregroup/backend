@@ -26,7 +26,7 @@ const PaymentController = () => {
                 language: 'AZ',
                 currency: 'AZN',
                 description: 'Order Payment',
-                callbackUrl: 'https://api.caregroup.tech/api/v1/payriff-callback',
+                callbackUrl: 'https://api.caregroup.tech/api/v1/payment/payriff-callback',
                 cardSave: false,
                 operation: 'PURCHASE',
                 metadata: { orderId },
@@ -72,7 +72,7 @@ const PaymentController = () => {
         try {
             const { code, payload } = req.body;
 
-            const paymentOrderId = payload.orderId || null;
+            const paymentOrderId = payload?.orderId || null;
             if (!paymentOrderId) {
                 return sendErrorResponse({
                     res,
