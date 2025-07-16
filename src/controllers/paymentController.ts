@@ -5,7 +5,6 @@ import {Response} from "express";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
 import prisma from "../config/db";
 import {EmailJsService} from "../services/emailJsService";
-import Sentry from "@sentry/node";
 import {sentryLogger} from "../utils/sentryLogger";
 
 const PaymentController = () => {
