@@ -1,5 +1,6 @@
 import process from "node:process";
 import axios from "axios";
+import {sentryLogger} from "../utils/sentryLogger";
 
 export class EmailJsService {
 
@@ -15,7 +16,7 @@ export class EmailJsService {
 
     public async sendMessage(to: string, templateId: string, params: any): Promise<any> {
         try {
-            const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
+            await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
                 service_id: this.config.service_id,
                 template_id: templateId,
                 user_id: this.config.public_key,
@@ -28,7 +29,7 @@ export class EmailJsService {
             });
             return true;
         } catch (error) {
-            console.error('Error sending email:', error.response?.data || error.message);
+            sentryLogger.logException("Failed to send email: " + error.message, this.config);
             return false;
         }
     }
