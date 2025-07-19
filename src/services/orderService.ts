@@ -1,10 +1,11 @@
 import {OrderException} from "../utils/exception";
 import {sendPostNotifications} from "../utils/helpers";
+import {EmailJsService} from "./emailJsService";
 
  export class OrderService {
 
     public async completeOrder(orderId: number): Promise<void> {
-        const order = await __db.order.findUnique({
+        const order = await __db.order.findFirst({
             where   : { id: orderId },
             include : { user: true },
         });
@@ -28,6 +29,16 @@ import {sendPostNotifications} from "../utils/helpers";
         } catch (error) {
             throw OrderException.couldNotSave();
         }
+
+        const mailService = new EmailJsService();
+        await mailService.sendMessage(
+            order.user.email as string,
+            'order_completed',
+            {
+                name: order.user.name as string,
+                orderId: orderId
+            }
+        );
 
         await this.sendPostNotification(
             order.userId,
