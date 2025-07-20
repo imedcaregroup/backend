@@ -659,6 +659,7 @@ const OrderController = () => {
         name: true,
         iconUrl: true,
       };
+      const status = req.query.status as string;
 
       logHttp("Fetching orders ==> ", req.user._id);
 
@@ -666,7 +667,9 @@ const OrderController = () => {
       const orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
-          orderStatus: req.query.status as string,
+          orderStatus: (status === 'accepted') ? {
+            in: ['accepted', 'pending']
+          } : status,
           startTime: {
             not: null,
           },
