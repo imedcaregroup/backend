@@ -14,7 +14,7 @@ router
   .route("/")
   .post(
     createAddressValidation,
-    validationWrapper(addressController.createAddress)
+    validationWrapper(addressController.createAddress),
   )
   .get(addressController.getMyAddresses);
 
@@ -23,7 +23,7 @@ router
   .get(addressController.getAddress)
   .patch(
     updateAddressValidation,
-    validationWrapper(addressController.updateAddress)
+    validationWrapper(addressController.updateAddress),
   )
   .delete(addressController.deleteAddress);
 

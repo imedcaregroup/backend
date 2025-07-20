@@ -246,7 +246,7 @@ const UserController = () => {
       logHttp("Creating jwt");
       const token = await generateJWT(
         { _id: user.id, type: "ACCESS_TOKEN" },
-        "365d"
+        "365d",
       );
       logHttp("Created jwt");
 
@@ -296,7 +296,7 @@ const UserController = () => {
         message: existingUser ? "Email already exists" : "Email is available",
         data: {
           userExists: existingUser ? true : false,
-          ...existingUser
+          ...existingUser,
         },
       });
     } catch (error: any) {
@@ -311,7 +311,7 @@ const UserController = () => {
 
   const loginUserWithGoogle = async (
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Received OAuth login request with reqBody ==> ", req.body);
@@ -340,7 +340,7 @@ const UserController = () => {
       // If not found by OAuth ID, check if the email already exists
       if (!user && email) {
         logHttp(
-          `User not found with OAuth ID. Checking if email exists: ${email}`
+          `User not found with OAuth ID. Checking if email exists: ${email}`,
         );
         user = await __db.user.findFirst({
           where: {
@@ -352,7 +352,7 @@ const UserController = () => {
         // If user exists with this email, update their record with OAuth info
         if (user) {
           logHttp(
-            `User found with email. Updating with OAuth provider details`
+            `User found with email. Updating with OAuth provider details`,
           );
           user = await __db.user.update({
             where: { id: user.id },
@@ -392,7 +392,7 @@ const UserController = () => {
       logHttp("Generating JWT for user");
       const token = await generateJWT(
         { _id: user.id, type: "ACCESS_TOKEN" },
-        "365d"
+        "365d",
       );
 
       return sendSuccessResponse({

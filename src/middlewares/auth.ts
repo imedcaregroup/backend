@@ -1,9 +1,8 @@
-import { Response, NextFunction } from "express";
-import prisma from "../config/db";
-import { sendErrorResponse } from "../utils/response";
-import logger from "../utils/logger";
-import { verifyJWT } from "../utils/helpers";
+import { NextFunction, Response } from "express";
 import { UserRequest } from "../types";
+import { verifyJWT } from "../utils/helpers";
+import logger from "../utils/logger";
+import { sendErrorResponse } from "../utils/response";
 
 export const authMiddleware = async (
   req: UserRequest,
@@ -26,7 +25,7 @@ export const authMiddleware = async (
           throw new Error("Not authorized for this action");
       }
 
-      const user = await prisma.user.findFirst({
+      const user = await __db.user.findFirst({
         where: {
           id: decode?._id,
           isDeleted: false,

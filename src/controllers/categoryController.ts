@@ -1,13 +1,13 @@
 import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import {AdminRequest, UserRequest} from "../types";
+import { AdminRequest, UserRequest } from "../types";
 import prisma from "../config/db";
 
 const CategoryController = () => {
   const getCategories = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -50,79 +50,66 @@ const CategoryController = () => {
   };
 
   const createCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
+    const { name, serviceId, iconUrl } = req.body;
 
-      const {
+    try {
+      const category = await prisma.category.create({
+        data: {
+          iconUrl,
           name,
           serviceId,
-          iconUrl,
-      } = req.body;
+        },
+      });
 
-      try {
-        const category = await prisma.category.create({
-          data: {
-            iconUrl,
-            name,
-            serviceId
-          }
-        });
-
-        return sendSuccessResponse({
-          res,
-          data: {
-            category
-          },
-        });
-      } catch (error) {
-        console.error("Error creating category:", error);
-      }
-
+      return sendSuccessResponse({
+        res,
+        data: {
+          category,
+        },
+      });
+    } catch (error) {
+      console.error("Error creating category:", error);
+    }
   };
 
   const updateCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
-
     const categoryId = parseInt(req.params.id);
 
-    const {
-      iconUrl,
-      name,
-      serviceId
-    } = req.body;
+    const { iconUrl, name, serviceId } = req.body;
 
     try {
       const category = await prisma.category.update({
         data: {
           iconUrl,
           name,
-          serviceId
+          serviceId,
         },
         where: {
-          id: categoryId
-        }
+          id: categoryId,
+        },
       });
 
       return sendSuccessResponse({
         res,
         data: {
-          category
+          category,
         },
       });
     } catch (error) {
       console.error("Error updating category:", error);
     }
-
   };
 
   const deleteCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
-
     const categoryId = parseInt(req.params.id);
 
     if (!categoryId) {
@@ -145,31 +132,33 @@ const CategoryController = () => {
       });
     }
 
-    const orderExists = await prisma.order
-        .findFirst({
-          where: {categoryId}
-        });
+    const orderExists = await prisma.order.findFirst({
+      where: { categoryId },
+    });
 
     if (orderExists) {
       return sendErrorResponse({
         res,
         statusCode: 400,
-        error: 'Cannot delete this category'
+        error: "Cannot delete this category",
       });
     }
 
     try {
       await prisma.category.delete({
         where: {
-          id: categoryId
-        }
+          id: categoryId,
+        },
       });
 
-      return sendSuccessResponse({res,});
+      return sendSuccessResponse({ res });
     } catch (error) {
-      return sendErrorResponse({res, statusCode: 500, error: 'Could not delete category'});
+      return sendErrorResponse({
+        res,
+        statusCode: 500,
+        error: "Could not delete category",
+      });
     }
-
   };
 
   const logHttp = (context: string, value?: any) =>
@@ -182,7 +171,7 @@ const CategoryController = () => {
     getCategories,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
   };
 };
 

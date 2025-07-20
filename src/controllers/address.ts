@@ -6,7 +6,7 @@ import { UserRequest } from "../types";
 const AddressController = () => {
   const createAddress = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Creating Address");
@@ -36,7 +36,7 @@ const AddressController = () => {
 
   const getMyAddresses = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Getting My Addresses");

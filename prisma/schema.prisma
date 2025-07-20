@@ -120,6 +120,9 @@ model Order {
   startTime          Int?
   fileUrl            String?
   doctor             String?            @db.VarChar(255)
+  forAnotherPerson  Boolean?          @default(false)
+  forAnotherPersonName String?
+  forAnotherPersonPhone String?
   Category           Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   medical            Medical            @relation(fields: [medicalId], references: [id])
   Service            Service?           @relation(fields: [serviceId], references: [id], onDelete: Restrict)

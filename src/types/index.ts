@@ -17,7 +17,7 @@ interface IAdmin {
   _id: number;
   email: string;
   name: string;
-  role: 'ADMIN' | 'SUPER_ADMIN';
+  role: "ADMIN" | "SUPER_ADMIN";
 }
 
 // Request with admin context
@@ -44,8 +44,8 @@ export interface ValidationError {
 
 export const Payriff = {
   BASE_URL: "https://api.payriff.com/api/v3",
-  SUCCESS: "00000"
-}
+  SUCCESS: "00000",
+};
 
 // export interface IRequestHandler {
 //   (req: Request | UserRequest, res: Response, next: NextFunction): Promise<any>;

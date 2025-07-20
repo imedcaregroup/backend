@@ -11,11 +11,11 @@ router
   .route("/")
   .post(
     setFcmTokenValidation,
-    validationWrapper(fcmTokenController.setFcmToken)
+    validationWrapper(fcmTokenController.setFcmToken),
   )
   .patch(
     setFcmTokenValidation,
-    validationWrapper(fcmTokenController.deleteFcmToken)
+    validationWrapper(fcmTokenController.deleteFcmToken),
   );
 
 export default router;
