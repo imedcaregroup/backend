@@ -12,7 +12,7 @@
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --ignore-pattern \"src/seeders/**\" --fix",
     "dev": "npx nodemon",
-    "start": "node build/index.js",
+    "start": "node ./build/index.js",
     "seed": "npx ts-node-dev src/seeders",
     "start:prod": "pm2 start npm --name imed-backend-prod -- start --output /dev/null --error /dev/null",
     "start:container": "docker-compose down --remove-orphans && docker-compose up --build --force-recreate imed-backend -d"

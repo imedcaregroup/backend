@@ -1,17 +1,17 @@
 import { Router } from "express";
-import userrRoute from "./user";
-import serviceRoute from "./service";
-import employeeRoute from "./employee";
+import { authMiddleware } from "../middlewares/auth";
+import addressRoute from "./address";
+import adminRoute from "./admin";
+import availbilityRoute from "./availability";
 import categoryRoute from "./category";
-import subCategoryRoute from "./subCategory";
+import employeeRoute from "./employee";
+import fcmTokenRoute from "./fcmToken";
 import medicalRoute from "./medical";
 import orderRoute from "./order";
-import availbilityRoute from "./availability";
-import addressRoute from "./address";
-import fcmTokenRoute from "./fcmToken";
 import paymentRoute from "./payment";
-import adminRoute from "./admin";
-import { authMiddleware } from "../middlewares/auth";
+import serviceRoute from "./service";
+import subCategoryRoute from "./subCategory";
+import userrRoute from "./user";
 
 const router = Router();
 

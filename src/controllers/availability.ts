@@ -1,4 +1,4 @@
-import { Response,Request } from "express";
+import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
@@ -7,7 +7,7 @@ import { formatTime } from "../utils/helpers";
 const AvailabilityController = () => {
   const getAvailableDays = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const medicalId = parseInt(req.query.medicalId as string);
@@ -46,7 +46,7 @@ const AvailabilityController = () => {
 
   const getTimeSlots = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const date = req.query.date;
@@ -107,7 +107,8 @@ const AvailabilityController = () => {
       });
 
       const availableTimeslots = timeSlots.filter(
-        (slot: any) => !orders.some((order: any) => order.startTime === slot.startTime)
+        (slot: any) =>
+          !orders.some((order: any) => order.startTime === slot.startTime),
       );
 
       return sendSuccessResponse({
@@ -117,7 +118,7 @@ const AvailabilityController = () => {
             (availableTimeObj: any) => ({
               ...availableTimeObj,
               displayTime: formatTime(availableTimeObj.startTime).slice(0, -3),
-            })
+            }),
           ),
         },
       });
@@ -134,17 +135,17 @@ const AvailabilityController = () => {
   const getMonths = (req: Request, res: Response) => {
     const months = [];
     const today = new Date();
-  
+
     for (let i = 0; i < 5; i++) {
       const futureDate = new Date(today.getFullYear(), today.getMonth() + i, 1);
       months.push({
-        month: futureDate.toLocaleString('default', { month: 'long' }), // Get month name
+        month: futureDate.toLocaleString("default", { month: "long" }), // Get month name
         year: futureDate.getFullYear(),
       });
     }
-  
+
     res.status(200).json({
-      message: 'Success',
+      message: "Success",
       status: true,
       data: months,
     });
@@ -159,18 +160,18 @@ const AvailabilityController = () => {
   //     const currentDay = today.getDate();
   //     const currentMonth = today.getMonth() + 1;
   //     const currentYear = today.getFullYear();
-  
+
   //     // Get month and year from the query (defaults to current month and year if not provided)
   //     const month = parseInt(req.query.month as string) || currentMonth;
   //     const year = parseInt(req.query.year as string) || currentYear;
-  
+
   //     // Get the last day of the requested month
   //     const lastDayOfMonth = new Date(year, month, 0).getDate();
-  
+
   //     // Format the start and end of the month as strings
   //     const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
   //     const endDate = `${year}-${month.toString().padStart(2, "0")}-${lastDayOfMonth}`;
-  
+
   //     // Fetch available slots for the entire month upfront
   //     const availableSlots = await __db.availability.findMany({
   //       where: {
@@ -183,7 +184,7 @@ const AvailabilityController = () => {
   //         startTime: true,
   //       },
   //     });
-  
+
   //     // Fetch all orders for the month to check booked slots
   //     const orders = await __db.order.findMany({
   //       where: {
@@ -199,7 +200,7 @@ const AvailabilityController = () => {
   //         startTime: true,
   //       },
   //     });
-  
+
   //     // Group orders by date for easy comparison
   //     const groupedOrders: { [key: string]: number[] } = {};
   //     orders.forEach((order: any) => {
@@ -213,24 +214,24 @@ const AvailabilityController = () => {
   //         groupedOrders[orderDate].push(Number(order.startTime));
   //       }
   //     });
-  
+
   //     // Calculate the remaining slots for each day of the month
   //     const remainingDays = [];
-  
+
   //     for (let day = 1; day <= lastDayOfMonth; day++) {
   //       if (month === currentMonth && year === currentYear && day < currentDay) {
   //         continue;
   //       }
-  
+
   //       const date = new Date(year, month - 1, day);
   //       const dateString = date.toLocaleDateString("en-CA");
-  
+
   //       // Filter available slots for this specific date
   //       let availableSlotsForDate = availableSlots.filter((slot: any) => {
   //         const slotDay = date.getDay();
   //         return slot.day === slotDay;
   //       });
-  
+
   //       if (month === currentMonth && year === currentYear && day === currentDay) {
   //         const now = new Date();
   //         const currentTime = now.getHours() * 100 + now.getMinutes();
@@ -238,13 +239,13 @@ const AvailabilityController = () => {
   //           return slot.startTime > currentTime;
   //         });
   //       }
-  
+
   //       const bookedSlots = groupedOrders[dateString] || [];
-  
+
   //       const remainingSlots = availableSlotsForDate.filter(
   //         (slot: any) => !bookedSlots.includes(Number(slot.startTime))
   //       );
-  
+
   //       remainingDays.push({
   //         day: date.toLocaleString("default", { weekday: "long" }),
   //         date: dateString,
@@ -255,7 +256,7 @@ const AvailabilityController = () => {
   //         })),
   //       });
   //     }
-  
+
   //     return sendSuccessResponse({
   //       res,
   //       data: { remainingDays },
@@ -269,11 +270,10 @@ const AvailabilityController = () => {
   //     });
   //   }
   // };
-  
 
   const getRemainingDaysAndSlots = async (
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const today = new Date();
@@ -291,14 +291,13 @@ const AvailabilityController = () => {
       if ((!medicalId && !employeeId) || (medicalId && employeeId)) {
         return sendErrorResponse({
           res,
-          error: 'You should pass one of the following: medicalId or employeeId',
-          statusCode: 400
+          error:
+            "You should pass one of the following: medicalId or employeeId",
+          statusCode: 400,
         });
       }
 
-      const idCondition = medicalId
-          ? { medicalId }
-          : { employeeId };
+      const idCondition = medicalId ? { medicalId } : { employeeId };
 
       // Fetch booked slots more precisely
       const orders = await __db.order.findMany({
@@ -356,13 +355,13 @@ const AvailabilityController = () => {
 
         // Filter slots for this day of week
         const availableSlotsForDate = availableSlots.filter(
-          (slot) => slot.day === slotDay
+          (slot) => slot.day === slotDay,
         );
 
         // Remove booked slots
         const bookedSlotsOnDate = bookedSlotsByDate[dateString] || [];
         const remainingSlots = availableSlotsForDate.filter(
-          (slot) => !bookedSlotsOnDate.includes(Number(slot.startTime))
+          (slot) => !bookedSlotsOnDate.includes(Number(slot.startTime)),
         );
 
         // Current day additional filtering
@@ -409,7 +408,6 @@ const AvailabilityController = () => {
       .toString()
       .padStart(2, "0")} ${ampm}`;
   };
-  
 
   const logHttp = (context: string, value?: any) =>
     logger.http(`Availability - ${context} => ${JSON.stringify(value)}`);
@@ -421,7 +419,7 @@ const AvailabilityController = () => {
     getAvailableDays,
     getTimeSlots,
     getMonths,
-    getRemainingDaysAndSlots
+    getRemainingDaysAndSlots,
   };
 };
 

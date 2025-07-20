@@ -3,7 +3,7 @@ import { NextFunction, Request } from "express";
 import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
 import { messaging } from "../config/messaging";
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from "bcrypt";
 
 const SECRET_KEY: Secret = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
@@ -36,7 +36,7 @@ export const validationWrapper = (callback: any): any => {
   return (
     req: Request | UserRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): any => {
     let errors = checkValidation(req as any);
     if (errors) {
@@ -56,7 +56,7 @@ export const generateJWT = (
 export const verifyJWT = (token: string): DecodedLoginTokenType => {
   const decode: DecodedLoginTokenType = verify(
     token,
-    SECRET_KEY
+    SECRET_KEY,
   ) as DecodedLoginTokenType;
   if (!decode) throw new Error("You are not authorized to perform this action");
   return decode;
@@ -90,7 +90,7 @@ export const sendPostNotifications = async (
   deviceTokens: any[],
   title: string,
   body: string,
-  payload: any
+  payload: any,
 ): Promise<any> => {
   try {
     if (deviceTokens.length) {
@@ -151,7 +151,7 @@ export const hashPassword = async (password: string): Promise<string> => {
 
 export const comparePasswords = async (
   plainTextPassword: string,
-  hashedPassword: string
+  hashedPassword: string,
 ): Promise<boolean> => {
   return await bcrypt.compare(plainTextPassword, hashedPassword);
 };

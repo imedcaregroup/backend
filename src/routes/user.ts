@@ -7,7 +7,8 @@ import {
   loginUserValidation,
   updatePasswordValidation,
   VerifyEmailValidation,
-  resetPasswordValidation, updateLocationValidation,
+  resetPasswordValidation,
+  updateLocationValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 import multer, { FileFilterCallback } from "multer";

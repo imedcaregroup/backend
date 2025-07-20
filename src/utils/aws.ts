@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import AWS from "aws-sdk";
 
 // Set up the AWS S3 configuration
 AWS.config.update({

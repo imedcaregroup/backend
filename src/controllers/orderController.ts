@@ -1,13 +1,12 @@
+import dayjs from "dayjs";
 import { Response } from "express";
+import multer, { FileFilterCallback } from "multer";
+import { OrderService } from "../services/orderService";
+import { AdminRequest, UserRequest } from "../types";
+import s3 from "../utils/aws"; // Import the AWS S3 instance
+import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import multer, { FileFilterCallback } from "multer";
-import s3 from "../utils/aws"; // Import the AWS S3 instance
-import { AdminRequest, UserRequest } from "../types";
-import { sendPostNotifications } from "../utils/helpers";
-import dayjs from "dayjs";
-import { OrderService } from "../services/orderService";
-import { OrderException } from "../utils/exception";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -15,7 +14,7 @@ const storage = multer.memoryStorage(); // Store the file in memory before uploa
 const fileFilter = (
   req: UserRequest,
   file: Express.Multer.File,
-  cb: FileFilterCallback
+  cb: FileFilterCallback,
 ) => {
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -34,214 +33,6 @@ const upload = multer({
 const orderService = new OrderService();
 
 const OrderController = () => {
-
-  // const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
-  //   try {
-  //     const fileUrls: string[] = []; // Initialize an array to store file URLs
-
-  //     upload(req, res, async (err) => {
-  //       if (err) {
-  //         logError("Multer Error: ", err);
-  //         return sendErrorResponse({
-  //           res,
-  //           statusCode: 400,
-  //           error: err.message,
-  //         });
-  //       }
-  //       if (req.files && Array.isArray(req.files)) {
-  //         const uploadPromises = req.files.map((file: Express.Multer.File) => {
-  //           const fileName = `${Date.now()}-${file.originalname}`;
-  //           const params = {
-  //             Bucket: process.env.AWS_S3_BUCKET_NAME!,
-  //             Key: fileName,
-  //             Body: file.buffer,
-  //             ContentType: file.mimetype,
-  //           };
-
-  //           return new Promise((resolve, reject) => {
-  //             s3.upload(params, (uploadError: Error | null, data: any) => {
-  //               if (uploadError) {
-  //                 logError("Multer Error: ", uploadError);
-  //                 reject("Error uploading file to S3");
-  //               } else {
-  //                 fileUrls.push(data.Location);
-  //                 resolve(data.Location);
-  //               }
-  //             });
-  //           });
-  //         });
-
-  //         await Promise.all(uploadPromises);
-  //       }
-
-  //       const {
-  //         serviceCat,
-  //         medicalId,
-  //         employeeId,
-  //         address,
-  //         entrance,
-  //         floor,
-  //         intercom,
-  //         apartment,
-  //         date,
-  //         startTime,
-  //         lat,
-  //         lng,
-  //         price,
-  //         additionalInfo,
-  //         paymentMethod,
-  //       } = req.body;
-
-  //       try {
-  //         // Validate that serviceCat is provided and is an array
-  //         if (
-  //           !serviceCat ||
-  //           !Array.isArray(serviceCat) ||
-  //           serviceCat.length === 0
-  //         ) {
-  //           return res.status(400).json({
-  //             msg: "Service categories are required.",
-  //             statusCode: 400,
-  //           });
-  //         }
-
-  //         if (!["COD", "Card"].includes(paymentMethod)) {
-  //           return res.status(400).json({
-  //             msg: "Invalid payment method. Must be 'COD' or 'Card'",
-  //             statusCode: 400,
-  //           });
-  //         }
-
-  //         // Check if the slot is already booked
-  //         const existingOrder = await __db.order.findFirst({
-  //           where: {
-  //             medicalId: medicalId,
-  //             orderDate: new Date(date),
-  //             startTime: startTime,
-  //           },
-  //         });
-
-  //         if (existingOrder) {
-  //           return res.status(400).json({
-  //             msg: "The selected slot is already booked. Please choose a different slot.",
-  //             statusCode: 400,
-  //           });
-  //         }
-
-  //         const medical = await __db.medical.findUnique({
-  //           where: { id: parseInt(medicalId) },
-  //           select: { adminId: true },
-  //         });
-
-  //         if (!medical) {
-  //           return sendErrorResponse({
-  //             res,
-  //             statusCode: 404,
-  //             error: "Medical not found",
-  //           });
-  //         }
-
-  //         // Create the Order record
-  //         const order = await __db.order.create({
-  //           data: {
-  //             price,
-  //             address,
-  //             lat,
-  //             lng,
-  //             entrance,
-  //             intercom,
-  //             floor,
-  //             apartment,
-  //             orderDate: new Date(date),
-  //             startTime: startTime,
-  //             paymentMethod,
-  //             medical: { connect: { id: medicalId } },
-  //             employee: employeeId
-  //               ? { connect: { id: employeeId } }
-  //               : undefined,
-  //             user: { connect: { id: req.user._id } },
-  //             additionalInfo,
-  //             admin: medical.adminId
-  //               ? { connect: { id: medical.adminId } }
-  //               : undefined,
-  //             fileUrl: fileUrls.join(","),
-  //           },
-  //           include: {
-  //             orderSubCategories: {
-  //               include: {
-  //                 service: true, // Include related services
-  //               },
-  //             },
-  //           },
-  //         });
-
-  //         // Create OrderSubCategory records for each service category in the serviceCat array
-  //         const orderSubCategoriesPromises = serviceCat.map(
-  //           (serviceCategory: any) => {
-  //             const services = serviceCategory?.service || [];
-
-  //             return services.map((service: any) => {
-  //               const serviceId = service.id;
-  //               const categories = service?.category || [];
-
-  //               return categories.map((category: any) => {
-  //                 const categoryId = category.id;
-  //                 const subCategoryIds = category?.subCategoryId || [];
-
-  //                 // Validate extracted data
-  //                 if (!serviceId || !categoryId || subCategoryIds.length === 0) {
-  //                   return res.status(400).json({
-  //                     msg: "Service, Category, and SubCategories are required for each service category.",
-  //                     statusCode: 400,
-  //                   });
-  //                 }
-  //                 return subCategoryIds.map(async (subCategoryId: number) => {
-  //                   console.log(serviceId, categoryId, subCategoryId, order.id);
-  //                   // Create OrderSubCategory for each subCategoryId
-  //                   try {
-  //                     const orderSubCategory = await __db.orderSubCategory.create({
-  //                       data: {
-  //                         orderId: order.id,
-  //                         serviceId,
-  //                         categoryId,
-  //                         subCategoryId,
-  //                       },
-  //                     });
-  //                     console.log("Created OrderSubCategory:", orderSubCategory);
-  //                     return orderSubCategory;
-  //                   } catch (error) {
-  //                     console.error("Error creating OrderSubCategory:", error);
-  //                   }
-  //                 });
-  //               });
-  //             });
-  //           }
-  //         );
-
-  //         // Wait for all the promises to resolve
-  //         const orderSubCategories = await Promise.all(
-  //           orderSubCategoriesPromises.flat(2)
-  //         ); // Flatten the array of arrays
-
-  //         // Return the successful response
-  //         return res.json({
-  //           msg: "Order and associated OrderSubCategories created successfully!",
-  //           data: { order, orderSubCategories },
-  //           statusCode: 200,
-  //         });
-
-  //       });
-
-  //   } catch (error) {
-  //     console.error(error);
-  //     return res.status(500).json({
-  //       msg: "Error creating order and order subcategories.",
-  //       statusCode: 500,
-  //       error: error.message,
-  //     });
-  //   }
-  // };
-
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const fileUrls: string[] = []; // Initialize an array to store file URLs
@@ -282,6 +73,19 @@ const OrderController = () => {
           await Promise.all(uploadPromises);
         }
 
+        const rawData = req.body.data;
+        let data;
+        try {
+          data = JSON.parse(rawData);
+        } catch {
+          logError("Invalid JSON in 'data': ", rawData);
+          return sendErrorResponse({
+            res,
+            statusCode: 400,
+            error: "Invalid JSON in 'data'",
+          });
+        }
+
         const {
           serviceCat,
           medicalId,
@@ -298,10 +102,17 @@ const OrderController = () => {
           price,
           additionalInfo,
           paymentMethod,
-        } = req.body;
+          forAnotherPerson,
+          forAnotherPersonName,
+          forAnotherPersonPhone,
+        } = data;
 
         // Validate inputs
-        if (!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) {
+        if (
+          !serviceCat ||
+          !Array.isArray(serviceCat) ||
+          serviceCat.length === 0
+        ) {
           return res.status(400).json({
             msg: "Service categories are required.",
             statusCode: 400,
@@ -311,6 +122,16 @@ const OrderController = () => {
         if (!["COD", "Card"].includes(paymentMethod)) {
           return res.status(400).json({
             msg: "Invalid payment method. Must be 'COD' or 'Card'",
+            statusCode: 400,
+          });
+        }
+
+        if (
+          forAnotherPerson &&
+          (!forAnotherPersonName || !forAnotherPersonPhone)
+        ) {
+          return res.status(400).json({
+            msg: "For another person name and phone are required.",
             statusCode: 400,
           });
         }
@@ -343,72 +164,98 @@ const OrderController = () => {
           });
         }
 
-        const order = await __db.order.create({
-          data: {
-            price,
-            address,
-            lat,
-            lng,
-            entrance,
-            intercom,
-            floor,
-            apartment,
-            orderDate: new Date(date),
-            startTime: startTime,
-            paymentMethod,
-            medical: { connect: { id: medicalId } },
-            employee: employeeId ? { connect: { id: employeeId } } : undefined,
-            user: { connect: { id: req.user._id } },
-            additionalInfo,
-            admin: medical.adminId ? { connect: { id: medical.adminId } } : undefined,
-            fileUrl: fileUrls.join(","),
-          },
-          include: {
-            orderSubCategories: {
-              include: {
-                service: true,
+        try {
+          var order = await __db.order.create({
+            data: {
+              price,
+              address,
+              lat,
+              lng,
+              entrance,
+              intercom,
+              floor,
+              apartment,
+              orderDate: new Date(date),
+              startTime: startTime,
+              medical: { connect: { id: medicalId } },
+              employee: employeeId
+                ? { connect: { id: employeeId } }
+                : undefined,
+              user: { connect: { id: req.user._id } },
+              admin: medical.adminId
+                ? { connect: { id: medical.adminId } }
+                : undefined,
+              additionalInfo,
+              forAnotherPerson: forAnotherPerson || false,
+              forAnotherPersonName: forAnotherPersonName || null,
+              forAnotherPersonPhone: forAnotherPersonPhone || null,
+              fileUrl: fileUrls.join(","),
+            },
+            include: {
+              orderSubCategories: {
+                include: {
+                  service: true,
+                },
               },
             },
-          },
-        });
+          });
+        } catch (err) {
+          logError("Error creating order:", err);
+          return sendErrorResponse({
+            res,
+            statusCode: 500,
+            error: "Error creating order",
+          });
+        }
 
-        const orderSubCategoriesPromises = serviceCat.map((serviceCategory: any) => {
-          const services = serviceCategory?.service || [];
-          return services.flatMap((service: any) => {
-            const serviceId = service.id;
-            const categories = service?.category || [];
+        const orderSubCategoriesPromises = serviceCat.map(
+          (serviceCategory: any) => {
+            const services = serviceCategory?.service || [];
+            return services.flatMap((service: any) => {
+              const serviceId = service.id;
+              const categories = service?.category || [];
 
-            return categories.flatMap((category: any) => {
-              const categoryId = category.id;
-              const subCategoryIds = category?.subCategoryId || [];
+              return categories.flatMap((category: any) => {
+                const categoryId = category.id;
+                const subCategoryIds = category?.subCategoryId || [];
 
-              if (!serviceId || !categoryId || subCategoryIds.length === 0) {
-                return res.status(400).json({
-                  msg: "Service, Category, and SubCategories are required for each service category.",
-                  statusCode: 400,
-                });
-              }
-
-              return subCategoryIds.map(async (subCategoryId: number) => {
-                try {
-                  const orderSubCategory = await __db.orderSubCategory.create({
-                    data: {
-                      orderId: order.id,
-                      serviceId,
-                      categoryId,
-                      subCategoryId,
-                    },
+                if (!serviceId || !categoryId || subCategoryIds.length === 0) {
+                  return res.status(400).json({
+                    msg: "Service, Category, and SubCategories are required for each service category.",
+                    statusCode: 400,
                   });
-                  return orderSubCategory;
-                } catch (error) {
-                  console.error("Error creating OrderSubCategory:", error);
                 }
+
+                return subCategoryIds.map(async (subCategoryId: number) => {
+                  try {
+                    const orderSubCategory = await __db.orderSubCategory.create(
+                      {
+                        data: {
+                          orderId: order.id,
+                          serviceId,
+                          categoryId,
+                          subCategoryId,
+                        },
+                      },
+                    );
+                    return orderSubCategory;
+                  } catch (error) {
+                    // console.error("Error creating OrderSubCategory:", error);
+                    return sendErrorResponse({
+                      res,
+                      statusCode: 500,
+                      error: "Error creating OrderSubCategory",
+                    });
+                  }
+                });
               });
             });
-          });
-        });
+          },
+        );
 
-        const orderSubCategories = await Promise.all(orderSubCategoriesPromises.flat(2));
+        const orderSubCategories = await Promise.all(
+          orderSubCategoriesPromises.flat(2),
+        );
 
         return res.json({
           msg: "Order and associated OrderSubCategories created successfully!",
@@ -417,7 +264,6 @@ const OrderController = () => {
         });
       });
     } catch (error: any) {
-      console.error(error);
       return res.status(500).json({
         msg: "Error creating order and order subcategories.",
         statusCode: 500,
@@ -428,7 +274,7 @@ const OrderController = () => {
 
   const createRequestOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Creating Request Order ", req.body);
@@ -767,7 +613,7 @@ const OrderController = () => {
 
   const changeEmployeeStatus = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     const orderId = parseInt(req.params.id as string);
     const employeeStatus = req.body.employeeStatus;
@@ -780,19 +626,20 @@ const OrderController = () => {
       select: {
         id: true,
         userId: true,
-        employeeStatus: true
+        employeeStatus: true,
       },
     });
 
     if (!order) throw new Error("No order found");
 
     switch (employeeStatus) {
-      case 'processing':
-        if (order.employeeStatus != 'pending') {
+      case "processing":
+        if (order.employeeStatus != "pending") {
           return sendErrorResponse({
             res,
-            error: "Employee status can only be changed to 'processing' from 'pending'",
-            statusCode: 400
+            error:
+              "Employee status can only be changed to 'processing' from 'pending'",
+            statusCode: 400,
           });
         }
     }
@@ -815,7 +662,7 @@ const OrderController = () => {
 
   const acceptOrRejectOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const orderId = +req.params.id;
@@ -829,7 +676,7 @@ const OrderController = () => {
         select: {
           id: true,
           userId: true,
-          orderStatus: true
+          orderStatus: true,
         },
       });
 
@@ -838,20 +685,22 @@ const OrderController = () => {
       logHttp("Checked for order in db");
 
       switch (status) {
-        case 'accepted':
-        case 'rejected':
-          if (order.orderStatus != 'pending') {
+        case "accepted":
+        case "rejected":
+          if (order.orderStatus != "pending") {
             return sendErrorResponse({
               res,
-              error: "Order status can be changed to 'accepted' or 'rejected' only from 'pending'",
+              error:
+                "Order status can be changed to 'accepted' or 'rejected' only from 'pending'",
             });
           }
           break;
-        case 'completed':
-          if (order.orderStatus != 'accepted') {
+        case "completed":
+          if (order.orderStatus != "accepted") {
             return sendErrorResponse({
               res,
-              error: "Order status can only be changed to 'completed' from 'accepted'",
+              error:
+                "Order status can only be changed to 'completed' from 'accepted'",
             });
           }
       }
@@ -887,8 +736,8 @@ const OrderController = () => {
             ? "You account has been accepted by admin"
             : req.body.declinedReason,
           {
-            deepLink: "imedapp://orders/" + orderId
-          }
+            deepLink: "imedapp://orders/" + orderId,
+          },
         );
 
       return sendSuccessResponse({
@@ -926,10 +775,10 @@ const OrderController = () => {
 
       if (orderStatus) {
         // here we temporarily show pending orders also if accepted status is chosen
-        if (orderStatus === 'accepted') {
-          condition['orderStatus'] = { in: ['accepted', 'pending'] };
+        if (orderStatus === "accepted") {
+          condition["orderStatus"] = { in: ["accepted", "pending"] };
         } else {
-          condition['orderStatus'] = orderStatus;
+          condition["orderStatus"] = orderStatus;
         }
       }
 
@@ -1060,7 +909,7 @@ const OrderController = () => {
   };
   const getRequestOrder = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       console.log("in here");
@@ -1241,7 +1090,7 @@ const OrderController = () => {
             name: subCategoryObj.subCategory.name,
             iconUrl: subCategoryObj.subCategory.iconUrl,
           },
-        })
+        }),
       );
 
       return sendSuccessResponse({
@@ -1267,7 +1116,7 @@ const OrderController = () => {
 
   const calculateDistanceFee = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${"AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o"}`;
@@ -1312,20 +1161,28 @@ const OrderController = () => {
     });
 
     if (!employee) {
-      return sendErrorResponse({ res, error: "Employee not found", statusCode: 404 });
+      return sendErrorResponse({
+        res,
+        error: "Employee not found",
+        statusCode: 404,
+      });
     }
 
     const order = await orderService.getOrder(orderId);
 
     if (!order) {
-      return sendErrorResponse({ res, error: "Order not found", statusCode: 404 });
+      return sendErrorResponse({
+        res,
+        error: "Order not found",
+        statusCode: 404,
+      });
     }
 
     if (order.employeeId != employee.id) {
       return sendErrorResponse({
         res,
         error: "This order is not associated with employee",
-        statusCode: 400
+        statusCode: 400,
       });
     }
 
@@ -1335,7 +1192,7 @@ const OrderController = () => {
       return sendErrorResponse({
         res,
         error: error,
-        statusCode: error.statusCode ?? 400
+        statusCode: error.statusCode ?? 400,
       });
     }
 
@@ -1350,7 +1207,11 @@ const OrderController = () => {
     const order = await orderService.getOrder(orderId);
 
     if (!order) {
-      return sendErrorResponse({ res, error: "Order not found", statusCode: 404 });
+      return sendErrorResponse({
+        res,
+        error: "Order not found",
+        statusCode: 404,
+      });
     }
 
     try {
@@ -1359,7 +1220,7 @@ const OrderController = () => {
       return sendErrorResponse({
         res,
         error: error,
-        statusCode: error.statusCode ?? 400
+        statusCode: error.statusCode ?? 400,
       });
     }
 
@@ -1449,7 +1310,7 @@ const OrderController = () => {
     startOrder,
     startOrderForAdmin,
     completeOrder,
-    assignEmployeeToOrder
+    assignEmployeeToOrder,
   };
 };
 

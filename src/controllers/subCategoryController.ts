@@ -1,13 +1,13 @@
 import { Response } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import {AdminRequest, UserRequest} from "../types";
+import { AdminRequest, UserRequest } from "../types";
 import prisma from "../config/db";
 
 const SubCategoryController = () => {
   const getSubCategories = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -61,9 +61,9 @@ const SubCategoryController = () => {
             },
           },
           medicalCategories: {
-            select: {price: true},
-            orderBy: {price: "asc"}
-          }
+            select: { price: true },
+            orderBy: { price: "asc" },
+          },
         },
       });
 
@@ -84,16 +84,19 @@ const SubCategoryController = () => {
               categoryName: obj.category?.name,
               serviceId: obj.category?.serviceId,
               serviceName: obj.category.service?.name,
-              price: "0 AZN"
+              price: "0 AZN",
             };
 
             if (obj.medicalCategories.length > 1) {
               const minPrice = Math.ceil(obj.medicalCategories[0].price);
-              const maxPrice = Math.ceil(obj.medicalCategories[obj.medicalCategories.length - 1].price);
+              const maxPrice = Math.ceil(
+                obj.medicalCategories[obj.medicalCategories.length - 1].price,
+              );
 
               item.price = `${minPrice}-${maxPrice} AZN`;
             } else if (obj.medicalCategories.length === 1) {
-              item.price = Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
+              item.price =
+                Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
             }
 
             return item;
@@ -115,42 +118,35 @@ const SubCategoryController = () => {
   };
 
   const createSubCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
-
-    const {
-      iconUrl,
-      name,
-      parentId
-    } = req.body;
+    const { iconUrl, name, parentId } = req.body;
 
     try {
       const category = await prisma.subCategory.create({
         data: {
           iconUrl,
           name,
-          categoryId: parentId
-        }
+          categoryId: parentId,
+        },
       });
 
       return sendSuccessResponse({
         res,
         data: {
-          category
+          category,
         },
       });
     } catch (error) {
       console.error("Error creating sub category:", error);
     }
-
   };
 
   const updateSubCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
-
     const categoryId = +req.params.id;
     if (!categoryId) {
       return sendErrorResponse({
@@ -172,41 +168,35 @@ const SubCategoryController = () => {
       });
     }
 
-    const {
-      iconUrl,
-      name,
-      parentId
-    } = req.body;
+    const { iconUrl, name, parentId } = req.body;
 
     try {
       const category = await prisma.subCategory.update({
         data: {
           iconUrl,
           name,
-          categoryId: parentId
+          categoryId: parentId,
         },
         where: {
-          id: categoryId
-        }
+          id: categoryId,
+        },
       });
 
       return sendSuccessResponse({
         res,
         data: {
-          category
+          category,
         },
       });
     } catch (error) {
       console.error("Error updating sub category:", error);
     }
-
   };
 
   const deleteSubCategory = async (
-      req: AdminRequest,
-      res: Response,
+    req: AdminRequest,
+    res: Response,
   ): Promise<any> => {
-
     const categoryId = +req.params.id;
 
     if (!categoryId) {
@@ -232,15 +222,18 @@ const SubCategoryController = () => {
     try {
       await prisma.subCategory.delete({
         where: {
-          id: categoryId
-        }
+          id: categoryId,
+        },
       });
 
-      return sendSuccessResponse({res,});
+      return sendSuccessResponse({ res });
     } catch (error) {
-      return sendErrorResponse({res, statusCode: 500, error: 'Could not delete sub category'});
+      return sendErrorResponse({
+        res,
+        statusCode: 500,
+        error: "Could not delete sub category",
+      });
     }
-
   };
 
   const logHttp = (context: string, value?: any) =>
@@ -253,7 +246,7 @@ const SubCategoryController = () => {
     getSubCategories,
     createSubCategory,
     updateSubCategory,
-    deleteSubCategory
+    deleteSubCategory,
   };
 };
 

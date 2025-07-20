@@ -41,7 +41,7 @@ const FcmTokenController = () => {
 
   const deleteFcmToken = async (
     req: UserRequest,
-    res: Response
+    res: Response,
   ): Promise<any> => {
     try {
       logHttp("Deleting Token");

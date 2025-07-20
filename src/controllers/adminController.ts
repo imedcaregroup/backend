@@ -373,7 +373,6 @@ const AdminController = () => {
     }
   };
 
-
   // Get all orders with admin filtering based on role
   const getAllOrders = async (req: AdminRequest, res: Response) => {
     try {
