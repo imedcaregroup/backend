@@ -164,38 +164,49 @@ const OrderController = () => {
           });
         }
 
-        const order = await __db.order.create({
-          data: {
-            price,
-            address,
-            lat,
-            lng,
-            entrance,
-            intercom,
-            floor,
-            apartment,
-            orderDate: new Date(date),
-            startTime: startTime,
-            medical: { connect: { id: medicalId } },
-            employee: employeeId ? { connect: { id: employeeId } } : undefined,
-            user: { connect: { id: req.user._id } },
-            admin: medical.adminId
-              ? { connect: { id: medical.adminId } }
-              : undefined,
-            additionalInfo,
-            forAnotherPerson: forAnotherPerson || false,
-            forAnotherPersonName: forAnotherPersonName || null,
-            forAnotherPersonPhone: forAnotherPersonPhone || null,
-            fileUrl: fileUrls.join(","),
-          },
-          include: {
-            orderSubCategories: {
-              include: {
-                service: true,
+        try {
+          var order = await __db.order.create({
+            data: {
+              price,
+              address,
+              lat,
+              lng,
+              entrance,
+              intercom,
+              floor,
+              apartment,
+              orderDate: new Date(date),
+              startTime: startTime,
+              medical: { connect: { id: medicalId } },
+              employee: employeeId
+                ? { connect: { id: employeeId } }
+                : undefined,
+              user: { connect: { id: req.user._id } },
+              admin: medical.adminId
+                ? { connect: { id: medical.adminId } }
+                : undefined,
+              additionalInfo,
+              forAnotherPerson: forAnotherPerson || false,
+              forAnotherPersonName: forAnotherPersonName || null,
+              forAnotherPersonPhone: forAnotherPersonPhone || null,
+              fileUrl: fileUrls.join(","),
+            },
+            include: {
+              orderSubCategories: {
+                include: {
+                  service: true,
+                },
               },
             },
-          },
-        });
+          });
+        } catch (err) {
+          logError("Error creating order:", err);
+          return sendErrorResponse({
+            res,
+            statusCode: 500,
+            error: "Error creating order",
+          });
+        }
 
         const orderSubCategoriesPromises = serviceCat.map(
           (serviceCategory: any) => {
