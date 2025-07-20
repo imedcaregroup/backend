@@ -89,12 +89,19 @@ const OrderController = () => {
         const {
           serviceCat,
           medicalId,
+          employeeId,
           address,
+          entrance,
+          floor,
+          intercom,
+          apartment,
           date,
           startTime,
           lat,
           lng,
           price,
+          additionalInfo,
+          paymentMethod,
           forAnotherPerson,
           forAnotherPersonName,
           forAnotherPersonPhone,
@@ -108,6 +115,13 @@ const OrderController = () => {
         ) {
           return res.status(400).json({
             msg: "Service categories are required.",
+            statusCode: 400,
+          });
+        }
+
+        if (!["COD", "Card"].includes(paymentMethod)) {
+          return res.status(400).json({
+            msg: "Invalid payment method. Must be 'COD' or 'Card'",
             statusCode: 400,
           });
         }
@@ -156,13 +170,19 @@ const OrderController = () => {
             address,
             lat,
             lng,
+            entrance,
+            intercom,
+            floor,
+            apartment,
             orderDate: new Date(date),
             startTime: startTime,
             medical: { connect: { id: medicalId } },
+            employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
             admin: medical.adminId
               ? { connect: { id: medical.adminId } }
               : undefined,
+            additionalInfo,
             forAnotherPerson: forAnotherPerson || false,
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
