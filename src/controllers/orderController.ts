@@ -1,8 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config();
 import dayjs from "dayjs";
 import { Response } from "express";
 import multer, { FileFilterCallback } from "multer";
 import { OrderService } from "../services/orderService";
-import { AdminRequest, UserRequest } from "../types";
+import { AdminRequest, Payriff, UserRequest } from "../types";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
@@ -750,6 +752,91 @@ const OrderController = () => {
       });
     }
   };
+  const cancelOrder = async (req: UserRequest, res: Response) => {
+    try {
+      const orderId = +req.params.id;
+
+      logHttp("Checking for order in db");
+      const order = await __db.order.findFirst({
+        where: {
+          id: +orderId,
+        },
+        select: {
+          id: true,
+          userId: true,
+          orderStatus: true,
+          payment_order_id: true,
+          paymetStatus: true,
+          price: true,
+        },
+      });
+
+      if (!order) throw new Error("No order found");
+
+      logHttp("Checked for order in db");
+
+      if (order.orderStatus in ["completed", "processing", "rejected"]) {
+        return sendErrorResponse({
+          res,
+          error:
+            "Order status can only be changed to 'canceled-by-user' from 'pending' or 'accepted'",
+        });
+      }
+
+      logHttp("canceling order ==> ");
+
+      if (order.payment_order_id && order.paymetStatus === "success") {
+        const body = {
+          amount: order.price,
+          orderId: order.payment_order_id,
+        };
+
+        const response = await fetch(Payriff.BASE_URL + `/refund`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: process.env.PAYRIFF_API_KEY || "",
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json();
+
+        if (data.code !== Payriff.SUCCESS) {
+          logHttp("Unsuccessful refund request", data);
+
+          return sendErrorResponse({
+            res,
+            statusCode: 400,
+            error: "Unsuccessful refund: " + data.message,
+          });
+        }
+      }
+
+      await __db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          declinedReason: req.body.declinedReason,
+          orderStatus: "canceled-by-user",
+        },
+      });
+
+      logHttp("canceled order ==> ");
+
+      return sendSuccessResponse({
+        res,
+        message: "Success",
+      });
+    } catch (error: any) {
+      logError(`Error while rejecting order ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error: error?.message,
+      });
+    }
+  };
 
   const getOrders = async (req: UserRequest, res: Response): Promise<any> => {
     try {
@@ -1299,6 +1386,7 @@ const OrderController = () => {
     createOrder,
     getMyOrders,
     acceptOrRejectOrder,
+    cancelOrder,
     getOrders,
     getOrder,
     createRequestOrder,
