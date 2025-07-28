@@ -775,11 +775,11 @@ const OrderController = () => {
 
       logHttp("Checked for order in db");
 
-      if (order.orderStatus in ["completed", "processing", "rejected"]) {
+      if (order.orderStatus in ["completed", "processing"]) {
         return sendErrorResponse({
           res,
           error:
-            "Order status can only be changed to 'canceled-by-user' from 'pending' or 'accepted'",
+            "Order status can only be changed to 'canceled-by-user' from 'completed' or 'processing'",
         });
       }
 
