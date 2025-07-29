@@ -32,6 +32,7 @@ router
     validationWrapper(orderController.acceptOrRejectOrder),
   );
 
+router.route("/:id/cancel").post(orderController.cancelOrder);
 router.route("/:id/start").post(orderController.startOrder);
 router.route("/:id/complete").post(orderController.completeOrder);
 router.route("/:id/assign").post(orderController.assignEmployeeToOrder);

@@ -7,7 +7,7 @@ import { sendErrorResponse } from "../utils/response";
 export const authMiddleware = async (
   req: UserRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (
@@ -47,7 +47,7 @@ export const authMiddleware = async (
     }
   } catch (error) {
     logger.error(
-      `Error while authenticating user ==> ${JSON.stringify(error.message)}`
+      `Error while authenticating user ==> ${JSON.stringify(error.message)}`,
     );
     sendErrorResponse({
       res,
