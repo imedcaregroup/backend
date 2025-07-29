@@ -177,6 +177,7 @@ const OrderController = () => {
               intercom,
               floor,
               apartment,
+              paymentMethod,
               orderDate: new Date(date),
               startTime: startTime,
               medical: { connect: { id: medicalId } },
