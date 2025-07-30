@@ -36,3 +36,7 @@ export const acceptOrRejectOrderValidation = [
   check("orderStatus").notEmpty().withMessage("Please provide orderStatus"),
   check("declinedReason").optional({ nullable: true, checkFalsy: true }),
 ];
+
+export const cancelOrderValidation = [
+  check("amount").isFloat().withMessage("Please provide amount to refund"),
+];

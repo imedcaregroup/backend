@@ -123,6 +123,8 @@ model Order {
   forAnotherPerson  Boolean?          @default(false)
   forAnotherPersonName String?
   forAnotherPersonPhone String?
+  refounded          Boolean?          @default(false)
+  refoundedAmount    Float?           @default(0)
   Category           Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   medical            Medical            @relation(fields: [medicalId], references: [id])
   Service            Service?           @relation(fields: [serviceId], references: [id], onDelete: Restrict)

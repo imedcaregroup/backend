@@ -755,6 +755,7 @@ const OrderController = () => {
   const cancelOrder = async (req: UserRequest, res: Response) => {
     try {
       const orderId = +req.params.id;
+      const amount = req.body.amount;
 
       logHttp("Checking for order in db");
       const order = await __db.order.findFirst({
@@ -767,7 +768,6 @@ const OrderController = () => {
           orderStatus: true,
           payment_order_id: true,
           paymetStatus: true,
-          price: true,
         },
       });
 
@@ -787,7 +787,7 @@ const OrderController = () => {
 
       if (order.payment_order_id && order.paymetStatus === "success") {
         const body = {
-          amount: order.price,
+          amount,
           orderId: order.payment_order_id,
         };
 
@@ -812,14 +812,24 @@ const OrderController = () => {
         }
       }
 
+      const updateBody: {
+        orderStatus: string;
+        refounded?: boolean;
+        refoundedAmount?: number;
+      } = {
+        orderStatus: "canceled-by-user",
+      };
+
+      if (order.payment_order_id && order.paymetStatus === "success") {
+        updateBody.refounded = true;
+        updateBody.refoundedAmount = amount;
+      }
+
       await __db.order.update({
         where: {
           id: orderId,
         },
-        data: {
-          declinedReason: req.body.declinedReason,
-          orderStatus: "canceled-by-user",
-        },
+        data: updateBody,
       });
 
       logHttp("canceled order ==> ");

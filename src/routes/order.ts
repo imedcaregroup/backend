@@ -2,7 +2,10 @@ import { Router } from "express";
 import OrderController from "../controllers/orderController";
 import { adminAuthMiddleware } from "../middlewares/adminAuth";
 import { validationWrapper } from "../utils/helpers";
-import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
+import {
+  acceptOrRejectOrderValidation,
+  cancelOrderValidation,
+} from "../validations/orderValidation";
 
 const orderController = OrderController();
 const router = Router();
@@ -32,7 +35,9 @@ router
     validationWrapper(orderController.acceptOrRejectOrder),
   );
 
-router.route("/:id/cancel").post(orderController.cancelOrder);
+router
+  .route("/:id/cancel")
+  .post(cancelOrderValidation, validationWrapper(orderController.cancelOrder));
 router.route("/:id/start").post(orderController.startOrder);
 router.route("/:id/complete").post(orderController.completeOrder);
 router.route("/:id/assign").post(orderController.assignEmployeeToOrder);
