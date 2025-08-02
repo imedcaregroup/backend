@@ -413,6 +413,35 @@ const UserController = () => {
     }
   };
 
+  const getPassports = async (req: UserRequest, res: Response) => {
+    try {
+      logHttp("Getting user passports with id ", req.user.id);
+      const user = await __db.user.findUnique({
+        where: {
+          id: req.user._id,
+        },
+        select: {
+          passportUrls: true,
+        },
+      });
+      const passports = user?.passportUrls || [];
+
+      logHttp("Got user passports with id ", req.user.id);
+
+      return sendSuccessResponse({
+        res,
+        data: passports,
+      });
+    } catch (error) {
+      logError(`Error while getPassports ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 400,
+        error,
+      });
+    }
+  };
+
   const getMyProfile = async (req: UserRequest, res: Response) => {
     try {
       logHttp("Getting user profile with id ", req.user.id);
@@ -762,6 +791,7 @@ const UserController = () => {
     resetPassword,
     updateLocation,
     getLocation,
+    getPassports,
   };
 };
 

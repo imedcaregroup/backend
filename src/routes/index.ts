@@ -10,6 +10,7 @@ import medicalRoute from "./medical";
 import orderRoute from "./order";
 import paymentRoute from "./payment";
 import serviceRoute from "./service";
+import fileRoute from "./file";
 import subCategoryRoute from "./subCategory";
 import userrRoute from "./user";
 
@@ -23,6 +24,7 @@ router.use("/payment", paymentRoute);
 
 // 🔐 Auth-protected user routes
 router.use(authMiddleware);
+router.use("/file", fileRoute);
 router.use("/service", serviceRoute);
 router.use("/employee", employeeRoute);
 router.use("/category", categoryRoute);
