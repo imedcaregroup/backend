@@ -64,6 +64,7 @@ router
   .post(VerifyEmailValidation, validationWrapper(userController.verifyEmail));
 router.use(authMiddleware);
 router.route("/me").get(userController.getMyProfile);
+router.route("/passports").get(userController.getPassports);
 router
   .route("/profile")
   .patch(

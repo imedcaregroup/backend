@@ -27,6 +27,7 @@ model User {
   lng                 Float?
   isDeleted           Boolean?   @default(false)
   imageUrl            String?    @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
+  passportUrls        String[]   @default([])
   addresses           Address[]
   orders              Order[]
   tokens              FcmToken[]
