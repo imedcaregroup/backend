@@ -38,6 +38,7 @@ const OrderController = () => {
   const createOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const data = req.body;
+      let specialOffer = null;
 
       const {
         serviceCat,
@@ -59,13 +60,39 @@ const OrderController = () => {
         forAnotherPersonName,
         forAnotherPersonPhone,
         fileUrls = [],
+        specialOfferId,
       } = data;
+
+      if (specialOfferId) {
+        specialOffer = await __db.specialOffer.findUnique({
+          where: { id: specialOfferId },
+          include: {
+            subCategories: {
+              include: {
+                category: {
+                  include: {
+                    service: true, // Include the related service
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      if (specialOfferId && !specialOffer) {
+        return res.status(404).json({
+          msg: "Special offer not found",
+          statusCode: 404,
+        });
+      }
 
       // Validate inputs
       if (
-        !serviceCat ||
-        !Array.isArray(serviceCat) ||
-        serviceCat.length === 0
+        (!serviceCat ||
+          !Array.isArray(serviceCat) ||
+          serviceCat.length === 0) &&
+        !specialOfferId
       ) {
         return res.status(400).json({
           msg: "Service categories are required.",
@@ -106,7 +133,9 @@ const OrderController = () => {
       }
 
       const medical = await __db.medical.findUnique({
-        where: { id: parseInt(medicalId) },
+        where: {
+          id: specialOffer ? specialOffer.medicalId : parseInt(medicalId),
+        },
         select: { adminId: true },
       });
 
@@ -121,7 +150,7 @@ const OrderController = () => {
       try {
         var order = await __db.order.create({
           data: {
-            price,
+            price: specialOffer ? specialOffer.price : price,
             address,
             lat,
             lng,
@@ -131,7 +160,11 @@ const OrderController = () => {
             apartment,
             orderDate: new Date(date),
             startTime: startTime,
-            medical: { connect: { id: medicalId } },
+            medical: {
+              connect: {
+                id: specialOffer ? specialOffer.medicalId : medicalId,
+              },
+            },
             employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
             admin: medical.adminId
@@ -142,6 +175,7 @@ const OrderController = () => {
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
+            SpecialOffer: { connect: { id: specialOfferId || null } },
           },
           include: {
             orderSubCategories: {
@@ -152,7 +186,7 @@ const OrderController = () => {
           },
         });
       } catch (err) {
-        logError("Error creating order:", err);
+        console.error("Error creating order:", err.code, err.meta);
         return sendErrorResponse({
           res,
           statusCode: 500,
@@ -160,8 +194,34 @@ const OrderController = () => {
         });
       }
 
-      const orderSubCategoriesPromises = serviceCat.map(
-        (serviceCategory: any) => {
+      let orderSubCategoriesPromises = null;
+
+      if (specialOffer) {
+        orderSubCategoriesPromises = specialOffer.subCategories.flatMap(
+          (subCategory: any) => {
+            const serviceId = subCategory.category.service.id;
+            const categoryId = subCategory.category.id;
+            const subCategoryId = subCategory.id;
+
+            if (!serviceId || !categoryId || !subCategoryId) {
+              return res.status(400).json({
+                msg: "Service, Category, and SubCategory are required for each special offer.",
+                statusCode: 400,
+              });
+            }
+
+            return __db.orderSubCategory.create({
+              data: {
+                orderId: order.id,
+                serviceId,
+                categoryId,
+                subCategoryId,
+              },
+            });
+          },
+        );
+      } else {
+        orderSubCategoriesPromises = serviceCat.map((serviceCategory: any) => {
           const services = serviceCategory?.service || [];
           return services.flatMap((service: any) => {
             const serviceId = service.id;
@@ -200,8 +260,8 @@ const OrderController = () => {
               });
             });
           });
-        },
-      );
+        });
+      }
 
       const orderSubCategories = await Promise.all(
         orderSubCategoriesPromises.flat(2),
@@ -357,102 +417,6 @@ const OrderController = () => {
     }
   };
 
-  // const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
-  //   try {
-  //     const limit = parseInt(req.query.limit as string) || 10;
-  //     const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : null;
-  //     const select = {
-  //       id: true,
-  //       name: true,
-  //       iconUrl: true,
-  //     };
-
-  //     logHttp("Fetching orders ==> ", req.user._id);
-  //     const orders = await __db.order.findMany({
-  //       where: {
-  //         userId: req.user._id,
-  //         orderStatus: req.query.status as string,
-  //         startTime:{
-  //           not:null
-  //         }
-  //       },
-  //       ...(cursor && { cursor: { id: cursor } }),
-  //       ...(cursor && { skip: 1 }),
-  //       take: limit,
-  //       include: {
-  //         service: {
-  //           select,
-  //         },
-  //         category: {
-  //           select,
-  //         },
-  //         orderSubCategories: {
-  //           include: {
-  //             subCategory: {
-  //               select: {
-  //                 id: true,
-  //                 name: true,
-  //                 iconUrl: true,
-  //                 medicalCatrgories: {
-  //                   select: {
-  //                     price: true, // Fetch price from MedicalCategory
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //         medical: {
-  //           select: {
-  //             ...select,
-  //             lat: true,
-  //             lng: true,
-  //             address: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         createdAt: "desc",
-  //       },
-  //     });
-
-  //     // Format `orderSubCategories` into a flat array of subCategory objects
-  //     const formattedOrders = orders.map((order: any) => ({
-  //       ...order,
-  //       orderSubCategories: order.orderSubCategories.map((osc: any) => ({
-  //         id: osc.subCategory.id,
-  //         name: osc.subCategory.name,
-  //         iconUrl: osc.subCategory.iconUrl,
-  //         price: osc.subCategory.medicalCatrgories?.[0]?.price || 0,
-  //       })),
-  //     }));
-
-  //     const formattedOrder = formattedOrders.map(order => ({
-  //       ...order,
-  //       createdAt: dayjs(order.createdAt).format("YYYY-MM-DD HH:mm:ss.SSS"),
-  //     }));
-
-  //     console.log("formattedOrder",formattedOrder)
-
-  //     logHttp("Fetched orders");
-
-  //     return sendSuccessResponse({
-  //       res,
-  //       data: {
-  //         orders: formattedOrder,
-  //         cursor:
-  //           orders.length >= limit ? orders[orders.length - 1].id : null,
-  //       },
-  //     });
-  //   } catch (error: any) {
-  //     logError("Error while getMyOrder ==> ", error?.message);
-  //     return sendErrorResponse({
-  //       res,
-  //       statusCode: error?.statusCode || 400,
-  //       error: error?.message,
-  //     });
-  //   }
-  // };
   const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -472,9 +436,12 @@ const OrderController = () => {
       const orders = await __db.order.findMany({
         where: {
           userId: req.user._id,
-          orderStatus: (status === 'accepted') ? {
-            in: ['accepted', 'pending']
-          } : status,
+          orderStatus:
+            status === "accepted"
+              ? {
+                  in: ["accepted", "pending"],
+                }
+              : status,
           startTime: {
             not: null,
           },
