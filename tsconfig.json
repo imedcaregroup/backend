@@ -16,5 +16,5 @@
     },
     "lib": ["es2017", "dom"]
   },
-  "include": ["src/**/*","src/controllers/paymentController.ts"]
+  "include": ["src/**/*"]
 }

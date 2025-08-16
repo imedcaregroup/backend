@@ -65,6 +65,7 @@ model SubCategory {
   medicalCategories  MedicalCategory[]
   orderSubCategories OrderSubCategory[] @relation("SubCategoryOrderSubCategories")
   category           Category           @relation(fields: [categoryId], references: [id])
+  specialOffers      SpecialOffer[]
 }
 
 model Medical {
@@ -82,6 +83,7 @@ model Medical {
   adminId           Int?
   admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
   employees         Employee[]
+  SpecialOffer      SpecialOffer[]
 }
 
 model MedicalCategory {
@@ -95,47 +97,49 @@ model MedicalCategory {
 }
 
 model Order {
-  id                 Int                @id @default(autoincrement())
-  createdAt          DateTime           @default(now())
-  serviceId          Int?
-  categoryId         Int?
-  medicalId          Int
-  userId             Int
-  price              Float              @default(0)
-  address            String?
-  lat                Float?
-  lng                Float?
-  entrance           String?
-  floor              Int?
-  apartment          String?
-  intercom           String?
-  paymetStatus       String             @default("pending")
-  payment_order_id   String?
-  orderStatus        String             @default("pending")
-  employeeStatus     String             @default("pending")
-  declinedReason     String?
-  orderDate          DateTime
-  additionalInfo     String?
-  date               String?
-  endTime            Int?
-  startTime          Int?
-  fileUrl            String?
-  doctor             String?            @db.VarChar(255)
-  forAnotherPerson  Boolean?          @default(false)
-  forAnotherPersonName String?
+  id                    Int                @id @default(autoincrement())
+  createdAt             DateTime           @default(now())
+  serviceId             Int?
+  categoryId            Int?
+  medicalId             Int
+  userId                Int
+  price                 Float              @default(0)
+  address               String?
+  lat                   Float?
+  lng                   Float?
+  entrance              String?
+  floor                 Int?
+  apartment             String?
+  intercom              String?
+  paymetStatus          String             @default("pending")
+  payment_order_id      String?
+  orderStatus           String             @default("pending")
+  employeeStatus        String             @default("pending")
+  declinedReason        String?
+  orderDate             DateTime
+  additionalInfo        String?
+  date                  String?
+  endTime               Int?
+  startTime             Int?
+  fileUrl               String?
+  doctor                String?            @db.VarChar(255)
+  forAnotherPerson      Boolean?           @default(false)
+  forAnotherPersonName  String?
   forAnotherPersonPhone String?
-  refounded          Boolean?          @default(false)
-  refoundedAmount    Float?           @default(0)
-  Category           Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  medical            Medical            @relation(fields: [medicalId], references: [id])
-  Service            Service?           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  user               User               @relation(fields: [userId], references: [id])
-  orderSubCategories OrderSubCategory[]
-  adminId            Int?
-  admin              Admin?             @relation("AdminOrder", fields: [adminId], references: [id])
-  employeeId         Int?
-  employee           Employee?          @relation(fields: [employeeId], references: [id])
-  paymentMethod      PaymentMethod?     @default(COD)
+  refounded             Boolean?           @default(false)
+  refoundedAmount       Float?             @default(0)
+  Category              Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  medical               Medical            @relation(fields: [medicalId], references: [id])
+  Service               Service?           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  user                  User               @relation(fields: [userId], references: [id])
+  orderSubCategories    OrderSubCategory[]
+  adminId               Int?
+  admin                 Admin?             @relation("AdminOrder", fields: [adminId], references: [id])
+  employeeId            Int?
+  employee              Employee?          @relation(fields: [employeeId], references: [id])
+  paymentMethod         PaymentMethod?     @default(COD)
+  SpecialOffer          SpecialOffer?      @relation(fields: [specialOfferId], references: [id])
+  specialOfferId        Int?
 }
 
 enum PaymentMethod {
@@ -156,8 +160,8 @@ model OrderSubCategory {
 }
 
 model Availability {
-  id         Int      @id @default(autoincrement())
-  createdAt  DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime  @default(now())
   day        Int
   startTime  Int
   endTime    Int
@@ -211,16 +215,50 @@ enum AdminRole {
 }
 
 model Employee {
-  id        Int      @id @default(autoincrement())
-  name      String
-  surName   String
-  position  String
-  userId    Int      @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  medicalId Int?
-  medical   Medical? @relation(fields: [medicalId], references: [id])
+  id             Int            @id @default(autoincrement())
+  name           String
+  surName        String
+  position       String
+  userId         Int            @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  medicalId      Int?
+  medical        Medical?       @relation(fields: [medicalId], references: [id])
   availabilities Availability[]
 
   Order Order[]
+}
+
+model SpecialOffer {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title       String
+  title_en    String?
+  title_az    String?
+  title_ru    String?
+  description String?
+  imageUrl    String
+  priority    Int       @default(0)
+  isActive    Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+
+  medicalId Int
+  medical Medical @relation(fields: [medicalId], references: [id])
+
+  subCategories SubCategory[]
+
+  originalPrice Float? // shown as strikethrough
+  price         Float? // final price if you want to lock it
+  discountType  DiscountType?
+  discountValue Float? // 20 -> 20% if PERCENTAGE, or 20 AZN if FIXED
+
+  orders Order[] // orders created from this offer
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
 }

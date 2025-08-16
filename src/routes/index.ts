@@ -13,6 +13,7 @@ import serviceRoute from "./service";
 import fileRoute from "./file";
 import subCategoryRoute from "./subCategory";
 import userrRoute from "./user";
+import specialOffersRoute from "./specialOffers";
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use("/order", orderRoute);
 router.use("/availability", availbilityRoute);
 router.use("/address", addressRoute);
 router.use("/token", fcmTokenRoute);
+router.use("/special-offers", specialOffersRoute);
 
 export default router;
