@@ -210,11 +210,18 @@ enum AdminRole {
   SUPER_ADMIN
 }
 
+enum EmployeeType {
+  DOCTOR
+  NURSE
+}
+
 model Employee {
   id        Int      @id @default(autoincrement())
   name      String
   surName   String
   position  String
+  type      EmployeeType @default(NURSE)
+  imageUrl  String?
   userId    Int      @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

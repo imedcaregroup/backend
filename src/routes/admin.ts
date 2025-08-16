@@ -18,11 +18,18 @@ import {
   updateSubCategoryValidation,
 } from "../validations/categoryValidation";
 import SubCategoryController from "../controllers/subCategoryController";
+import {
+    createEmployeeValidation,
+    deleteEmployeeValidation,
+    updateEmployeeValidation
+} from "../validations/employeeValidation";
+import EmployeeController from "../controllers/employeeController";
 
 const adminController = AdminController();
 const orderController = OrderController();
 const categoryController = CategoryController();
 const subCategoryController = SubCategoryController();
+const employeeController = EmployeeController();
 const router = Router();
 
 // Public routes
@@ -91,6 +98,27 @@ router
     validationWrapper(subCategoryController.updateSubCategory),
   )
   .delete(subCategoryController.deleteSubCategory);
+
+// employee
+router
+    .route('/employees')
+    .get(employeeController.getEmployees);
+router
+    .route('/employees')
+    .post(
+        createEmployeeValidation,
+        validationWrapper(employeeController.createEmployee)
+    );
+router.route('/employees/:id')
+    .patch(
+        updateEmployeeValidation,
+        validationWrapper(employeeController.updateEmployee)
+    );
+router.route('/employees/:id')
+    .delete(
+        deleteEmployeeValidation,
+        validationWrapper(employeeController.deleteEmployee)
+    );
 
 // ✅ Super admin-only routes after this point
 router.use(superAdminOnly);
