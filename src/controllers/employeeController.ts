@@ -2,6 +2,7 @@ import {AdminRequest, UserRequest} from "index";
 import { Response } from "express";
 import prisma from "../config/db";
 import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
+import {EmployeeService} from "../services/employeeService";
 
 const EmployeeController = () => {
   const getEmployees = async (
@@ -113,8 +114,26 @@ const EmployeeController = () => {
       }
   };
 
+  const getDoctorsByCategory = async (req: UserRequest, res: Response): Promise<any> => {
+      const categoryId = parseInt(req.body.categoryId as string);
+
+      if (!categoryId) {
+          return sendErrorResponse({res, error: "You have to pass categoryId", statusCode: 400});
+      }
+
+      try {
+          const employeeService = new EmployeeService();
+          const employees = await employeeService.getDoctorsByCategory(categoryId);
+
+          return sendSuccessResponse({res, data: employees});
+      } catch (error) {
+          return sendErrorResponse({res, error});
+      }
+  };
+
   return {
     getEmployees,
+    getDoctorsByCategory,
     createEmployee,
     updateEmployee,
     deleteEmployee
