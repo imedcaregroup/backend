@@ -32,6 +32,49 @@ export class EmployeeService {
         })
     };
 
+    public async getDoctors(): Promise<any> {
+        let condition: any = {
+            include: {
+                medical: {select: {id: true, name: true}},
+                employeeCategories: {
+                    include: {
+                        subCategory: true
+                    }
+                }
+            },
+            where: {
+                type: "DOCTOR"
+            }
+        }
+
+        let employees = await prisma.employee.findMany(condition);
+
+        return employees.map((employee: any) => {
+            return {
+                id: employee.id,
+                name: employee.name,
+                surName: employee.surName,
+                position: employee.position,
+                imageUrl: employee.imageUrl,
+                medical: {
+                    id: employee.medical.id,
+                    name: employee.medical.name
+                },
+                services: employee.employeeCategories.map((item: any) => {
+                    return {
+                        categoryId: item.subCategory.categoryId,
+                        subCategoryId: item.subCategoryId,
+                        name: item.subCategory.name,
+                        az: item.subCategory.name_az,
+                        ru: item.subCategory.name_ru,
+                        en: item.subCategory.name_en,
+                        price: item.price.toString() + " azn"
+                    };
+                })
+            };
+        });
+    }
+
     public async createEmployee(data: any): Promise<any> {
         const {name, surName, type, position, imageUrl, userId, medicalId, prices} = data;
 

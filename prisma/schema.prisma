@@ -100,6 +100,7 @@ model EmployeeCategory {
   employeeId    Int
   subCategoryId Int
   createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   price         Float       @default(0)
   employee      Employee    @relation(fields: [employeeId], references: [id])
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])

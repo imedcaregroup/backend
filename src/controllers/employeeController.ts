@@ -6,8 +6,8 @@ import {EmployeeService} from "../services/employeeService";
 
 const EmployeeController = () => {
   const getEmployees = async (
-    req: UserRequest,
-    res: Response,
+      req: AdminRequest,
+      res: Response,
   ): Promise<any> => {
     const medicalId = parseInt(req.query.medicalId as string) || null;
 
@@ -75,6 +75,25 @@ const EmployeeController = () => {
       }
   };
 
+    const getDoctors = async (
+        req: UserRequest,
+        res: Response,
+    ): Promise<any> => {
+        try {
+            const employeeService = new EmployeeService();
+            const employees = await employeeService.getDoctors();
+
+            return sendSuccessResponse({
+                res,
+                data: {
+                    employees
+                },
+            });
+        } catch (error) {
+            return sendErrorResponse({res, error});
+        }
+    };
+
   const getDoctorsByCategory = async (req: UserRequest, res: Response): Promise<any> => {
       const categoryId = parseInt(req.body.categoryId as string);
 
@@ -93,8 +112,9 @@ const EmployeeController = () => {
   };
 
   return {
-    getEmployees,
+    getDoctors,
     getDoctorsByCategory,
+    getEmployees,
     createEmployee,
     updateEmployee,
     deleteEmployee
