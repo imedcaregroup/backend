@@ -103,6 +103,8 @@ model EmployeeCategory {
   price         Float       @default(0)
   employee      Employee    @relation(fields: [employeeId], references: [id])
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+
+  @@unique([employeeId, subCategoryId])
 }
 
 model Order {

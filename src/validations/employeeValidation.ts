@@ -39,6 +39,14 @@ export const createEmployeeValidation = [
         throw new Error("Medical with given ID does not exist");
       }
     }),
+
+    check("prices")
+        .optional()
+        .isArray({ min: 0 }).withMessage("Prices must be list"),
+    check("prices.*.subCategoryId")
+        .isInt().withMessage("subCategoryId must be number"),
+    check("prices.*.price")
+        .isFloat().withMessage("prices must be float")
 ];
 
 export const updateEmployeeValidation = [
@@ -90,6 +98,14 @@ export const updateEmployeeValidation = [
                 throw new Error("Medical with given ID does not exist");
             }
         }),
+
+    check("prices")
+        .optional()
+        .isArray({ min: 0 }).withMessage("Prices must be list"),
+    check("prices.*.subCategoryId")
+        .isInt().withMessage("subCategoryId must be number"),
+    check("prices.*.price")
+        .isFloat().withMessage("prices must be float")
 ];
 
 export const deleteEmployeeValidation = [
