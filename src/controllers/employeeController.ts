@@ -1,12 +1,13 @@
-import { UserRequest } from "index";
+import {AdminRequest, UserRequest} from "index";
 import { Response } from "express";
 import prisma from "../config/db";
-import { sendSuccessResponse } from "../utils/response";
+import {sendErrorResponse, sendSuccessResponse} from "../utils/response";
+import {EmployeeService} from "../services/employeeService";
 
 const EmployeeController = () => {
   const getEmployees = async (
-    req: UserRequest,
-    res: Response,
+      req: AdminRequest,
+      res: Response,
   ): Promise<any> => {
     const medicalId = parseInt(req.query.medicalId as string) || null;
 
@@ -27,8 +28,96 @@ const EmployeeController = () => {
     });
   };
 
+  const createEmployee = async (req: AdminRequest, res: Response): Promise<any> => {
+      try {
+          const employeeService = new EmployeeService();
+          const employee = await employeeService.createEmployee(req.body);
+
+          return sendSuccessResponse({
+              res,
+              data: {
+                  employee,
+              },
+          });
+      } catch (error) {
+          return sendErrorResponse({res, error});
+      }
+  };
+
+  const updateEmployee = async (req: AdminRequest, res: Response): Promise<any> => {
+      const employeeId = parseInt(req.params.id as string);
+
+      try {
+          const employeeService = new EmployeeService();
+          const employee = await employeeService.updateEmployee(employeeId, req.body);
+
+          return sendSuccessResponse({
+              res,
+              data: {
+                  employee,
+              },
+          });
+      } catch (error) {
+          return sendErrorResponse({res, error});
+      }
+  };
+
+  const deleteEmployee = async (req: AdminRequest, res: Response): Promise<any> => {
+      const employeeId = parseInt(req.params.id as string);
+
+      try {
+          const employeeService = new EmployeeService();
+          await employeeService.deleteEmployee(employeeId);
+
+          return sendSuccessResponse({ res });
+      } catch (error) {
+          return sendErrorResponse({res, error});
+      }
+  };
+
+    const getDoctors = async (
+        req: UserRequest,
+        res: Response,
+    ): Promise<any> => {
+        try {
+            const employeeService = new EmployeeService();
+            const employees = await employeeService.getDoctors();
+
+            return sendSuccessResponse({
+                res,
+                data: {
+                    employees
+                },
+            });
+        } catch (error) {
+            return sendErrorResponse({res, error});
+        }
+    };
+
+  const getDoctorsByCategory = async (req: UserRequest, res: Response): Promise<any> => {
+      const categoryId = parseInt(req.body.categoryId as string);
+
+      if (!categoryId) {
+          return sendErrorResponse({res, error: "You have to pass categoryId", statusCode: 400});
+      }
+
+      try {
+          const employeeService = new EmployeeService();
+          const employees = await employeeService.getDoctorsByCategory(categoryId);
+
+          return sendSuccessResponse({res, data: employees});
+      } catch (error) {
+          return sendErrorResponse({res, error});
+      }
+  };
+
   return {
+    getDoctors,
+    getDoctorsByCategory,
     getEmployees,
+    createEmployee,
+    updateEmployee,
+    deleteEmployee
   };
 };
 
