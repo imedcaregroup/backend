@@ -1,6 +1,4 @@
 import prisma from "../config/db";
-import {isHigherPrecedenceThanAwait} from "@typescript-eslint/eslint-plugin/dist/util";
-import {sendSuccessResponse} from "../utils/response";
 
 export class EmployeeService {
 
@@ -161,11 +159,6 @@ export class EmployeeService {
     }
 
     protected async syncEmployeeCategories(employeeId: number, prices: any): Promise<any> {
-        // fetch current categories
-        const currentItems = await prisma.employeeCategory.findMany({
-            where: {employeeId}
-        });
-
         const inputSubCategories = prices.map((item: any) => Number(item.subCategoryId));
 
         await prisma.employeeCategory.deleteMany({
