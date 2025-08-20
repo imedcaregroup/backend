@@ -12,6 +12,7 @@ const SpecialOffersController = () => {
     try {
       const limitRaw = Number(req.query.limit);
       const medicalId = Number(req.query.medicalId);
+      const search = req.query.search as string | undefined;
       const startsAtSort = req.query.startsAtSort as "asc" | "desc" | undefined;
       const priceSort = req.query.priceSort as "asc" | "desc" | undefined;
       const minPrice = Number(req.query.minPrice);
@@ -19,6 +20,11 @@ const SpecialOffersController = () => {
 
       const where: Prisma.SpecialOfferWhereInput = {
         isActive: true,
+        ...(search && search.trim().length > 0
+          ? {
+              title: { contains: search, mode: "insensitive" },
+            }
+          : {}),
         ...(Number.isFinite(medicalId) ? { medicalId } : {}),
         ...(Number.isFinite(minPrice) ? { price: { gte: minPrice } } : {}),
         ...(Number.isFinite(maxPrice) ? { price: { lte: maxPrice } } : {}),
