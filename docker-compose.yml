@@ -1,19 +1,19 @@
 services:
   # Node.js service
-#  imed-backend:
-#    container_name: imed-backend
-#    build:
-#      dockerfile: Dockerfile
-#      context: .
-#    ports:
-#      - "4000:4000"
-#    volumes:
-#      - .:/app # Mount current directory to /app
-#      - /app/node_modules # Optional: only if necessary
-#    env_file:
-#      - .env
-#    depends_on:
-#      - postgres # Ensure the db service starts before the app service
+  imed-backend:
+    container_name: imed-backend
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app # Mount current directory to /app
+      - /app/node_modules # Optional: only if necessary
+    env_file:
+      - .env
+    depends_on:
+      - postgres # Ensure the db service starts before the app service
   # PostgreSQL service
   postgres:
     image: postgres:latest
