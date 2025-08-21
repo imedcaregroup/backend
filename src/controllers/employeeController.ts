@@ -79,9 +79,11 @@ const EmployeeController = () => {
         req: UserRequest,
         res: Response,
     ): Promise<any> => {
+        const categoryId = parseInt(req.query.categoryId as string) || null;
+
         try {
             const employeeService = new EmployeeService();
-            const employees = await employeeService.getDoctors();
+            const employees = await employeeService.getDoctors(categoryId);
 
             return sendSuccessResponse({
                 res,
@@ -94,26 +96,8 @@ const EmployeeController = () => {
         }
     };
 
-  const getDoctorsByCategory = async (req: UserRequest, res: Response): Promise<any> => {
-      const categoryId = parseInt(req.body.categoryId as string);
-
-      if (!categoryId) {
-          return sendErrorResponse({res, error: "You have to pass categoryId", statusCode: 400});
-      }
-
-      try {
-          const employeeService = new EmployeeService();
-          const employees = await employeeService.getDoctorsByCategory(categoryId);
-
-          return sendSuccessResponse({res, data: employees});
-      } catch (error) {
-          return sendErrorResponse({res, error});
-      }
-  };
-
   return {
     getDoctors,
-    getDoctorsByCategory,
     getEmployees,
     createEmployee,
     updateEmployee,

@@ -175,7 +175,7 @@ const OrderController = () => {
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
-            SpecialOffer: { connect: { id: specialOfferId || null } },
+            SpecialOffer: specialOfferId ? { connect: { id: specialOfferId } } : undefined,
           },
           include: {
             orderSubCategories: {
@@ -186,7 +186,7 @@ const OrderController = () => {
           },
         });
       } catch (err) {
-        console.error("Error creating order:", err.code, err.meta);
+        console.error("Error creating order: ", err.code, err.message);
         return sendErrorResponse({
           res,
           statusCode: 500,
@@ -782,11 +782,6 @@ const OrderController = () => {
       const orderStatus = req.query.orderStatus;
       const from = req.query.from;
       const to = req.query.to;
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
 
       const condition: { [key: string]: any } = {
         startTime: { not: null },
@@ -843,14 +838,7 @@ const OrderController = () => {
             },
             orderSubCategories: {
               include: {
-                service: {
-                  // Include the related service
-                  select: {
-                    id: true,
-                    name: true,
-                    iconUrl: true,
-                  },
-                },
+                service: true,
                 category: {
                   // Include the related category
                   select: {
@@ -882,7 +870,7 @@ const OrderController = () => {
                 lng: true,
                 address: true,
               },
-            },
+            }
           },
           orderBy: {
             createdAt: "desc",
@@ -1012,11 +1000,6 @@ const OrderController = () => {
   const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const orderId = Number(req.params.id);
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
 
       logHttp("Fetching order");
       let order = await __db.order.findFirst({
@@ -1034,14 +1017,7 @@ const OrderController = () => {
           },
           orderSubCategories: {
             include: {
-              service: {
-                // Include the related service
-                select: {
-                  id: true,
-                  name: true,
-                  iconUrl: true,
-                },
-              },
+              service: true,
               category: {
                 // Include the related category
                 select: {
@@ -1074,6 +1050,7 @@ const OrderController = () => {
               address: true,
             },
           },
+          Service: true,
           user: {
             select: {
               id: true,
