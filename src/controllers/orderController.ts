@@ -175,7 +175,9 @@ const OrderController = () => {
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
-            SpecialOffer: { connect: { id: specialOfferId || null } },
+            ...(specialOfferId && {
+              SpecialOffer: { connect: { id: specialOfferId } },
+            }),
           },
           include: {
             orderSubCategories: {
@@ -186,6 +188,7 @@ const OrderController = () => {
           },
         });
       } catch (err) {
+        console.error(err);
         console.error("Error creating order:", err.code, err.meta);
         return sendErrorResponse({
           res,
@@ -423,11 +426,7 @@ const OrderController = () => {
       const cursor = req.query.cursor
         ? parseInt(req.query.cursor as string)
         : null;
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
+
       const status = req.query.status as string;
 
       logHttp("Fetching orders ==> ", req.user._id);
@@ -492,6 +491,11 @@ const OrderController = () => {
               address: true,
             },
           },
+          SpecialOffer: {
+            select: {
+              title: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -501,6 +505,7 @@ const OrderController = () => {
       // Format `orderSubCategories` into a flat array of subCategory objects
       const formattedOrders = orders.map((order: any) => ({
         ...order,
+        title: order.SpecialOffer?.title || null,
         orderSubCategories: order.orderSubCategories.map((osc: any) => ({
           id: osc.subCategory.id,
           name: osc.subCategory.name,
@@ -515,8 +520,6 @@ const OrderController = () => {
         ...order,
         createdAt: dayjs(order.createdAt).format("YYYY-MM-DD HH:mm:ss.SSS"),
       }));
-
-      console.log("formattedOrder", formattedOrder);
 
       logHttp("Fetched orders");
 
@@ -782,11 +785,6 @@ const OrderController = () => {
       const orderStatus = req.query.orderStatus;
       const from = req.query.from;
       const to = req.query.to;
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
 
       const condition: { [key: string]: any } = {
         startTime: { not: null },
@@ -843,32 +841,11 @@ const OrderController = () => {
             },
             orderSubCategories: {
               include: {
-                service: {
-                  // Include the related service
-                  select: {
-                    id: true,
-                    name: true,
-                    iconUrl: true,
-                  },
-                },
-                category: {
-                  // Include the related category
-                  select: {
-                    id: true,
-                    name: true,
-                    iconUrl: true,
-                  },
-                },
                 subCategory: {
                   select: {
                     id: true,
                     name: true,
                     iconUrl: true,
-                    medicalCategories: {
-                      select: {
-                        price: true, // Fetch price from MedicalCategory
-                      },
-                    },
                   },
                 },
               },
@@ -883,6 +860,11 @@ const OrderController = () => {
                 address: true,
               },
             },
+            SpecialOffer: {
+              select: {
+                title: true,
+              },
+            },
           },
           orderBy: {
             createdAt: "desc",
@@ -893,6 +875,7 @@ const OrderController = () => {
         // Format `orderSubCategories` into a flat array of subCategory objects
         const formattedOrders = orders.map((order: any) => ({
           ...order,
+          title: order.SpecialOffer?.title || null,
           orderSubCategories: order.orderSubCategories.map((osc: any) => ({
             id: osc.subCategory.id,
             name: osc.subCategory.name,
@@ -933,7 +916,6 @@ const OrderController = () => {
     res: Response,
   ): Promise<any> => {
     try {
-      console.log("in here");
       const limit = parseInt(req.query.limit as string) || 10;
       const page = parseInt(req.query.page as string) || 1;
       const orderStatus = req.query.orderStatus;
@@ -980,7 +962,13 @@ const OrderController = () => {
               iconUrl: true,
             },
           },
+          SpecialOffer: {
+            select: {
+              title: true,
+            },
+          },
         },
+
         orderBy: {
           orderDate: "desc",
         },
@@ -991,7 +979,12 @@ const OrderController = () => {
       return sendSuccessResponse({
         res,
         data: {
-          orders,
+          orders: orders.map((order) => {
+            return {
+              ...order,
+              title: order.SpecialOffer?.title || null,
+            };
+          }),
           meta: {
             count,
             limit: +limit,
@@ -1090,6 +1083,11 @@ const OrderController = () => {
               imageUrl: true,
             },
           },
+          SpecialOffer: {
+            select: {
+              title: true,
+            },
+          },
         },
       });
 
@@ -1118,6 +1116,7 @@ const OrderController = () => {
         res,
         data: {
           ...order,
+          title: order.SpecialOffer?.title || null,
           user: {
             ...order.user,
             userOrderCount,
