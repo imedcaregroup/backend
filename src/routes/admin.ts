@@ -19,9 +19,9 @@ import {
 } from "../validations/categoryValidation";
 import SubCategoryController from "../controllers/subCategoryController";
 import {
-    createEmployeeValidation,
-    deleteEmployeeValidation,
-    updateEmployeeValidation
+  createEmployeeValidation,
+  deleteEmployeeValidation,
+  updateEmployeeValidation,
 } from "../validations/employeeValidation";
 import EmployeeController from "../controllers/employeeController";
 
@@ -100,25 +100,25 @@ router
   .delete(subCategoryController.deleteSubCategory);
 
 // employee
+router.route("/employees").get(employeeController.getEmployees);
 router
-    .route('/employees')
-    .get(employeeController.getEmployees);
+  .route("/employees")
+  .post(
+    createEmployeeValidation,
+    validationWrapper(employeeController.createEmployee),
+  );
 router
-    .route('/employees')
-    .post(
-        createEmployeeValidation,
-        validationWrapper(employeeController.createEmployee)
-    );
-router.route('/employees/:id')
-    .patch(
-        updateEmployeeValidation,
-        validationWrapper(employeeController.updateEmployee)
-    );
-router.route('/employees/:id')
-    .delete(
-        deleteEmployeeValidation,
-        validationWrapper(employeeController.deleteEmployee)
-    );
+  .route("/employees/:id")
+  .patch(
+    updateEmployeeValidation,
+    validationWrapper(employeeController.updateEmployee),
+  );
+router
+  .route("/employees/:id")
+  .delete(
+    deleteEmployeeValidation,
+    validationWrapper(employeeController.deleteEmployee),
+  );
 
 // ✅ Super admin-only routes after this point
 router.use(superAdminOnly);
