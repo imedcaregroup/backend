@@ -5,6 +5,6 @@ const employeeController = EmployeeController();
 
 const router = Router();
 
-router.route("/").get(employeeController.getEmployees);
+router.route("/doctors").get(employeeController.getDoctors);
 
 export default router;

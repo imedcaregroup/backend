@@ -188,7 +188,6 @@ const OrderController = () => {
           },
         });
       } catch (err) {
-        console.error(err);
         console.error("Error creating order:", err.code, err.meta);
         return sendErrorResponse({
           res,
@@ -841,6 +840,15 @@ const OrderController = () => {
             },
             orderSubCategories: {
               include: {
+                service: true,
+                category: {
+                  // Include the related category
+                  select: {
+                    id: true,
+                    name: true,
+                    iconUrl: true,
+                  },
+                },
                 subCategory: {
                   select: {
                     id: true,
@@ -1005,11 +1013,6 @@ const OrderController = () => {
   const getOrder = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       const orderId = Number(req.params.id);
-      const select = {
-        id: true,
-        name: true,
-        iconUrl: true,
-      };
 
       logHttp("Fetching order");
       let order = await __db.order.findFirst({
@@ -1027,14 +1030,7 @@ const OrderController = () => {
           },
           orderSubCategories: {
             include: {
-              service: {
-                // Include the related service
-                select: {
-                  id: true,
-                  name: true,
-                  iconUrl: true,
-                },
-              },
+              service: true,
               category: {
                 // Include the related category
                 select: {
@@ -1067,6 +1063,7 @@ const OrderController = () => {
               address: true,
             },
           },
+          Service: true,
           user: {
             select: {
               id: true,

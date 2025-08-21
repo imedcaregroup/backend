@@ -38,6 +38,7 @@ model Service {
   id         Int                @id @default(autoincrement())
   iconUrl    String
   name       String
+  systemName String?
   categories Category[]
   Order      Order[]
   orders     OrderSubCategory[]
@@ -63,6 +64,7 @@ model SubCategory {
   name_ru            String?
   categoryId         Int
   medicalCategories  MedicalCategory[]
+  employeeCategories EmployeeCategory[]
   orderSubCategories OrderSubCategory[] @relation("SubCategoryOrderSubCategories")
   category           Category           @relation(fields: [categoryId], references: [id])
   specialOffers      SpecialOffer[]
@@ -94,6 +96,19 @@ model MedicalCategory {
   price         Float       @default(0)
   medical       Medical     @relation(fields: [medicalId], references: [id])
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+}
+
+model EmployeeCategory {
+  id            Int         @id @default(autoincrement())
+  employeeId    Int
+  subCategoryId Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  price         Float       @default(0)
+  employee      Employee    @relation(fields: [employeeId], references: [id])
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+
+  @@unique([employeeId, subCategoryId])
 }
 
 model Order {
@@ -214,19 +229,26 @@ enum AdminRole {
   SUPER_ADMIN
 }
 
-model Employee {
-  id             Int            @id @default(autoincrement())
-  name           String
-  surName        String
-  position       String
-  userId         Int            @unique
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime       @default(now())
-  medicalId      Int?
-  medical        Medical?       @relation(fields: [medicalId], references: [id])
-  availabilities Availability[]
+enum EmployeeType {
+  DOCTOR
+  NURSE
+}
 
-  Order Order[]
+model Employee {
+  id                    Int      @id @default(autoincrement())
+  name                  String
+  surName               String
+  position              String
+  type                  EmployeeType @default(NURSE)
+  imageUrl              String?
+  userId                Int      @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  medicalId             Int?
+  medical               Medical? @relation(fields: [medicalId], references: [id])
+  availabilities        Availability[]
+  employeeCategories    EmployeeCategory[]
+  Order                 Order[]
 }
 
 model SpecialOffer {
