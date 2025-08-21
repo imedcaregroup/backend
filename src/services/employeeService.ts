@@ -2,35 +2,8 @@ import prisma from "../config/db";
 
 export class EmployeeService {
 
-    public async getDoctorsByCategory(categoryId: number): Promise<any> {
+    public async getDoctors(categoryId: number|null): Promise<any> {
 
-        const subIds = (
-            await prisma.subCategory.findMany({
-                where: { categoryId },
-                select: { id: true },
-            })
-        ).map(item => item.id);
-
-        if (!subIds.length) {
-            throw new Error('There is no subCategory for passed category');
-        }
-
-        return await prisma.employee.findMany({
-            where: {
-                type: "DOCTOR",
-                employeeCategories: {
-                    some: {
-                        subCategoryId: {in: subIds}
-                    }
-                }
-            },
-            include: {
-                employeeCategories: true
-            }
-        })
-    };
-
-    public async getDoctors(): Promise<any> {
         let condition: any = {
             include: {
                 medical: {select: {id: true, name: true}},
@@ -42,6 +15,28 @@ export class EmployeeService {
             },
             where: {
                 type: "DOCTOR"
+            }
+        }
+
+        if (categoryId) {
+            const subIds = (
+                await prisma.subCategory.findMany({
+                    where: { categoryId },
+                    select: { id: true },
+                })
+            ).map(item => item.id);
+
+            if (!subIds.length) {
+                throw new Error('There is no subCategory for passed category');
+            }
+
+            condition.where = {
+                ...condition.where,
+                employeeCategories: {
+                    some: {
+                        subCategoryId: {in: subIds}
+                    }
+                }
             }
         }
 
