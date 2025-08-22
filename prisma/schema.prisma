@@ -38,6 +38,7 @@ model Service {
   id         Int                @id @default(autoincrement())
   iconUrl    String
   name       String
+  systemName String?
   categories Category[]
   Order      Order[]
   orders     OrderSubCategory[]

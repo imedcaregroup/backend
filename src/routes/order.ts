@@ -1,6 +1,5 @@
 import { Router } from "express";
 import OrderController from "../controllers/orderController";
-import { adminAuthMiddleware } from "../middlewares/adminAuth";
 import { validationWrapper } from "../utils/helpers";
 import {
   acceptOrRejectOrderValidation,
@@ -41,22 +40,5 @@ router
 router.route("/:id/start").post(orderController.startOrder);
 router.route("/:id/complete").post(orderController.completeOrder);
 router.route("/:id/assign").post(orderController.assignEmployeeToOrder);
-//
-// 🛡️ Admin-Protected Routes for ONLY 3 APIs
-//
-const adminRouter = Router();
-
-adminRouter.use(adminAuthMiddleware);
-
-// adminRouter.get("/orders", orderController.getOrders);
-// adminRouter.get("/orders/:id", orderController.getOrder);
-// adminRouter.patch(
-//   "/orders/:id",
-//   acceptOrRejectOrderValidation,
-//   validationWrapper(orderController.acceptOrRejectOrder)
-// );
-
-// Mount adminRouter on /admin/orders
-router.use("/admin", adminRouter);
 
 export default router;
