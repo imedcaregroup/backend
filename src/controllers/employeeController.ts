@@ -105,8 +105,25 @@ const EmployeeController = () => {
     }
   };
 
+  const getDoctor = async (req: UserRequest, res: Response): Promise<any> => {
+    const employeeId = parseInt(req.params.id as string);
+    if (!employeeId) {
+        return sendErrorResponse({res, error: 'Invalid employee id', statusCode: 400});
+    }
+
+    try {
+        const employeeService = new EmployeeService();
+        const doctor = await employeeService.getDoctor(employeeId);
+
+        return sendSuccessResponse({res, data: doctor});
+    } catch (error) {
+        return sendErrorResponse({res, error});
+    }
+  };
+
   return {
     getDoctors,
+    getDoctor,
     getEmployees,
     createEmployee,
     updateEmployee,

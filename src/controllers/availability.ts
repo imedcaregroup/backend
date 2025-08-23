@@ -2,7 +2,6 @@ import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
-import { formatTime } from "../utils/helpers";
 
 const AvailabilityController = () => {
   const getAvailableDays = async (

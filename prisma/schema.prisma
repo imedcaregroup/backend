@@ -239,6 +239,10 @@ model Employee {
   name                  String
   surName               String
   position              String
+  about_az              String?
+  about_ru              String?
+  about_en              String?
+  experienceYears       String?
   type                  EmployeeType @default(NURSE)
   imageUrl              String?
   userId                Int      @unique
