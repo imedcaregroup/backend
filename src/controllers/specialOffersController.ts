@@ -26,8 +26,12 @@ const SpecialOffersController = () => {
             }
           : {}),
         ...(Number.isFinite(medicalId) ? { medicalId } : {}),
-        ...(Number.isFinite(minPrice) ? { price: { gte: minPrice } } : {}),
-        ...(Number.isFinite(maxPrice) ? { price: { lte: maxPrice } } : {}),
+        ...{
+          price: {
+            gte: Number.isFinite(minPrice) ? minPrice : 0,
+            lte: Number.isFinite(maxPrice) ? maxPrice : undefined,
+          },
+        },
         startsAt: {
           lte: new Date(),
         },
