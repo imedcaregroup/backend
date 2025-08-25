@@ -80,16 +80,7 @@ export class EmployeeService {
 
   public async getDoctor(id: number): Promise<any> {
       const employee = await prisma.employee.findUnique({
-          select: {
-              id: true,
-              name: true,
-              surName: true,
-              position: true,
-              experienceYears: true,
-              about_az: true,
-              about_ru: true,
-              about_en: true,
-              imageUrl: true,
+          include: {
               medical: { select: { id: true, name: true, iconUrl: true } },
               employeeCategories: {
                   include: {
