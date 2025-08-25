@@ -62,7 +62,7 @@ export const verifyJWT = (token: string): DecodedLoginTokenType => {
   return decode;
 };
 
-export const decordToken = (token: string): string => {
+export const decodeToken = (token: string): string => {
   const decodedToken = verify(token, SECRET_KEY) as DecodedTokenType;
   return decodedToken.userId;
 };
@@ -76,7 +76,7 @@ export const formatTime = (time: number) => {
   const minutes = timeString.slice(2, 4);
 
   // Return formatted time
-  return `${hours}:${minutes}:00`;
+  return `${hours}:${minutes}`;
 };
 
 const sliceArrayIntoGroups = (tokenArr: any[]) => {
