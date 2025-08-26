@@ -62,6 +62,7 @@ model SubCategory {
   name_en            String?
   name_az            String?
   name_ru            String?
+  systemName         String?
   categoryId         Int
   medicalCategories  MedicalCategory[]
   employeeCategories EmployeeCategory[]

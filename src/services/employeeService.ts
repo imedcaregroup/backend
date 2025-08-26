@@ -129,6 +129,7 @@ export class EmployeeService {
                   az: item.subCategory.name_az,
                   ru: item.subCategory.name_ru,
                   en: item.subCategory.name_en,
+                  systemName: item.subCategory.systemName,
                   price: item.price.toString() + " azn",
               };
           }),
