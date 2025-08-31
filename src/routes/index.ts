@@ -14,6 +14,7 @@ import fileRoute from "./file";
 import subCategoryRoute from "./subCategory";
 import userrRoute from "./user";
 import specialOffersRoute from "./specialOffers";
+import notificationsRoute from "./notifications";
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use("/availability", availbilityRoute);
 router.use("/address", addressRoute);
 router.use("/token", fcmTokenRoute);
 router.use("/special-offers", specialOffersRoute);
+router.use("/notification", notificationsRoute);
 
 export default router;

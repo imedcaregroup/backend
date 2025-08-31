@@ -1,35 +1,38 @@
 import { Router } from "express";
+import { createNotificationValidation } from "../validations/notificationValidation";
 import AdminController from "../controllers/adminController";
+import CategoryController from "../controllers/categoryController";
+import EmployeeController from "../controllers/employeeController";
+import NotificationsController from "../controllers/notificationsController";
+import OrderController from "../controllers/orderController";
+import SubCategoryController from "../controllers/subCategoryController";
 import { adminAuthMiddleware, superAdminOnly } from "../middlewares/adminAuth";
 import { validationWrapper } from "../utils/helpers";
 import {
+  changePasswordValidation,
   createAdminValidation,
   loginAdminValidation,
   updateAdminValidation,
-  changePasswordValidation,
 } from "../validations/adminValidation";
-import OrderController from "../controllers/orderController";
-import CategoryController from "../controllers/categoryController";
-import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
 import {
   createCategoryValidation,
   createSubCategoryValidation,
   updateCategoryValidation,
   updateSubCategoryValidation,
 } from "../validations/categoryValidation";
-import SubCategoryController from "../controllers/subCategoryController";
 import {
   createEmployeeValidation,
   deleteEmployeeValidation,
   updateEmployeeValidation,
 } from "../validations/employeeValidation";
-import EmployeeController from "../controllers/employeeController";
+import { acceptOrRejectOrderValidation } from "../validations/orderValidation";
 
 const adminController = AdminController();
 const orderController = OrderController();
 const categoryController = CategoryController();
 const subCategoryController = SubCategoryController();
 const employeeController = EmployeeController();
+const notificationsController = NotificationsController();
 const router = Router();
 
 // Public routes
@@ -118,6 +121,14 @@ router
   .delete(
     deleteEmployeeValidation,
     validationWrapper(employeeController.deleteEmployee),
+  );
+
+// Notifications
+router
+  .route("/notification")
+  .post(
+    createNotificationValidation,
+    validationWrapper(notificationsController.createNotification),
   );
 
 // ✅ Super admin-only routes after this point
