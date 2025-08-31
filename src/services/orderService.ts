@@ -39,6 +39,19 @@ export class OrderService {
       },
     );
 
+    const notification = await __db.notification.create({
+      data: {
+        title: "Order Completed",
+        body: "Your order has been completed successfully.",
+      },
+    });
+    await __db.userNotification.create({
+      data: {
+        user: { connect: { id: order.userId } },
+        notification: { connect: { id: notification.id } },
+      },
+    });
+
     await this.sendPostNotification(
       order.userId,
       order.id,
@@ -56,6 +69,20 @@ export class OrderService {
       where: { id: order.id },
       data: {
         employeeStatus: "processing",
+      },
+    });
+
+    const notification = await __db.notification.create({
+      data: {
+        title: "Order on the way",
+        body: "Your order is being delivered now.",
+      },
+    });
+
+    await __db.userNotification.create({
+      data: {
+        user: { connect: { id: order.userId } },
+        notification: { connect: { id: notification.id } },
       },
     });
 

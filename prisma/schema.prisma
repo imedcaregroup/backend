@@ -8,8 +8,8 @@ datasource db {
 }
 
 model User {
-  id                  Int        @id @default(autoincrement())
-  email               String?    @unique
+  id                  Int                @id @default(autoincrement())
+  email               String?            @unique
   password            String?
   mobileNumber        String?
   otp                 Int?
@@ -17,21 +17,22 @@ model User {
   surName             String?
   pytroNym            String?
   dob                 DateTime?
-  address             String?    @default("None")
+  address             String?            @default("None")
   authProvider        String
   googleId            String?
-  notificationEnabled Boolean    @default(false)
+  notificationEnabled Boolean            @default(false)
   country             String?
   gender              String?
   lat                 Float?
   lng                 Float?
-  isDeleted           Boolean?   @default(false)
-  imageUrl            String?    @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
-  passportUrls        String[]   @default([])
+  isDeleted           Boolean?           @default(false)
+  imageUrl            String?            @default("https://thumbs.dreamstime.com/b/profile-anonymous-face-icon-gray-silhouette-person-male-default-avatar-photo-placeholder-white-background-vector-illustration-106473768.jpg")
+  passportUrls        String[]           @default([])
   addresses           Address[]
   orders              Order[]
   tokens              FcmToken[]
   employee            Employee?
+  notificationsPivot  UserNotification[]
 }
 
 model Service {
@@ -273,7 +274,7 @@ model SpecialOffer {
   endsAt      DateTime?
 
   medicalId Int
-  medical Medical @relation(fields: [medicalId], references: [id])
+  medical   Medical @relation(fields: [medicalId], references: [id])
 
   subCategories SubCategory[]
 
@@ -283,6 +284,30 @@ model SpecialOffer {
   discountValue Float? // 20 -> 20% if PERCENTAGE, or 20 AZN if FIXED
 
   orders Order[] // orders created from this offer
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  recipients UserNotification[]
+
+  @@index([createdAt(sort: Desc)], map: "idx_notification_created")
+}
+
+model UserNotification {
+  userId         Int
+  notificationId Int
+  readAt         DateTime?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, notificationId])
+  @@index([userId, readAt], map: "idx_un_user_readat")
+  @@index([notificationId], map: "idx_un_notification")
 }
 
 enum DiscountType {

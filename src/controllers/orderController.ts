@@ -643,6 +643,27 @@ const OrderController = () => {
         },
       });
 
+      const notification = await __db.notification.create({
+        data: {
+          title:
+            req.body.orderStatus === "accepted"
+              ? "Your order has been accepted"
+              : "Your order has been rejected",
+          body:
+            req.body.orderStatus === "accepted"
+              ? "You account has been accepted by admin"
+              : req.body.declinedReason ||
+                "Your order has been rejected by admin",
+        },
+      });
+
+      await __db.userNotification.create({
+        data: {
+          user: { connect: { id: order.userId } },
+          notification: { connect: { id: notification.id } },
+        },
+      });
+
       logHttp("Accepted or rejected order ==> ");
 
       const tokens = await __db.fcmToken.findMany({
