@@ -45,7 +45,7 @@ export const sendErrorResponse = ({
 }: ErrorParamType): void => {
   const responseObj: ErrorResponseType = {
     error: error?.message || error?.response?.data || error,
-    status: false,
+    status: error?.status || statusCode,
   };
-  res.status(statusCode).send(responseObj);
+  res.status(Number(responseObj.status)).send(responseObj);
 };
