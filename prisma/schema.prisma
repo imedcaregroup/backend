@@ -88,6 +88,7 @@ model Medical {
   admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
   employees         Employee[]
   SpecialOffer      SpecialOffer[]
+  employeeMedical   EmployeeMedical[]
 }
 
 model MedicalCategory {
@@ -107,10 +108,20 @@ model EmployeeCategory {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   price         Float       @default(0)
-  employee      Employee    @relation(fields: [employeeId], references: [id])
+  employee      Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
 
   @@unique([employeeId, subCategoryId])
+}
+
+model EmployeeMedical {
+  id    Int @id @default(autoincrement())
+  employeeId Int?
+  medicalId  Int?
+  medical    Medical?  @relation(fields: [medicalId], references: [id])
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, medicalId])
 }
 
 model Order {
@@ -255,6 +266,7 @@ model Employee {
   availabilities        Availability[]
   employeeCategories    EmployeeCategory[]
   Order                 Order[]
+  medicals              EmployeeMedical[]
 }
 
 model SpecialOffer {
