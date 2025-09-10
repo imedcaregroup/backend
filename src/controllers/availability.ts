@@ -287,21 +287,27 @@ const AvailabilityController = () => {
 
       const lastDayOfMonth = new Date(year, month, 0).getDate();
 
-      if ((!medicalId && !employeeId) || (medicalId && employeeId)) {
+      if (!medicalId && !employeeId) {
         return sendErrorResponse({
           res,
           error:
-            "You should pass one of the following: medicalId or employeeId",
+            "You should pass one of the following cases: medicalId or employeeId with medicalId",
           statusCode: 400,
         });
       }
 
-      const idCondition = medicalId ? { medicalId } : { employeeId };
+      const whereParts: any = {};
+      if (medicalId) {
+        whereParts.medicalId = medicalId;
+      }
+      if (employeeId) {
+        whereParts.employeeId = employeeId;
+      }
 
       // Fetch booked slots more precisely
       const orders = await __db.order.findMany({
         where: {
-          ...idCondition,
+          ...whereParts,
           orderDate: {
             gte: new Date(year, month - 1, 1),
             lte: new Date(year, month - 1, lastDayOfMonth),
@@ -327,7 +333,7 @@ const AvailabilityController = () => {
       // Fetch available slots
       const availableSlots = await __db.availability.findMany({
         where: {
-          ...idCondition,
+          ...whereParts,
           day: { in: Array.from({ length: 7 }, (_, i) => i) },
         },
         select: {
