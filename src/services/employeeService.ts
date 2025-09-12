@@ -16,7 +16,7 @@ export class EmployeeService {
   public async getDoctors(categoryId: number | null): Promise<any> {
     let condition: any = {
       include: {
-        medical: { select: { id: true, name: true } },
+        medicals: { include: { medical: true} },
         employeeCategories: {
           include: {
             subCategory: true,
@@ -59,10 +59,11 @@ export class EmployeeService {
         surName: employee.surName,
         position: employee.position,
         imageUrl: employee.imageUrl,
-        medical: {
-          id: employee.medical.id,
-          name: employee.medical.name,
-        },
+        medicals: employee.medicals.map((em: any) => ({
+            id: em.medical.id,
+            name: em.medical.name,
+            iconUrl: em.medical.iconUrl,
+        })),
         services: employee.employeeCategories.map((item: any) => {
           return {
             categoryId: item.subCategory.categoryId,
@@ -81,7 +82,9 @@ export class EmployeeService {
   public async getDoctor(id: number): Promise<any> {
       const employee = await prisma.employee.findUnique({
           include: {
-              medical: { select: { id: true, name: true, iconUrl: true } },
+              medicals: {
+                  include: { medical: true },
+              },
               employeeCategories: {
                   include: {
                       subCategory: {
@@ -97,6 +100,7 @@ export class EmployeeService {
               id
           },
       });
+
       if (!employee) {
           throw new HttpException(404, 'Doctor not found');
       }
@@ -113,11 +117,11 @@ export class EmployeeService {
             en: employee.about_en,
           },
           imageUrl: employee.imageUrl,
-          medical: employee.medical ? {
-              id: employee.medical.id,
-              name: employee.medical.name,
-              iconUrl: employee.medical.iconUrl
-          } : null,
+          medicals: employee.medicals.map((em: any) => ({
+              id: em.medical.id,
+              name: em.medical.name,
+              iconUrl: em.medical.iconUrl,
+          })),
           schedule: await this.getSchedule(employee.id),
           services: employee.employeeCategories.map((item: any) => {
               return {
@@ -144,7 +148,7 @@ export class EmployeeService {
       position,
       imageUrl,
       userId,
-      medicalId,
+      medicals,
       prices,
     } = data;
 
@@ -164,9 +168,11 @@ export class EmployeeService {
         position,
         imageUrl,
         user: { connect: { id: userId } },
-        medical: { connect: { id: medicalId } },
+        medical: { connect: { id: medicals[0] } },
       },
     });
+
+    await this.syncEmployeeMedicals(employee.id, medicals);
 
     // sync employee-category
     if (prices) {
@@ -189,7 +195,7 @@ export class EmployeeService {
       position,
       imageUrl,
       userId,
-      medicalId,
+      medicals,
       prices,
     } = data;
 
@@ -202,14 +208,12 @@ export class EmployeeService {
         position,
         imageUrl,
         user: { connect: { id: userId } },
-        medical: { connect: { id: medicalId } },
+        medical: { connect: { id: medicals[0] } },
       },
     });
 
-    // sync employee-category
-    if (prices) {
-      await this.syncEmployeeCategories(employee.id, prices);
-    }
+    await this.syncEmployeeMedicals(employee.id, medicals);
+    await this.syncEmployeeCategories(employee.id, prices);
 
     return await prisma.employee.findUnique({
       where: { id: employee.id },
@@ -228,15 +232,43 @@ export class EmployeeService {
       throw new Error("Cannot delete this employee cause it used in order(s)");
     }
 
-    await prisma.employeeCategory.deleteMany({
-      where: { employeeId },
-    });
-
     await prisma.employee.delete({
       where: {
         id: employeeId,
       },
     });
+  }
+
+  protected async syncEmployeeMedicals(
+      employeeId: number,
+      medicals: number[]
+  ): Promise<number[]> {
+      await prisma.employeeMedical.deleteMany({
+          where: {
+              employeeId,
+              medicalId: { notIn: medicals },
+          },
+      });
+
+      await Promise.all(
+          medicals.map(async (medicalId) => {
+              const medical = await prisma.medical.findUnique({
+                  where: { id: medicalId },
+              });
+
+              if (!medical) return;
+
+              await prisma.employeeMedical.upsert({
+                  where: {
+                      employeeId_medicalId: { employeeId, medicalId },
+                  },
+                  create: { employeeId, medicalId },
+                  update: {}
+              });
+          })
+      );
+
+      return medicals;
   }
 
   protected async syncEmployeeCategories(

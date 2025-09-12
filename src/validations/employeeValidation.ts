@@ -25,20 +25,29 @@ export const createEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
-  check("medicalId")
-    .notEmpty()
-    .isNumeric()
-    .withMessage("Please provide medicalId")
-    .bail()
-    .custom(async (value) => {
-      const medical = await prisma.medical.findUnique({
-        where: { id: parseInt(value) },
-      });
+  // check("medicalId")
+  //   .notEmpty()
+  //   .isNumeric()
+  //   .withMessage("Please provide medicalId")
+  //   .bail()
+  //   .custom(async (value) => {
+  //     const medical = await prisma.medical.findUnique({
+  //       where: { id: parseInt(value) },
+  //     });
+  //
+  //     if (!medical) {
+  //       throw new Error("Medical with given ID does not exist");
+  //     }
+  //   }),
 
-      if (!medical) {
-        throw new Error("Medical with given ID does not exist");
-      }
-    }),
+  check("medicals")
+    .notEmpty()
+    .isArray({ min: 1})
+    .withMessage("Medical(s) must be list"),
+
+  check("medicals.*")
+    .isInt()
+    .withMessage("Medical id must be number"),
 
   check("prices")
     .optional()
@@ -88,20 +97,28 @@ export const updateEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
-  check("medicalId")
-    .notEmpty()
-    .isInt()
-    .withMessage("Please provide medicalId")
-    .bail()
-    .custom(async (value) => {
-      const medical = await prisma.medical.findUnique({
-        where: { id: parseInt(value) },
-      });
+  // check("medicalId")
+  //   .notEmpty()
+  //   .isInt()
+  //   .withMessage("Please provide medicalId")
+  //   .bail()
+  //   .custom(async (value) => {
+  //     const medical = await prisma.medical.findUnique({
+  //       where: { id: parseInt(value) },
+  //     });
+  //
+  //     if (!medical) {
+  //       throw new Error("Medical with given ID does not exist");
+  //     }
+  //   }),
 
-      if (!medical) {
-        throw new Error("Medical with given ID does not exist");
-      }
-    }),
+  check("medicals")
+      .notEmpty()
+      .isArray({ min: 1})
+      .withMessage("Medical(s) must be list"),
+  check("medicals.*")
+      .isInt()
+      .withMessage("Medical id must be number"),
 
   check("prices")
     .optional()
