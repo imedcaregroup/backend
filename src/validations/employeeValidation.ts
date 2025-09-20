@@ -32,6 +32,19 @@ export const createEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
+  check("cityId")
+      .optional({ nullable: true })
+      .isInt()
+      .withMessage("Please provide cityId")
+      .bail()
+      .custom(async (value) => {
+          const city = await prisma.city.findUnique({
+              where: { id: parseInt(value) },
+          })
+          if (!city) {
+              throw new Error("City with given ID does not exist");
+          }
+      }),
 
   check("medicals")
     .notEmpty()
@@ -96,6 +109,19 @@ export const updateEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
+  check("cityId")
+      .optional({ nullable: true })
+      .isInt()
+      .withMessage("Please provide cityId")
+      .bail()
+      .custom(async (value) => {
+          const city = await prisma.city.findUnique({
+              where: { id: parseInt(value) },
+          })
+          if (!city) {
+              throw new Error("City with given ID does not exist");
+          }
+      }),
 
   check("medicals")
       .notEmpty()

@@ -270,6 +270,29 @@ model Employee {
   employeeCategories    EmployeeCategory[]
   Order                 Order[]
   medicals              EmployeeMedical[]
+  cityId                Int?
+  city                  City? @relation(fields: [cityId], references: [id])
+}
+
+model Country {
+  id        Int @id @default(autoincrement())
+  name_az   String?
+  name_en   String?
+  name_ru   String
+
+  cities    City[]
+}
+
+model City {
+  id        Int @id @default(autoincrement())
+  name_az   String?
+  name_en   String?
+  name_ru   String
+
+  countryId Int
+  country   Country @relation(fields: [countryId], references: [id])
+
+  employees Employee[]
 }
 
 model SpecialOffer {

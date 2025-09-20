@@ -85,6 +85,7 @@ export class EmployeeService {
               medicals: {
                   include: { medical: true },
               },
+              city: true,
               employeeCategories: {
                   include: {
                       subCategory: {
@@ -121,6 +122,11 @@ export class EmployeeService {
             ru: employee.about_ru,
             en: employee.about_en,
           },
+          city: employee.city ? {
+            az: employee.city.name_az,
+            ru: employee.city.name_ru,
+            en: employee.city.name_en,
+          } : null,
           imageUrl: employee.imageUrl,
           medicals: employee.medicals.map((em: any) => ({
               id: em.medical.id,
@@ -154,6 +160,7 @@ export class EmployeeService {
       patientsCount,
       imageUrl,
       userId,
+      cityId,
       medicals,
       prices,
       about_az,
@@ -187,6 +194,7 @@ export class EmployeeService {
         experienceYears_en,
         experienceYears_ru,
         user: { connect: { id: userId } },
+        city: cityId ? { connect: {id: cityId} } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });
@@ -221,6 +229,7 @@ export class EmployeeService {
       experienceYears_ru,
       experienceYears_en,
       userId,
+      cityId,
       medicals,
       prices,
     } = data;
@@ -241,6 +250,7 @@ export class EmployeeService {
         experienceYears_en,
         imageUrl,
         user: { connect: { id: userId } },
+        city: cityId ? { connect: {id: undefined} } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });
