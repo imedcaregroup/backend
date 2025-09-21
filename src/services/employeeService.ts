@@ -85,6 +85,7 @@ export class EmployeeService {
               medicals: {
                   include: { medical: true },
               },
+              city: true,
               employeeCategories: {
                   include: {
                       subCategory: {
@@ -110,12 +111,22 @@ export class EmployeeService {
           name: employee.name,
           surName: employee.surName,
           position: employee.position,
-          experienceYears: employee.experienceYears,
+          patientsCount: employee.patientsCount,
+          experienceYears: {
+              az: employee.experienceYears_az,
+              ru: employee.experienceYears_ru,
+              en: employee.experienceYears_en,
+          },
           about: {
             az: employee.about_az,
             ru: employee.about_ru,
             en: employee.about_en,
           },
+          city: employee.city ? {
+            az: employee.city.name_az,
+            ru: employee.city.name_ru,
+            en: employee.city.name_en,
+          } : null,
           imageUrl: employee.imageUrl,
           medicals: employee.medicals.map((em: any) => ({
               id: em.medical.id,
@@ -146,10 +157,18 @@ export class EmployeeService {
       surName,
       type,
       position,
+      patientsCount,
       imageUrl,
       userId,
+      cityId,
       medicals,
       prices,
+      about_az,
+      about_ru,
+      about_en,
+      experienceYears_az,
+      experienceYears_ru,
+      experienceYears_en
     } = data;
 
     const existingEmployeeByUser = await prisma.employee.findFirst({
@@ -166,8 +185,16 @@ export class EmployeeService {
         surName,
         type,
         position,
+        patientsCount,
         imageUrl,
+        about_az,
+        about_en,
+        about_ru,
+        experienceYears_az,
+        experienceYears_en,
+        experienceYears_ru,
         user: { connect: { id: userId } },
+        city: cityId ? { connect: {id: cityId} } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });
@@ -193,8 +220,16 @@ export class EmployeeService {
       surName,
       type,
       position,
+      patientsCount,
       imageUrl,
+      about_az,
+      about_ru,
+      about_en,
+      experienceYears_az,
+      experienceYears_ru,
+      experienceYears_en,
       userId,
+      cityId,
       medicals,
       prices,
     } = data;
@@ -206,8 +241,16 @@ export class EmployeeService {
         surName,
         type,
         position,
+        patientsCount,
+        about_az,
+        about_ru,
+        about_en,
+        experienceYears_az,
+        experienceYears_ru,
+        experienceYears_en,
         imageUrl,
         user: { connect: { id: userId } },
+        city: cityId ? { connect: {id: undefined} } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });

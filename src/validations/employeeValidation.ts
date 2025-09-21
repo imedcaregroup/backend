@@ -6,6 +6,13 @@ export const createEmployeeValidation = [
   check("name").notEmpty().withMessage("Please provide name"),
   check("surName").notEmpty().withMessage("Please provide surName"),
   check("position").notEmpty().withMessage("Please provide position"),
+  check("patientsCount").optional().isInt({ min: 0 }).withMessage("Please provide positionsCount"),
+  check(["about_az", "about_en", "about_ru"])
+    .optional({ nullable: true })
+    .isString(),
+  check(["experienceYears_az", "experienceYears_en", "experienceYears_ru"])
+    .optional({ nullable: true })
+    .isString(),
   check("type")
     .notEmpty()
     .withMessage("Please provide type")
@@ -25,26 +32,24 @@ export const createEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
-  // check("medicalId")
-  //   .notEmpty()
-  //   .isNumeric()
-  //   .withMessage("Please provide medicalId")
-  //   .bail()
-  //   .custom(async (value) => {
-  //     const medical = await prisma.medical.findUnique({
-  //       where: { id: parseInt(value) },
-  //     });
-  //
-  //     if (!medical) {
-  //       throw new Error("Medical with given ID does not exist");
-  //     }
-  //   }),
+  check("cityId")
+      .optional({ nullable: true })
+      .isInt()
+      .withMessage("Please provide cityId")
+      .bail()
+      .custom(async (value) => {
+          const city = await prisma.city.findUnique({
+              where: { id: parseInt(value) },
+          })
+          if (!city) {
+              throw new Error("City with given ID does not exist");
+          }
+      }),
 
   check("medicals")
     .notEmpty()
     .isArray({ min: 1})
     .withMessage("Medical(s) must be list"),
-
   check("medicals.*")
     .isInt()
     .withMessage("Medical id must be number"),
@@ -78,6 +83,13 @@ export const updateEmployeeValidation = [
   check("name").notEmpty().withMessage("Please provide name"),
   check("surName").notEmpty().withMessage("Please provide surName"),
   check("position").notEmpty().withMessage("Please provide position"),
+  check("patientsCount").optional().isInt({ min: 0 }).withMessage("Please provide positionsCount"),
+  check(["about_az", "about_en", "about_ru"])
+      .optional({ nullable: true })
+      .isString(),
+  check(["experienceYears_az", "experienceYears_en", "experienceYears_ru"])
+      .optional({ nullable: true })
+      .isString(),
   check("type")
     .notEmpty()
     .withMessage("Please provide type")
@@ -97,20 +109,19 @@ export const updateEmployeeValidation = [
         throw new Error("User with given ID does not exist");
       }
     }),
-  // check("medicalId")
-  //   .notEmpty()
-  //   .isInt()
-  //   .withMessage("Please provide medicalId")
-  //   .bail()
-  //   .custom(async (value) => {
-  //     const medical = await prisma.medical.findUnique({
-  //       where: { id: parseInt(value) },
-  //     });
-  //
-  //     if (!medical) {
-  //       throw new Error("Medical with given ID does not exist");
-  //     }
-  //   }),
+  check("cityId")
+      .optional({ nullable: true })
+      .isInt()
+      .withMessage("Please provide cityId")
+      .bail()
+      .custom(async (value) => {
+          const city = await prisma.city.findUnique({
+              where: { id: parseInt(value) },
+          })
+          if (!city) {
+              throw new Error("City with given ID does not exist");
+          }
+      }),
 
   check("medicals")
       .notEmpty()
