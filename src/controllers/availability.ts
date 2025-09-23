@@ -283,7 +283,7 @@ const AvailabilityController = () => {
       const month = parseInt(req.query.month as string) || currentMonth;
       const year = parseInt(req.query.year as string) || currentYear;
       const medicalId = parseInt(req.query.medicalId as string);
-      const employeeId = parseInt(req.query.employeeId as string);
+      const employeeId = parseInt(req.query.employeeId as string) || null;
 
       const lastDayOfMonth = new Date(year, month, 0).getDate();
 
@@ -296,12 +296,11 @@ const AvailabilityController = () => {
         });
       }
 
-      const whereParts: any = {};
+      const whereParts: any = {
+        employeeId
+      };
       if (medicalId) {
         whereParts.medicalId = medicalId;
-      }
-      if (employeeId) {
-        whereParts.employeeId = employeeId;
       }
 
       // Fetch booked slots more precisely
