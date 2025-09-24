@@ -29,6 +29,7 @@ export const getMedicalsBySubcategory = (
         SELECT 
             "m"."id",
             "m"."iconUrl",
+            "m"."imageUrl",
             "m"."name",
             "m"."address",
             "m"."lat",
@@ -49,7 +50,7 @@ export const getMedicalsBySubcategory = (
         WHERE 
             "mc"."subCategoryId" = ANY (ARRAY[${subCategoryArray}])
         GROUP BY 
-            "m"."id", "m"."iconUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
+            "m"."id", "m"."iconUrl", "m"."imageUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
         HAVING 
             ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 
@@ -75,6 +76,7 @@ export const getMedicalsBySubcategory = (
         SELECT 
             "m"."id",
             "m"."iconUrl",
+            "m"."imageUrl",
             "m"."name",
             "m"."address",
             "m"."lat",
@@ -100,7 +102,7 @@ export const getMedicalsBySubcategory = (
                 ELSE "mc"."price" < ${lastPrice} OR ("mc"."price" = ${lastPrice} AND "m"."id" < ${lastMedicalId}) END
             )
         GROUP BY 
-            "m"."id", "m"."iconUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
+            "m"."id", "m"."iconUrl", "m"."imageUrl", "m"."name", "m"."address", "m"."lat", "m"."lng"
         HAVING 
             ARRAY_AGG("mc"."subCategoryId") @> ARRAY[${subCategoryArray}]
         ORDER BY 

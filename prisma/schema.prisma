@@ -75,6 +75,7 @@ model SubCategory {
 model Medical {
   id                Int               @id @default(autoincrement())
   iconUrl           String
+  imageUrl          String?
   name              String
   lat               Float
   lng               Float
@@ -115,7 +116,7 @@ model EmployeeCategory {
 }
 
 model EmployeeMedical {
-  id    Int @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   employeeId Int?
   medicalId  Int?
   medical    Medical?  @relation(fields: [medicalId], references: [id])
@@ -248,46 +249,46 @@ enum EmployeeType {
 }
 
 model Employee {
-  id                    Int      @id @default(autoincrement())
-  name                  String
-  surName               String
-  position              String
-  about_az              String?
-  about_ru              String?
-  about_en              String?
-  experienceYears_az    String?
-  experienceYears_ru    String?
-  experienceYears_en    String?
-  patientsCount         Int @default(0)
-  type                  EmployeeType @default(NURSE)
-  imageUrl              String?
-  userId                Int      @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt             DateTime @default(now())
-  medicalId             Int?
-  medical               Medical? @relation(fields: [medicalId], references: [id])
-  availabilities        Availability[]
-  employeeCategories    EmployeeCategory[]
-  Order                 Order[]
-  medicals              EmployeeMedical[]
-  cityId                Int?
-  city                  City? @relation(fields: [cityId], references: [id])
+  id                 Int                @id @default(autoincrement())
+  name               String
+  surName            String
+  position           String
+  about_az           String?
+  about_ru           String?
+  about_en           String?
+  experienceYears_az String?
+  experienceYears_ru String?
+  experienceYears_en String?
+  patientsCount      Int                @default(0)
+  type               EmployeeType       @default(NURSE)
+  imageUrl           String?
+  userId             Int                @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime           @default(now())
+  medicalId          Int?
+  medical            Medical?           @relation(fields: [medicalId], references: [id])
+  availabilities     Availability[]
+  employeeCategories EmployeeCategory[]
+  Order              Order[]
+  medicals           EmployeeMedical[]
+  cityId             Int?
+  city               City?              @relation(fields: [cityId], references: [id])
 }
 
 model Country {
-  id        Int @id @default(autoincrement())
-  name_az   String?
-  name_en   String?
-  name_ru   String
+  id      Int     @id @default(autoincrement())
+  name_az String?
+  name_en String?
+  name_ru String
 
-  cities    City[]
+  cities City[]
 }
 
 model City {
-  id        Int @id @default(autoincrement())
-  name_az   String?
-  name_en   String?
-  name_ru   String
+  id      Int     @id @default(autoincrement())
+  name_az String?
+  name_en String?
+  name_ru String
 
   countryId Int
   country   Country @relation(fields: [countryId], references: [id])

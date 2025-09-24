@@ -1,9 +1,8 @@
 import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import { UserRequest } from "../types";
+import { UserRequest, AdminRequest } from "index";
 import { getMedicalsBySubcategory as getMedicalsBySubcategoryQuery } from "../queries/medical";
-import { AdminRequest } from "../types";
 
 const MedicalController = () => {
   const getMedicalsBySubcategory = async (
@@ -74,7 +73,6 @@ const MedicalController = () => {
         data: topPartners,
       });
     } catch (error: any) {
-      console.error("Error in fetching top partners:", error);
       logError(
         `Error while fetching top medical partners ==> `,
         error?.message,
@@ -148,6 +146,7 @@ const MedicalController = () => {
           lng: true,
           contact: true,
           iconUrl: true,
+          imageUrl: true,
           services: true,
         },
       });
