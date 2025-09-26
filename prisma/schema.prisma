@@ -79,9 +79,14 @@ model Medical {
   name              String
   lat               Float
   lng               Float
-  address           String
+  address           String?
+  address_en        String?
+  address_ru        String?
   services          String?
-  contact           Int?
+  services_en       String?
+  services_ru       String?
+  contact           String?
+  isActive          Boolean           @default(true)
   availabilities    Availability[]
   medicalCatrgories MedicalCategory[]
   orders            Order[]

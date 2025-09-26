@@ -53,7 +53,11 @@ const MedicalController = () => {
   ): Promise<any> => {
     try {
       // Fetching all partners
-      const topPartners = await global.__db.medical.findMany();
+      const topPartners = await global.__db.medical.findMany({
+        where: {
+          isActive: true
+        }
+      });
 
       // Iterate through the results to ensure services are in JSON format
       // topPartners.forEach(partner => {
@@ -91,6 +95,9 @@ const MedicalController = () => {
         orderBy: {
           name: "asc", // Sorting by name in alphabetical order
         },
+        where: {
+          isActive: true,
+        }
       });
 
       if (!medicalPartners.length) {
@@ -137,6 +144,7 @@ const MedicalController = () => {
       const medical = await global.__db.medical.findUnique({
         where: {
           id: parseInt(id), // Ensure the ID is parsed to an integer
+          isActive: true,
         },
         select: {
           adminId: true,
