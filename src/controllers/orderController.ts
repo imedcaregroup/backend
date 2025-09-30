@@ -117,15 +117,33 @@ const OrderController = () => {
         });
       }
 
-      const existingOrder = await __db.order.findFirst({
+      const existingOrder = await __db.order.findMany({
         where: {
           medicalId: medicalId,
           orderDate: new Date(date),
           startTime: startTime,
+          OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
         },
       });
 
-      if (existingOrder) {
+      logHttp("existingOrder", existingOrder);
+
+      const currentDate = new Date(date);
+      const slotDay =
+        currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
+
+      const availableSlots = await __db.availability.findMany({
+        where: {
+          medicalId: medicalId,
+          startTime: startTime,
+          day: slotDay,
+        },
+      });
+
+      if (
+        existingOrder.length &&
+        existingOrder.length >= availableSlots.length
+      ) {
         return res.status(400).json({
           msg: "The selected slot is already booked. Please choose a different slot.",
           statusCode: 400,

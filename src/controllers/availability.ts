@@ -276,6 +276,7 @@ const AvailabilityController = () => {
   ): Promise<any> => {
     try {
       const today = new Date();
+
       const currentDay = today.getDate();
       const currentMonth = today.getMonth() + 1;
       const currentYear = today.getFullYear();
@@ -297,13 +298,13 @@ const AvailabilityController = () => {
       }
 
       const whereParts: any = {
-        employeeId
+        employeeId,
       };
       if (medicalId) {
         whereParts.medicalId = medicalId;
       }
 
-      // Fetch booked slots more precisely
+      // Fetch booked slots more precisely (All orders in given month)
       const orders = await __db.order.findMany({
         where: {
           ...whereParts,
@@ -320,13 +321,19 @@ const AvailabilityController = () => {
       });
 
       // Group booked slots by date
-      const bookedSlotsByDate: { [key: string]: number[] } = {};
+      const bookedSlotsByDate: { [key: string]: { [key: string]: number } } =
+        {};
       orders.forEach((order) => {
-        const dateKey = order.orderDate.toISOString().split("T")[0];
+        const dateKey = toIsoPreservingLocal(order.orderDate).split("T")[0];
         if (!bookedSlotsByDate[dateKey]) {
-          bookedSlotsByDate[dateKey] = [];
+          bookedSlotsByDate[dateKey] = {};
         }
-        bookedSlotsByDate[dateKey].push(Number(order.startTime));
+
+        if (!bookedSlotsByDate[dateKey][String(order.startTime)]) {
+          bookedSlotsByDate[dateKey][String(order.startTime)] = 0;
+        }
+
+        bookedSlotsByDate[dateKey][String(order.startTime)]++;
       });
 
       // Fetch available slots
@@ -344,18 +351,10 @@ const AvailabilityController = () => {
 
       const remainingDays = [];
 
-      for (let day = 1; day <= lastDayOfMonth; day++) {
-        if (
-          month === currentMonth &&
-          year === currentYear &&
-          day < currentDay
-        ) {
-          continue;
-        }
-
-        const date = new Date(year, month - 1, day);
-        const dateString = date.toISOString().split("T")[0];
-        const slotDay = date.getDay();
+      for (let day = currentDay; day <= lastDayOfMonth; day++) {
+        const date = new Date(year, month - 1, day, 0, 0, 0);
+        const dateString = toIsoPreservingLocal(date).split("T")[0];
+        const slotDay = date.getDay() - 1 < 0 ? 6 : date.getDay() - 1;
 
         // Filter slots for this day of week
         const availableSlotsForDate = availableSlots.filter(
@@ -363,12 +362,23 @@ const AvailabilityController = () => {
         );
 
         // Remove booked slots
-        const bookedSlotsOnDate = bookedSlotsByDate[dateString] || [];
-        const remainingSlots = availableSlotsForDate.filter(
-          (slot) => !bookedSlotsOnDate.includes(Number(slot.startTime)),
+        const bookedSlotsOnDate = bookedSlotsByDate[dateString];
+
+        const distinctAvailableSlotsForDate = distinctByStartTime(
+          availableSlotsForDate,
         );
 
-        // Current day additional filtering
+        const remainingSlots = distinctAvailableSlotsForDate.filter(
+          (slot) =>
+            !bookedSlotsOnDate?.[String(slot.startTime)] ||
+            (bookedSlotsOnDate?.[String(slot.startTime)] &&
+              bookedSlotsOnDate?.[String(slot.startTime)] >=
+                availableSlotsForDate.filter(
+                  (availableSlot) => availableSlot.startTime === slot.startTime,
+                ).length),
+        );
+
+        // Current-day additional filtering
         const filteredSlots =
           month === currentMonth && year === currentYear && day === currentDay
             ? remainingSlots.filter((slot) => {
@@ -382,10 +392,16 @@ const AvailabilityController = () => {
           day: date.toLocaleString("default", { weekday: "long" }),
           date: dateString,
           remainingSlotsCount: filteredSlots.length,
-          remainingSlots: filteredSlots.map((slot) => ({
-            startTime: slot.startTime,
-            displayTime: formatTime(slot.startTime),
-          })),
+          remainingSlots: filteredSlots
+            .map((slot) => ({
+              remainingPlaces:
+                availableSlotsForDate.filter(
+                  (availableSlot) => availableSlot.startTime === slot.startTime,
+                ).length - (bookedSlotsOnDate?.[String(slot.startTime)] || 0),
+              startTime: slot.startTime,
+              displayTime: formatTime(slot.startTime),
+            }))
+            .filter((slot) => slot.remainingPlaces > 0),
         });
       }
 
@@ -394,7 +410,8 @@ const AvailabilityController = () => {
         data: { remainingDays },
       });
     } catch (error: any) {
-      logError(`Error in getRemainingDaysAndSlots`, error?.message);
+      console.log(error);
+      logError(`Error in getRemainingDaysAndSlots`, error.message);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -411,6 +428,29 @@ const AvailabilityController = () => {
     return `${formattedHours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")} ${ampm}`;
+  };
+
+  // Utility function to format time as 'HH:MM AM/PM'
+  const distinctByStartTime = <T extends { startTime: number }>(
+    arr: T[],
+  ): T[] => {
+    return Array.from(
+      new Map(arr.map((item) => [item.startTime, item])).values(),
+    );
+  };
+
+  const toIsoPreservingLocal = (d: Date) => {
+    const utcTs = Date.UTC(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate(),
+      d.getHours(),
+      d.getMinutes(),
+      d.getSeconds(),
+      d.getMilliseconds(),
+    );
+
+    return new Date(utcTs).toISOString();
   };
 
   const logHttp = (context: string, value?: any) =>
