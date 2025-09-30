@@ -146,17 +146,6 @@ const MedicalController = () => {
           id: parseInt(id), // Ensure the ID is parsed to an integer
           isActive: true,
         },
-        select: {
-          adminId: true,
-          name: true,
-          address: true,
-          lat: true,
-          lng: true,
-          contact: true,
-          iconUrl: true,
-          imageUrl: true,
-          services: true,
-        },
       });
 
       if (!medical) {
