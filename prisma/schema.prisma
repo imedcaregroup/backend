@@ -85,6 +85,9 @@ model Medical {
   services          String?
   services_en       String?
   services_ru       String?
+  type_az           String?
+  type_en           String?
+  type_ru           String?
   contact           String?
   isActive          Boolean           @default(true)
   availabilities    Availability[]
