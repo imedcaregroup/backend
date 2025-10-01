@@ -9,6 +9,8 @@ import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
+import prisma from "../config/db";
+import {HttpException} from "../utils/exception";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -70,9 +72,7 @@ const OrderController = () => {
             subCategories: {
               include: {
                 category: {
-                  include: {
-                    service: true, // Include the related service
-                  },
+                  include: { service: true },
                 },
               },
             },
@@ -87,13 +87,8 @@ const OrderController = () => {
         });
       }
 
-      // Validate inputs
-      if (
-        (!serviceCat ||
-          !Array.isArray(serviceCat) ||
-          serviceCat.length === 0) &&
-        !specialOfferId
-      ) {
+      // Валидации
+      if ((!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) && !specialOfferId) {
         return res.status(400).json({
           msg: "Service categories are required.",
           statusCode: 400,
@@ -107,16 +102,14 @@ const OrderController = () => {
         });
       }
 
-      if (
-        forAnotherPerson &&
-        (!forAnotherPersonName || !forAnotherPersonPhone)
-      ) {
+      if (forAnotherPerson && (!forAnotherPersonName || !forAnotherPersonPhone)) {
         return res.status(400).json({
           msg: "For another person name and phone are required.",
           statusCode: 400,
         });
       }
 
+      // Проверка занятости слота
       const existingOrder = await __db.order.findMany({
         where: {
           medicalId: medicalId,
@@ -126,24 +119,14 @@ const OrderController = () => {
         },
       });
 
-      logHttp("existingOrder", existingOrder);
-
       const currentDate = new Date(date);
-      const slotDay =
-        currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
+      const slotDay = currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
 
       const availableSlots = await __db.availability.findMany({
-        where: {
-          medicalId: medicalId,
-          startTime: startTime,
-          day: slotDay,
-        },
+        where: { medicalId: medicalId, startTime: startTime, day: slotDay },
       });
 
-      if (
-        existingOrder.length &&
-        existingOrder.length >= availableSlots.length
-      ) {
+      if (existingOrder.length && existingOrder.length >= availableSlots.length) {
         return res.status(400).json({
           msg: "The selected slot is already booked. Please choose a different slot.",
           statusCode: 400,
@@ -151,9 +134,7 @@ const OrderController = () => {
       }
 
       const medical = await __db.medical.findUnique({
-        where: {
-          id: specialOffer ? specialOffer.medicalId : parseInt(medicalId),
-        },
+        where: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
         select: { adminId: true },
       });
 
@@ -165,8 +146,10 @@ const OrderController = () => {
         });
       }
 
-      try {
-        var order = await __db.order.create({
+      // транзакция
+      const result = await prisma.$transaction(async (tx) => {
+        // создаём заказ
+        const order = await tx.order.create({
           data: {
             price: specialOffer ? specialOffer.price : price,
             address,
@@ -178,135 +161,85 @@ const OrderController = () => {
             apartment,
             paymentMethod,
             orderDate: new Date(date),
-            startTime: startTime,
+            startTime,
             medical: {
-              connect: {
-                id: specialOffer ? specialOffer.medicalId : medicalId,
-              },
+              connect: { id: specialOffer ? specialOffer.medicalId : medicalId },
             },
             employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
-            admin: medical.adminId
-              ? { connect: { id: medical.adminId } }
-              : undefined,
+            admin: medical.adminId ? { connect: { id: medical.adminId } } : undefined,
             additionalInfo,
             forAnotherPerson: forAnotherPerson || false,
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
-            ...(specialOfferId && {
-              SpecialOffer: { connect: { id: specialOfferId } },
-            }),
-          },
-          include: {
-            orderSubCategories: {
-              include: {
-                service: true,
-              },
-            },
+            ...(specialOfferId && { SpecialOffer: { connect: { id: specialOfferId } } }),
           },
         });
-      } catch (err) {
-        console.error("Error creating order:", err.code, err.meta);
-        return sendErrorResponse({
-          res,
-          statusCode: 500,
-          error: "Error creating order",
-        });
-      }
 
-      let orderSubCategoriesPromises = null;
+        // создаём подкатегории
+        let orderSubCategories: any[] = [];
 
-      if (specialOffer) {
-        orderSubCategoriesPromises = specialOffer.subCategories.flatMap(
-          (subCategory: any) => {
+        if (specialOffer) {
+          for (const subCategory of specialOffer.subCategories) {
             const serviceId = subCategory.category.service.id;
             const categoryId = subCategory.category.id;
             const subCategoryId = subCategory.id;
 
             if (!serviceId || !categoryId || !subCategoryId) {
-              return res.status(400).json({
-                msg: "Service, Category, and SubCategory are required for each special offer.",
-                statusCode: 400,
-              });
+              throw new Error("Service, Category, and SubCategory are required for each special offer.");
             }
 
-            return __db.orderSubCategory.create({
-              data: {
-                orderId: order.id,
-                serviceId,
-                categoryId,
-                subCategoryId,
-              },
+            const sub = await tx.orderSubCategory.create({
+              data: { orderId: order.id, serviceId, categoryId, subCategoryId },
             });
-          },
-        );
-      } else {
-        orderSubCategoriesPromises = serviceCat.map((serviceCategory: any) => {
-          const services = serviceCategory?.service || [];
-          return services.flatMap((service: any) => {
-            const serviceId = service.id;
-            const categories = service?.category || [];
+            orderSubCategories.push(sub);
+          }
+        } else {
+          for (const serviceCategory of serviceCat) {
+            const services = serviceCategory?.service || [];
+            for (const service of services) {
+              const serviceId = service.id;
+              const categories = service?.category || [];
 
-            return categories.flatMap((category: any) => {
-              const categoryId = category.id;
-              const subCategoryIds = category?.subCategoryId || [];
+              for (const category of categories) {
+                const categoryId = category.id;
+                const subCategoryIds = category?.subCategoryId || [];
 
-              if (!serviceId || !categoryId || subCategoryIds.length === 0) {
-                return res.status(400).json({
-                  msg: "Service, Category, and SubCategories are required for each service category.",
-                  statusCode: 400,
-                });
-              }
-
-              return subCategoryIds.map(async (subCategoryId: number) => {
-                try {
-                  const orderSubCategory = await __db.orderSubCategory.create({
-                    data: {
-                      orderId: order.id,
-                      serviceId,
-                      categoryId,
-                      subCategoryId,
-                    },
-                  });
-                  return orderSubCategory;
-                } catch (error) {
-                  // console.error("Error creating OrderSubCategory:", error);
-                  return sendErrorResponse({
-                    res,
-                    statusCode: 500,
-                    error: "Error creating OrderSubCategory",
-                  });
+                if (!serviceId || !categoryId || subCategoryIds.length === 0) {
+                  throw new Error("Service, Category, and SubCategories are required for each service category.");
                 }
-              });
-            });
-          });
-        });
-      }
 
-      const orderSubCategories = await Promise.all(
-        orderSubCategoriesPromises.flat(2),
-      );
+                for (const subCategoryId of subCategoryIds) {
+                  const sub = await tx.orderSubCategory.create({
+                    data: { orderId: order.id, serviceId, categoryId, subCategoryId },
+                  });
+                  orderSubCategories.push(sub);
+                }
+              }
+            }
+          }
+        }
 
+        return { order, orderSubCategories };
+      });
+
+      // если заказ для себя, обновляем user.passportUrls
       if (!forAnotherPerson) {
-        logHttp("Updating user passportUrls with fileUrls");
         await __db.user.update({
           where: { id: req.user._id },
-          data: {
-            passportUrls: fileUrls,
-          },
+          data: { passportUrls: fileUrls },
         });
       }
 
       return res.json({
         msg: "Order and associated OrderSubCategories created successfully!",
-        data: { order, orderSubCategories },
+        data: result,
         statusCode: 200,
       });
     } catch (error: any) {
-      return res.status(500).json({
+      return res.status(error.statusCode ?? 500).json({
         msg: "Error creating order and order subcategories.",
-        statusCode: 500,
         error: error.message,
       });
     }
