@@ -13,6 +13,7 @@ router
   .get(medicalController.getTopMedicalPartners);
 router.route("/getAll").get(medicalController.getAll);
 router.route("/getById/:id").get(medicalController.getMedicalById);
+router.route("/getServiceFee/:id").get(medicalController.getServiceFee);
 
 // Admin protected routes
 router.use(adminAuthMiddleware);

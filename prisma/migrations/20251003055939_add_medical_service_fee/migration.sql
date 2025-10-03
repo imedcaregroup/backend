@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Medical" ADD COLUMN     "serviceFee" DOUBLE PRECISION NOT NULL DEFAULT 0;

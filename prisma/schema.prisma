@@ -90,6 +90,7 @@ model Medical {
   type_ru           String?
   contact           String?
   isActive          Boolean           @default(true)
+  serviceFee        Float             @default(0)
   availabilities    Availability[]
   medicalCatrgories MedicalCategory[]
   orders            Order[]

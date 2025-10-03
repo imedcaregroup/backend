@@ -55,8 +55,8 @@ const MedicalController = () => {
       // Fetching all partners
       const topPartners = await global.__db.medical.findMany({
         where: {
-          isActive: true
-        }
+          isActive: true,
+        },
       });
 
       // Iterate through the results to ensure services are in JSON format
@@ -97,7 +97,7 @@ const MedicalController = () => {
         },
         where: {
           isActive: true,
-        }
+        },
       });
 
       if (!medicalPartners.length) {
@@ -161,6 +161,55 @@ const MedicalController = () => {
       });
     } catch (error: any) {
       logError(`Error while fetching medical by ID ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 500,
+        error,
+      });
+    }
+  };
+
+  const getServiceFee = async (
+    req: UserRequest,
+    res: Response,
+  ): Promise<any> => {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Medical ID is required.",
+        });
+      }
+
+      // Fetch the medical service fee
+      const serviceFee = await global.__db.medical.findUnique({
+        where: {
+          id: parseInt(id), // Ensure the ID is parsed to an integer
+          isActive: true,
+        },
+        select: {
+          serviceFee: true,
+        },
+      });
+
+      if (!serviceFee) {
+        return res.status(404).json({
+          success: false,
+          message: "Medical service fee not found or is inactive.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: serviceFee,
+      });
+    } catch (error: any) {
+      logError(
+        `Error while fetching service fee of medical ==> `,
+        error?.message,
+      );
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 500,
@@ -258,6 +307,7 @@ const MedicalController = () => {
     getTopMedicalPartners,
     getAll,
     getMedicalById,
+    getServiceFee,
     searchMedicalSubCategories,
   };
 };
