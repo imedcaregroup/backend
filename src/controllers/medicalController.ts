@@ -2,7 +2,6 @@ import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest, AdminRequest } from "index";
-import { getMedicalsBySubcategory as getMedicalsBySubcategoryQuery } from "../queries/medical";
 
 const MedicalController = () => {
   const getMedicalsBySubcategory = async (
@@ -217,55 +216,6 @@ const MedicalController = () => {
     }
   };
 
-  const getServiceFee = async (
-    req: UserRequest,
-    res: Response,
-  ): Promise<any> => {
-    try {
-      const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Medical ID is required.",
-        });
-      }
-
-      // Fetch the medical service fee
-      const serviceFee = await global.__db.medical.findUnique({
-        where: {
-          id: parseInt(id), // Ensure the ID is parsed to an integer
-          isActive: true,
-        },
-        select: {
-          serviceFee: true,
-        },
-      });
-
-      if (!serviceFee) {
-        return res.status(404).json({
-          success: false,
-          message: "Medical service fee not found or is inactive.",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: serviceFee,
-      });
-    } catch (error: any) {
-      logError(
-        `Error while fetching service fee of medical ==> `,
-        error?.message,
-      );
-      return sendErrorResponse({
-        res,
-        statusCode: error?.statusCode || 500,
-        error,
-      });
-    }
-  };
-
   const searchMedicalSubCategories = async (
     req: AdminRequest,
     res: Response,
@@ -355,7 +305,6 @@ const MedicalController = () => {
     getTopMedicalPartners,
     getAll,
     getMedicalById,
-    getServiceFee,
     searchMedicalSubCategories,
   };
 };
