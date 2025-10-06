@@ -10,31 +10,81 @@ const MedicalController = () => {
     res: Response,
   ): Promise<any> => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const subCategoryId = (req.query.subCategoryIds as string)
-        ?.split(",")
-        .map((id) => parseInt(id));
-      const sortOrder = (req.query.sortOrder as string) || "ASC";
       const lastMedicalId = parseInt(req.query.lastMedicalId as string) || null;
       const lastPrice = parseInt(req.query.lastPrice as string) || null;
+      const limit = Number.parseInt(req.query.limit as string) || 10;
+      const sortOrder = (
+        (req.query.sortOrder as string) || "ASC"
+      ).toUpperCase() as "ASC" | "DESC";
 
-      logHttp("Fetching Medicals ==> ");
-      let medicals = await global.__db.$queryRawUnsafe(
-        getMedicalsBySubcategoryQuery(
-          subCategoryId,
-          lastPrice,
-          lastMedicalId,
-          limit,
-          sortOrder,
-        ),
-      );
+      const subCategoryIds =
+        typeof req.query.subCategoryIds === "string"
+          ? (req.query.subCategoryIds as string)
+              .split(",")
+              .map((x) => Number.parseInt(x))
+              .filter(Number.isFinite)
+          : [];
 
-      logHttp("Fetched Medicals ==> ");
+      if (subCategoryIds.length === 0) {
+        return res.status(400).json({ message: "subCategoryIds is required" });
+      }
+
+      // 2) Fetch only what you need
+      const [medicals, subCategories] = await Promise.all([
+        __db.medicalCategory.findMany({
+          where: { subCategoryId: { in: subCategoryIds } },
+          select: {
+            medicalId: true,
+            price: true,
+            subCategoryId: true,
+            subCategory: { select: { id: true, name: true } },
+            medical: { select: { id: true, name: true, iconUrl: true } },
+          },
+          orderBy: [{ medicalId: "asc" }, { subCategoryId: "asc" }],
+        }),
+        __db.subCategory.findMany({
+          where: { id: { in: subCategoryIds } },
+          select: { id: true, name: true },
+          orderBy: { id: "asc" },
+        }),
+      ]);
+
+      const grouped = Object.groupBy(medicals, (item) => item.medicalId);
+      let result = Object.entries(grouped).map(([medicalId, items]) => ({
+        medicalId: Number(medicalId),
+        name: items?.[0].medical.name,
+        iconUrl: items?.[0].medical.iconUrl,
+        isFull: items?.length === subCategoryIds.length,
+        totalPrice: items?.reduce((acc, cur) => acc + cur.price, 0) ?? 0,
+        subCategories: subCategories.map((subCategory) => {
+          const medicalSubCategory = items?.find(
+            (i) => i.subCategory.id === subCategory.id,
+          );
+          return {
+            id: subCategory.id,
+            name: subCategory.name,
+            price: medicalSubCategory?.price,
+            isPresented: !!medicalSubCategory,
+          };
+        }),
+      }));
+
+      // 5) Sorting & pagination at the grouped level (stable & predictable)
+      result.sort((a, b) => {
+        const dir = sortOrder === "ASC" ? 1 : -1;
+        // primary: isFull first, then by totalPrice, then medicalId
+        if (a.isFull !== b.isFull) return (a.isFull ? -1 : 1) * dir;
+        if (a.totalPrice !== b.totalPrice)
+          return (a.totalPrice - b.totalPrice) * dir;
+        return (a.medicalId - b.medicalId) * dir;
+      });
+
+      result = result.slice(0, limit);
 
       return sendSuccessResponse({
         res,
         data: {
-          medicals,
+          medicals: result,
         },
       });
     } catch (error: any) {

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import addressRoute from "./address";
 import adminRoute from "./admin";
-import availbilityRoute from "./availability";
+import availabilityRoute from "./availability";
 import categoryRoute from "./category";
 import employeeRoute from "./employee";
 import fcmTokenRoute from "./fcmToken";
@@ -12,14 +12,14 @@ import paymentRoute from "./payment";
 import serviceRoute from "./service";
 import fileRoute from "./file";
 import subCategoryRoute from "./subCategory";
-import userrRoute from "./user";
+import userRoute from "./user";
 import specialOffersRoute from "./specialOffers";
 import notificationsRoute from "./notifications";
 
 const router = Router();
 
 // Public routes
-router.use("/user", userrRoute);
+router.use("/user", userRoute);
 router.use("/admin", adminRoute);
 router.use("/medical", medicalRoute);
 router.use("/payment", paymentRoute);
@@ -32,7 +32,7 @@ router.use("/employee", employeeRoute);
 router.use("/category", categoryRoute);
 router.use("/subcategory", subCategoryRoute);
 router.use("/order", orderRoute);
-router.use("/availability", availbilityRoute);
+router.use("/availability", availabilityRoute);
 router.use("/address", addressRoute);
 router.use("/token", fcmTokenRoute);
 router.use("/special-offers", specialOffersRoute);
