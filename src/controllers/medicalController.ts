@@ -10,8 +10,6 @@ const MedicalController = () => {
     res: Response,
   ): Promise<any> => {
     try {
-      const lastMedicalId = parseInt(req.query.lastMedicalId as string) || null;
-      const lastPrice = parseInt(req.query.lastPrice as string) || null;
       const limit = Number.parseInt(req.query.limit as string) || 10;
       const sortOrder = (
         (req.query.sortOrder as string) || "ASC"
