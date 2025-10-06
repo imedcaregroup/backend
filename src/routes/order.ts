@@ -22,7 +22,7 @@ router.route("/my").get(orderController.getMyOrders);
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
 router.route("/getRequestOrder").get(orderController.getRequestOrder);
 router
-  .route("/calculateDistanceFee")
+  .route("/calculateDistanceFee/:id")
   .post(orderController.calculateDistanceFee);
 
 // Order actions for user

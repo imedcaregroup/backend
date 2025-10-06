@@ -73,7 +73,7 @@ model SubCategory {
 }
 
 model Medical {
-  id                Int               @id @default(autoincrement())
+  id                Int                   @id @default(autoincrement())
   iconUrl           String
   imageUrl          String?
   name              String
@@ -89,16 +89,28 @@ model Medical {
   type_en           String?
   type_ru           String?
   contact           String?
-  isActive          Boolean           @default(true)
-  serviceFee        Float             @default(0)
+  isActive          Boolean               @default(true)
+  tiers             DistancePricingTier[]
   availabilities    Availability[]
   medicalCatrgories MedicalCategory[]
   orders            Order[]
   adminId           Int?
-  admin             Admin?            @relation("AdminMedical", fields: [adminId], references: [id])
+  admin             Admin?                @relation("AdminMedical", fields: [adminId], references: [id])
   employees         Employee[]
   SpecialOffer      SpecialOffer[]
   employeeMedical   EmployeeMedical[]
+}
+
+model DistancePricingTier {
+  id        Int      @id @default(autoincrement())
+  medicalId Int
+  minKm     Decimal  @db.Decimal(10, 2)
+  maxKm     Decimal? @db.Decimal(10, 2)
+  feeAzn    Decimal  @db.Decimal(10, 2)
+
+  medical Medical @relation(fields: [medicalId], references: [id])
+
+  @@index([medicalId, minKm, maxKm])
 }
 
 model MedicalCategory {

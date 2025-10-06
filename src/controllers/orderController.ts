@@ -1176,6 +1176,7 @@ const OrderController = () => {
     res: Response,
   ): Promise<any> => {
     try {
+      const medicalId = Number(req.params.id);
       const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${"AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o"}`;
 
       const response = await fetch(endpoint);
@@ -1184,22 +1185,28 @@ const OrderController = () => {
       if (data.status !== "OK") {
         throw new Error(data.error_message || "Failed to fetch distance data");
       }
-      //
-      console.log("data:", JSON.stringify(data));
 
       const distanceInKm = data.rows[0]?.elements[0]?.distance?.value / 1000;
+      const distancePricingTiers = await __db.distancePricingTier.findFirst({
+        where: {
+          medicalId: medicalId,
+          minKm: { lte: distanceInKm },
+          OR: [{ maxKm: null }, { maxKm: { gt: distanceInKm } }],
+        },
+      });
 
-      let distanceFee = 25;
-
-      if (distanceInKm > 20) {
-        distanceFee = 50;
-      } else if (distanceInKm > 15) {
-        distanceFee = 35;
+      if (!distancePricingTiers) {
+        return sendErrorResponse({
+          res,
+          statusCode: 404,
+          error:
+            "No distance pricing tiers configured for the specified medical.",
+        });
       }
 
       return sendSuccessResponse({
         res,
-        data: { distanceFee },
+        data: { distanceFee: Number(distancePricingTiers.feeAzn) },
       });
     } catch (error: any) {
       console.log("errrr:", error);
