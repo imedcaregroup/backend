@@ -29,7 +29,7 @@ const MedicalController = () => {
 
       // 2) Fetch only what you need
       const [medicals, subCategories] = await Promise.all([
-        __db.medicalCategory.findMany({
+        global.__db.medicalCategory.findMany({
           where: { subCategoryId: { in: subCategoryIds } },
           select: {
             medicalId: true,
@@ -40,7 +40,7 @@ const MedicalController = () => {
           },
           orderBy: [{ medicalId: "asc" }, { subCategoryId: "asc" }],
         }),
-        __db.subCategory.findMany({
+        global.__db.subCategory.findMany({
           where: { id: { in: subCategoryIds } },
           select: { id: true, name: true },
           orderBy: { id: "asc" },
