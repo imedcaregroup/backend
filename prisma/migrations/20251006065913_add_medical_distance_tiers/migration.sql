@@ -23,3 +23,11 @@ CREATE INDEX "DistancePricingTier_medicalId_minKm_maxKm_idx" ON "DistancePricing
 
 -- AddForeignKey
 ALTER TABLE "DistancePricingTier" ADD CONSTRAINT "DistancePricingTier_medicalId_fkey" FOREIGN KEY ("medicalId") REFERENCES "Medical"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Ensure minKm >= 0
+ALTER TABLE "DistancePricingTier"
+    ADD CONSTRAINT "chk_minKm_nonnegative" CHECK ("minKm" >= 0);
+
+-- Ensure maxKm is NULL or > minKm
+ALTER TABLE "DistancePricingTier"
+    ADD CONSTRAINT "chk_maxKm_gt_minKm_or_null" CHECK ("maxKm" IS NULL OR "maxKm" > "minKm");
