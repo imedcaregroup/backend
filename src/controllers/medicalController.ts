@@ -34,14 +34,21 @@ const MedicalController = () => {
             medicalId: true,
             price: true,
             subCategoryId: true,
-            subCategory: { select: { id: true, name: true } },
+            subCategory: {
+              select: { id: true, name: true },
+            },
             medical: { select: { id: true, name: true, iconUrl: true } },
           },
           orderBy: [{ medicalId: "asc" }, { subCategoryId: "asc" }],
         }),
         global.__db.subCategory.findMany({
           where: { id: { in: subCategoryIds } },
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            name: true,
+            category: { select: { name: true } },
+          },
+          // include: { category: { select: { name: true } } },
           orderBy: { id: "asc" },
         }),
       ]);
@@ -60,6 +67,7 @@ const MedicalController = () => {
           return {
             id: subCategory.id,
             name: subCategory.name,
+            categoryName: subCategory.category.name,
             price: medicalSubCategory?.price,
             isPresented: !!medicalSubCategory,
           };
