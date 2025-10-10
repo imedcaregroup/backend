@@ -1187,6 +1187,13 @@ const OrderController = () => {
       }
 
       const distanceInKm = data.rows[0]?.elements[0]?.distance?.value / 1000;
+
+      if (!distanceInKm) {
+        throw new Error(
+          "Unable to calculate distance. Please try again later.",
+        );
+      }
+
       const distancePricingTiers = await __db.distancePricingTier.findFirst({
         where: {
           medicalId: medicalId,
