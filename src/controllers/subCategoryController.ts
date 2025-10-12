@@ -93,7 +93,8 @@ const SubCategoryController = () => {
                 obj.medicalCategories[obj.medicalCategories.length - 1].price,
               );
 
-              item.price = `${minPrice}-${maxPrice} AZN`;
+              if (minPrice === maxPrice) item.price = `${minPrice} AZN`;
+              else item.price = `${minPrice}-${maxPrice} AZN`;
             } else if (obj.medicalCategories.length === 1) {
               item.price =
                 Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
