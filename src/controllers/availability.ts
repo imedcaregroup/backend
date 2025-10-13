@@ -347,6 +347,9 @@ const AvailabilityController = () => {
           day: true,
           startTime: true,
         },
+        orderBy: {
+          startTime: "asc",
+        },
       });
 
       const remainingDays = [];
