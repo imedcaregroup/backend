@@ -297,17 +297,23 @@ const AvailabilityController = () => {
         });
       }
 
-      const whereParts: any = {
-        employeeId,
-      };
+      const orderWhereParts: any = {};
+      const availabilityWhereParts: any = {};
+
       if (medicalId) {
-        whereParts.medicalId = medicalId;
+        orderWhereParts.medicalId = medicalId;
+        availabilityWhereParts.medicalId = medicalId;
+        availabilityWhereParts.employeeId = null;
+      } else if (employeeId) {
+        orderWhereParts.employeeId = employeeId;
+        availabilityWhereParts.employeeId = employeeId;
+        availabilityWhereParts.medicalId = null;
       }
 
       // Fetch booked slots more precisely (All orders in given month)
       const orders = await __db.order.findMany({
         where: {
-          ...whereParts,
+          ...orderWhereParts,
           orderDate: {
             gte: new Date(year, month - 1, 1),
             lte: new Date(year, month - 1, lastDayOfMonth),
@@ -339,7 +345,7 @@ const AvailabilityController = () => {
       // Fetch available slots
       const availableSlots = await __db.availability.findMany({
         where: {
-          ...whereParts,
+          ...availabilityWhereParts,
           day: { in: Array.from({ length: 7 }, (_, i) => i) },
         },
         select: {
