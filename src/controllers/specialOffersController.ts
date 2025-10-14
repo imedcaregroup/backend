@@ -43,7 +43,7 @@ const SpecialOffersController = () => {
       const orderBy: Prisma.SpecialOfferOrderByWithRelationInput[] = [];
       if (startsAtSort) orderBy.push({ startsAt: startsAtSort });
       if (priceSort) orderBy.push({ price: priceSort });
-      orderBy.push({ priority: "desc" });
+      orderBy.push({ priority: "asc" });
 
       // only include take if it's a positive finite number
       const take =
