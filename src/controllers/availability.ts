@@ -300,14 +300,19 @@ const AvailabilityController = () => {
       const orderWhereParts: any = {};
       const availabilityWhereParts: any = {};
 
-      if (medicalId) {
-        orderWhereParts.medicalId = medicalId;
-        availabilityWhereParts.medicalId = medicalId;
-        availabilityWhereParts.employeeId = null;
-      } else if (employeeId) {
-        orderWhereParts.employeeId = employeeId;
-        availabilityWhereParts.employeeId = employeeId;
-        availabilityWhereParts.medicalId = null;
+      if (medicalId && employeeId) {
+        orderWhereParts.medicalId = availabilityWhereParts.medicalId = medicalId;
+        orderWhereParts.employeeId = availabilityWhereParts.employeeId = employeeId;
+      } else {
+        if (medicalId) {
+          orderWhereParts.medicalId = medicalId;
+          availabilityWhereParts.medicalId = medicalId;
+          availabilityWhereParts.employeeId = null;
+        } else if (employeeId) {
+          orderWhereParts.employeeId = employeeId;
+          availabilityWhereParts.employeeId = employeeId;
+          availabilityWhereParts.medicalId = null;
+        }
       }
 
       // Fetch booked slots more precisely (All orders in given month)
