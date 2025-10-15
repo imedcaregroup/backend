@@ -2,6 +2,7 @@ import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest } from "../types";
+import { RemainingSlotsService } from "../services/availability/remainingSlotsService";
 
 const AvailabilityController = () => {
   const getAvailableDays = async (
@@ -275,138 +276,17 @@ const AvailabilityController = () => {
     res: Response,
   ): Promise<any> => {
     try {
-      const today = new Date();
-
-      const currentDay = today.getDate();
-      const currentMonth = today.getMonth() + 1;
-      const currentYear = today.getFullYear();
-
-      const month = parseInt(req.query.month as string) || currentMonth;
-      const year = parseInt(req.query.year as string) || currentYear;
-      const medicalId = parseInt(req.query.medicalId as string);
+      const month = parseInt(req.query.month as string) || null;
+      const year = parseInt(req.query.year as string) || null;
+      const medicalId = parseInt(req.query.medicalId as string) || null;
       const employeeId = parseInt(req.query.employeeId as string) || null;
 
-      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      const remainingSlotsService = new RemainingSlotsService();
 
-      if (!medicalId && !employeeId) {
-        return sendErrorResponse({
-          res,
-          error:
-            "You should pass one of the following cases: medicalId or employeeId with medicalId",
-          statusCode: 400,
-        });
-      }
+      remainingSlotsService.setDateParameters(month, year);
+      remainingSlotsService.setEntityParameters(medicalId, employeeId);
 
-      const whereParts: any = {
-        employeeId,
-      };
-      if (medicalId) {
-        whereParts.medicalId = medicalId;
-      }
-
-      // Fetch booked slots more precisely (All orders in given month)
-      const orders = await __db.order.findMany({
-        where: {
-          ...whereParts,
-          orderDate: {
-            gte: new Date(year, month - 1, 1),
-            lte: new Date(year, month - 1, lastDayOfMonth),
-          },
-          OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
-        },
-        select: {
-          orderDate: true,
-          startTime: true,
-        },
-      });
-
-      // Group booked slots by date
-      const bookedSlotsByDate: { [key: string]: { [key: string]: number } } =
-        {};
-      orders.forEach((order) => {
-        const dateKey = toIsoPreservingLocal(order.orderDate).split("T")[0];
-        if (!bookedSlotsByDate[dateKey]) {
-          bookedSlotsByDate[dateKey] = {};
-        }
-
-        if (!bookedSlotsByDate[dateKey][String(order.startTime)]) {
-          bookedSlotsByDate[dateKey][String(order.startTime)] = 0;
-        }
-
-        bookedSlotsByDate[dateKey][String(order.startTime)]++;
-      });
-
-      // Fetch available slots
-      const availableSlots = await __db.availability.findMany({
-        where: {
-          ...whereParts,
-          day: { in: Array.from({ length: 7 }, (_, i) => i) },
-        },
-        select: {
-          id: true,
-          day: true,
-          startTime: true,
-        },
-        orderBy: {
-          startTime: "asc",
-        },
-      });
-
-      const remainingDays = [];
-
-      for (let day = currentDay; day <= lastDayOfMonth; day++) {
-        const date = new Date(year, month - 1, day, 0, 0, 0);
-        const dateString = toIsoPreservingLocal(date).split("T")[0];
-        const slotDay = date.getDay() - 1 < 0 ? 6 : date.getDay() - 1;
-
-        // Filter slots for this day of week
-        const availableSlotsForDate = availableSlots.filter(
-          (slot) => slot.day === slotDay,
-        );
-
-        // Remove booked slots
-        const bookedSlotsOnDate = bookedSlotsByDate[dateString];
-
-        const distinctAvailableSlotsForDate = distinctByStartTime(
-          availableSlotsForDate,
-        );
-
-        const remainingSlots = distinctAvailableSlotsForDate.filter(
-          (slot) =>
-            !bookedSlotsOnDate?.[String(slot.startTime)] ||
-            (bookedSlotsOnDate?.[String(slot.startTime)] &&
-              bookedSlotsOnDate?.[String(slot.startTime)] >=
-                availableSlotsForDate.filter(
-                  (availableSlot) => availableSlot.startTime === slot.startTime,
-                ).length),
-        );
-
-        // Current-day additional filtering
-        const filteredSlots =
-          month === currentMonth && year === currentYear && day === currentDay
-            ? remainingSlots.filter((slot) => {
-                const now = new Date();
-                const currentTime = now.getHours() * 100 + now.getMinutes();
-                return slot.startTime > currentTime;
-              })
-            : remainingSlots;
-
-        remainingDays.push({
-          day: date.toLocaleString("default", { weekday: "long" }),
-          date: dateString,
-          remainingSlotsCount: filteredSlots.length,
-          remainingSlots: filteredSlots
-            .map((slot) => ({
-              remainingPlaces:
-                availableSlotsForDate.filter(
-                  (availableSlot) => availableSlot.startTime === slot.startTime,
-                ).length - (bookedSlotsOnDate?.[String(slot.startTime)] || 0),
-              startTime: slot.startTime,
-              displayTime: formatTime(slot.startTime),
-            }))
-            .filter((slot) => slot.remainingPlaces > 0),
-        });
-      }
+      const remainingDays = await remainingSlotsService.getSlots();
 
       return sendSuccessResponse({
         res,
@@ -440,20 +320,6 @@ const AvailabilityController = () => {
     return Array.from(
       new Map(arr.map((item) => [item.startTime, item])).values(),
     );
-  };
-
-  const toIsoPreservingLocal = (d: Date) => {
-    const utcTs = Date.UTC(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate(),
-      d.getHours(),
-      d.getMinutes(),
-      d.getSeconds(),
-      d.getMilliseconds(),
-    );
-
-    return new Date(utcTs).toISOString();
   };
 
   const logHttp = (context: string, value?: any) =>
