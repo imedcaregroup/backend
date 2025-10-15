@@ -306,6 +306,7 @@ const AvailabilityController = () => {
       } else {
         if (medicalId) {
           orderWhereParts.medicalId = medicalId;
+          orderWhereParts.employeeId = null;
           availabilityWhereParts.medicalId = medicalId;
           availabilityWhereParts.employeeId = null;
         } else if (employeeId) {
