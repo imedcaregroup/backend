@@ -72,7 +72,7 @@ export class EmployeeService {
             az: item.subCategory.name_az,
             ru: item.subCategory.name_ru,
             en: item.subCategory.name_en,
-            price: item.price.toString() + " azn",
+            price: item.price.toString(),
           };
         }),
       };
@@ -132,6 +132,7 @@ export class EmployeeService {
               id: em.medical.id,
               name: em.medical.name,
               iconUrl: em.medical.iconUrl,
+              address: em.medical.address,
           })),
           schedule: await this.getSchedule(employee.id),
           services: employee.employeeCategories.map((item: any) => {
@@ -145,7 +146,7 @@ export class EmployeeService {
                   ru: item.subCategory.name_ru,
                   en: item.subCategory.name_en,
                   systemName: item.subCategory.systemName,
-                  price: item.price.toString() + " azn",
+                  price: item.price.toString(),
               };
           }),
       };
