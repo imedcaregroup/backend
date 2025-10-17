@@ -87,10 +87,29 @@ const OrderController = () => {
         });
       }
 
+      // Extract serviceId from serviceCat to determine if this is a home doctor call
+      let extractedServiceId: number | null = null;
+      if (serviceCat && Array.isArray(serviceCat) && serviceCat.length > 0) {
+        const firstService = serviceCat[0]?.service?.[0];
+        if (firstService?.id) {
+          extractedServiceId = firstService.id;
+        }
+      }
+
+      const isHomeDoctorCall = extractedServiceId === 1;
+
       // Валидации
       if ((!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) && !specialOfferId) {
         return res.status(400).json({
           msg: "Service categories are required.",
+          statusCode: 400,
+        });
+      }
+
+      // For non-home doctor calls (serviceId !== 1), medicalId is required
+      if (!isHomeDoctorCall && !medicalId && !specialOfferId) {
+        return res.status(400).json({
+          msg: "Medical ID is required for non-home doctor calls.",
           statusCode: 400,
         });
       }
@@ -110,40 +129,68 @@ const OrderController = () => {
       }
 
       // Проверка занятости слота
-      const existingOrder = await __db.order.findMany({
-        where: {
-          medicalId: medicalId,
-          orderDate: new Date(date),
-          startTime: startTime,
-          OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
-        },
-      });
-
       const currentDate = new Date(date);
       const slotDay = currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
 
-      const availableSlots = await __db.availability.findMany({
-        where: { medicalId: medicalId, startTime: startTime, day: slotDay },
-      });
-
-      if (existingOrder.length && existingOrder.length >= availableSlots.length) {
-        return res.status(400).json({
-          msg: "The selected slot is already booked. Please choose a different slot.",
-          statusCode: 400,
+      if (isHomeDoctorCall && employeeId) {
+        // For home doctor calls, check employee availability
+        const existingEmployeeOrders = await __db.order.findMany({
+          where: {
+            employeeId: employeeId,
+            orderDate: new Date(date),
+            startTime: startTime,
+            OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
+          },
         });
+
+        const availableEmployeeSlots = await __db.availability.findMany({
+          where: { employeeId: employeeId, startTime: startTime, day: slotDay },
+        });
+
+        if (existingEmployeeOrders.length && existingEmployeeOrders.length >= availableEmployeeSlots.length) {
+          return res.status(400).json({
+            msg: "The selected employee slot is already booked. Please choose a different slot or employee.",
+            statusCode: 400,
+          });
+        }
+      } else if (!isHomeDoctorCall && medicalId) {
+        // For medical facility visits, check medical facility availability
+        const existingOrder = await __db.order.findMany({
+          where: {
+            medicalId: medicalId,
+            orderDate: new Date(date),
+            startTime: startTime,
+            OR: [{ orderStatus: "pending" }, { orderStatus: "accepted" }],
+          },
+        });
+
+        const availableSlots = await __db.availability.findMany({
+          where: { medicalId: medicalId, startTime: startTime, day: slotDay },
+        });
+
+        if (existingOrder.length && existingOrder.length >= availableSlots.length) {
+          return res.status(400).json({
+            msg: "The selected slot is already booked. Please choose a different slot.",
+            statusCode: 400,
+          });
+        }
       }
 
-      const medical = await __db.medical.findUnique({
-        where: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
-        select: { adminId: true },
-      });
-
-      if (!medical) {
-        return sendErrorResponse({
-          res,
-          statusCode: 404,
-          error: "Medical not found",
+      // Fetch medical info only if medicalId is provided (not required for home doctor calls)
+      let medical = null;
+      if (specialOffer?.medicalId || medicalId) {
+        medical = await __db.medical.findUnique({
+          where: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+          select: { adminId: true },
         });
+
+        if (!medical && !isHomeDoctorCall) {
+          return sendErrorResponse({
+            res,
+            statusCode: 404,
+            error: "Medical not found",
+          });
+        }
       }
 
       // транзакция
@@ -162,12 +209,17 @@ const OrderController = () => {
             paymentMethod,
             orderDate: new Date(date),
             startTime,
-            medical: {
-              connect: { id: specialOffer ? specialOffer.medicalId : medicalId },
-            },
+            // Connect medical only if medicalId is provided (not required for home doctor calls)
+            ...(specialOffer?.medicalId || medicalId
+              ? {
+                  medical: {
+                    connect: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+                  },
+                }
+              : {}),
             employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
-            admin: medical.adminId ? { connect: { id: medical.adminId } } : undefined,
+            admin: medical?.adminId ? { connect: { id: medical.adminId } } : undefined,
             additionalInfo,
             forAnotherPerson: forAnotherPerson || false,
             forAnotherPersonName: forAnotherPersonName || null,
