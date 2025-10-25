@@ -7,15 +7,52 @@ const FcmTokenController = () => {
   const setFcmToken = async (req: UserRequest, res: Response): Promise<any> => {
     try {
       logHttp("Finding Token With Given Fcm Token");
-      const token = await __db.fcmToken.findFirst({
+      const existingToken = await __db.fcmToken.findFirst({
         where: {
           token: req.body.token,
         },
       });
 
-      if (token) throw new Error("Token already in use");
-      logHttp("No Fcm Token With Given Fcm Token");
+      // If token already exists for this user, return success (idempotent)
+      if (existingToken && existingToken.userId === req.user._id) {
+        logHttp("Token already exists for this user, skipping creation");
+        return sendSuccessResponse({
+          res,
+          message: "Token already registered",
+        });
+      }
 
+      // If token exists for a different user, delete old entry and create new one
+      // (FCM tokens are device-specific, they can only belong to one user)
+      // We delete instead of update to prevent race conditions where notifications
+      // meant for the old user get delivered to the new user's device
+      if (existingToken && existingToken.userId !== req.user._id) {
+        logHttp(`Token exists for different user (userId: ${existingToken.userId}), deleting old entry and creating new one for current user (userId: ${req.user._id})`);
+
+        // Delete old token entry
+        await __db.fcmToken.delete({
+          where: {
+            id: existingToken.id,
+          },
+        });
+        logHttp("Deleted old Fcm Token entry");
+
+        // Create new token entry for current user
+        await __db.fcmToken.create({
+          data: {
+            ...req.body,
+            userId: req.user._id,
+          },
+        });
+        logHttp("Created new Fcm Token for current user");
+
+        return sendSuccessResponse({
+          res,
+          message: "Token reassigned successfully",
+        });
+      }
+
+      // Token doesn't exist, create new one
       logHttp("Creating Fcm Token For User");
       await __db.fcmToken.create({
         data: {
