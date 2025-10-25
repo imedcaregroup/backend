@@ -73,7 +73,7 @@ export class RemainingSlotsService {
         (slot: any) =>
           !bookedSlotsOnDate?.[String(slot.startTime)] ||
           (bookedSlotsOnDate?.[String(slot.startTime)] &&
-            bookedSlotsOnDate?.[String(slot.startTime)] >=
+            bookedSlotsOnDate?.[String(slot.startTime)] <=
               availableSlotsForDate.filter(
                 (availableSlot: any) =>
                   availableSlot.startTime === slot.startTime,
