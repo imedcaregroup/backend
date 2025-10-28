@@ -322,16 +322,19 @@ model SpecialOffer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  title       String
-  title_en    String?
-  title_az    String?
-  title_ru    String?
-  description String?
-  imageUrl    String
-  priority    Int       @default(0)
-  isActive    Boolean   @default(true)
-  startsAt    DateTime?
-  endsAt      DateTime?
+  title_az       String    @default("")
+  title_en       String    @default("")
+  title_ru       String    @default("")
+  description_az String?
+  description_en String?
+  description_ru String?
+  imageUrl_az    String    @default("")
+  imageUrl_en    String    @default("")
+  imageUrl_ru    String    @default("")
+  priority       Int       @default(0)
+  isActive       Boolean   @default(true)
+  startsAt       DateTime?
+  endsAt         DateTime?
 
   medicalId Int
   medical   Medical @relation(fields: [medicalId], references: [id])

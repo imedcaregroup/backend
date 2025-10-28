@@ -117,6 +117,9 @@ const SpecialOffersController = () => {
             select: {
               id: true,
               name: true,
+              name_az: true,
+              name_en: true,
+              name_ru: true,
               category: {
                 select: {
                   id: true,
@@ -169,12 +172,15 @@ const SpecialOffersController = () => {
         startsAt,
         endsAt,
         priority,
-        imageUrl,
-        title,
-        title_en,
+        imageUrl_az,
+        imageUrl_en,
+        imageUrl_ru,
         title_az,
+        title_en,
         title_ru,
-        description,
+        description_az,
+        description_en,
+        description_ru,
         originalPrice,
         discountType,
         discountValue,
@@ -183,12 +189,15 @@ const SpecialOffersController = () => {
 
       const specialOffer = await __db.specialOffer.create({
         data: {
-          title,
           title_en,
           title_az,
           title_ru,
-          description,
-          imageUrl,
+          description_az,
+          description_en,
+          description_ru,
+          imageUrl_az,
+          imageUrl_en,
+          imageUrl_ru,
           medicalId,
           isActive,
           startsAt: new Date(startsAt),

@@ -10,7 +10,7 @@ import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import prisma from "../config/db";
-import {HttpException} from "../utils/exception";
+import { HttpException } from "../utils/exception";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -99,7 +99,12 @@ const OrderController = () => {
       const isHomeDoctorCall = extractedServiceId === 1;
 
       // Валидации
-      if ((!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) && !specialOfferId) {
+      if (
+        (!serviceCat ||
+          !Array.isArray(serviceCat) ||
+          serviceCat.length === 0) &&
+        !specialOfferId
+      ) {
         return res.status(400).json({
           msg: "Service categories are required.",
           statusCode: 400,
@@ -121,7 +126,10 @@ const OrderController = () => {
         });
       }
 
-      if (forAnotherPerson && (!forAnotherPersonName || !forAnotherPersonPhone)) {
+      if (
+        forAnotherPerson &&
+        (!forAnotherPersonName || !forAnotherPersonPhone)
+      ) {
         return res.status(400).json({
           msg: "For another person name and phone are required.",
           statusCode: 400,
@@ -130,7 +138,8 @@ const OrderController = () => {
 
       // Проверка занятости слота
       const currentDate = new Date(date);
-      const slotDay = currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
+      const slotDay =
+        currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
 
       if (isHomeDoctorCall && employeeId) {
         // For home doctor calls, check employee availability
@@ -147,7 +156,10 @@ const OrderController = () => {
           where: { employeeId: employeeId, startTime: startTime, day: slotDay },
         });
 
-        if (existingEmployeeOrders.length && existingEmployeeOrders.length >= availableEmployeeSlots.length) {
+        if (
+          existingEmployeeOrders.length &&
+          existingEmployeeOrders.length >= availableEmployeeSlots.length
+        ) {
           return res.status(400).json({
             msg: "The selected employee slot is already booked. Please choose a different slot or employee.",
             statusCode: 400,
@@ -168,7 +180,10 @@ const OrderController = () => {
           where: { medicalId: medicalId, startTime: startTime, day: slotDay },
         });
 
-        if (existingOrder.length && existingOrder.length >= availableSlots.length) {
+        if (
+          existingOrder.length &&
+          existingOrder.length >= availableSlots.length
+        ) {
           return res.status(400).json({
             msg: "The selected slot is already booked. Please choose a different slot.",
             statusCode: 400,
@@ -180,7 +195,9 @@ const OrderController = () => {
       let medical = null;
       if (specialOffer?.medicalId || medicalId) {
         medical = await __db.medical.findUnique({
-          where: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+          where: {
+            id: specialOffer ? specialOffer.medicalId : parseInt(medicalId),
+          },
           select: { adminId: true },
         });
 
@@ -213,19 +230,27 @@ const OrderController = () => {
             ...(specialOffer?.medicalId || medicalId
               ? {
                   medical: {
-                    connect: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+                    connect: {
+                      id: specialOffer
+                        ? specialOffer.medicalId
+                        : parseInt(medicalId),
+                    },
                   },
                 }
               : {}),
             employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
-            admin: medical?.adminId ? { connect: { id: medical.adminId } } : undefined,
+            admin: medical?.adminId
+              ? { connect: { id: medical.adminId } }
+              : undefined,
             additionalInfo,
             forAnotherPerson: forAnotherPerson || false,
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
-            ...(specialOfferId && { SpecialOffer: { connect: { id: specialOfferId } } }),
+            ...(specialOfferId && {
+              SpecialOffer: { connect: { id: specialOfferId } },
+            }),
           },
         });
 
@@ -239,7 +264,9 @@ const OrderController = () => {
             const subCategoryId = subCategory.id;
 
             if (!serviceId || !categoryId || !subCategoryId) {
-              throw new Error("Service, Category, and SubCategory are required for each special offer.");
+              throw new Error(
+                "Service, Category, and SubCategory are required for each special offer.",
+              );
             }
 
             const sub = await tx.orderSubCategory.create({
@@ -259,12 +286,19 @@ const OrderController = () => {
                 const subCategoryIds = category?.subCategoryId || [];
 
                 if (!serviceId || !categoryId || subCategoryIds.length === 0) {
-                  throw new Error("Service, Category, and SubCategories are required for each service category.");
+                  throw new Error(
+                    "Service, Category, and SubCategories are required for each service category.",
+                  );
                 }
 
                 for (const subCategoryId of subCategoryIds) {
                   const sub = await tx.orderSubCategory.create({
-                    data: { orderId: order.id, serviceId, categoryId, subCategoryId },
+                    data: {
+                      orderId: order.id,
+                      serviceId,
+                      categoryId,
+                      subCategoryId,
+                    },
                   });
                   orderSubCategories.push(sub);
                 }
@@ -496,7 +530,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -895,7 +931,9 @@ const OrderController = () => {
             },
             SpecialOffer: {
               select: {
-                title: true,
+                title_az: true,
+                title_en: true,
+                title_ru: true,
               },
             },
           },
@@ -997,7 +1035,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -1015,7 +1055,9 @@ const OrderController = () => {
           orders: orders.map((order) => {
             return {
               ...order,
-              title: order.SpecialOffer?.title || null,
+              title_az: order.SpecialOffer?.title_az || null,
+              title_en: order.SpecialOffer?.title_en || null,
+              title_ru: order.SpecialOffer?.title_ru || null,
             };
           }),
           meta: {
@@ -1107,7 +1149,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -1138,7 +1182,9 @@ const OrderController = () => {
         res,
         data: {
           ...order,
-          title: order.SpecialOffer?.title || null,
+          title_az: order.SpecialOffer?.title_az || null,
+          title_en: order.SpecialOffer?.title_en || null,
+          title_ru: order.SpecialOffer?.title_ru || null,
           user: {
             ...order.user,
             userOrderCount,
