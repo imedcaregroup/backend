@@ -110,6 +110,7 @@ const SpecialOffersController = () => {
             select: {
               id: true,
               name: true,
+              iconUrl: true,
             },
           },
           subCategories: {
