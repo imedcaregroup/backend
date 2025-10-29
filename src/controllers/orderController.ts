@@ -493,7 +493,14 @@ const OrderController = () => {
                   iconUrl: true,
                   medicalCategories: {
                     select: {
-                      price: true, // Fetch price from MedicalCategory
+                      medicalId: true,
+                      price: true, // Fetch price from MedicalCategory (for facility visits)
+                    },
+                  },
+                  employeeCategories: {
+                    select: {
+                      employeeId: true,
+                      price: true, // Fetch price from EmployeeCategory (for home doctor calls)
                     },
                   },
                 },
@@ -525,14 +532,35 @@ const OrderController = () => {
       const formattedOrders = orders.map((order: any) => ({
         ...order,
         title: order.SpecialOffer?.title || null,
-        orderSubCategories: order.orderSubCategories.map((osc: any) => ({
-          id: osc.subCategory.id,
-          name: osc.subCategory.name,
-          iconUrl: osc.subCategory.iconUrl,
-          price: osc.subCategory.medicalCategories?.[0]?.price || 0, // Ensure medicalCategories is correctly referenced
-          service: osc.service, // Add service information
-          category: osc.category, // Add category information
-        })),
+        orderSubCategories: order.orderSubCategories.map((osc: any) => {
+          let price = 0;
+
+          // Check if this is a home doctor call (serviceId === 1)
+          const isHomeDoctorCall = order.serviceId === 1;
+
+          if (isHomeDoctorCall && order.employeeId) {
+            // For home doctor calls, get price from EmployeeCategory
+            const employeeCategory = osc.subCategory.employeeCategories?.find(
+              (ec: any) => ec.employeeId === order.employeeId
+            );
+            price = employeeCategory?.price || 0;
+          } else if (order.medicalId) {
+            // For facility visits, get price from MedicalCategory
+            const medicalCategory = osc.subCategory.medicalCategories?.find(
+              (mc: any) => mc.medicalId === order.medicalId
+            );
+            price = medicalCategory?.price || 0;
+          }
+
+          return {
+            id: osc.subCategory.id,
+            name: osc.subCategory.name,
+            iconUrl: osc.subCategory.iconUrl,
+            price,
+            service: osc.service, // Add service information
+            category: osc.category, // Add category information
+          };
+        }),
       }));
 
       const formattedOrder = formattedOrders.map((order: any) => ({
