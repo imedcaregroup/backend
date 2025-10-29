@@ -460,6 +460,14 @@ const OrderController = () => {
         ...(cursor && { skip: 1 }),
         take: limit,
         include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              surName: true,
+              position: true,
+            },
+          },
           orderSubCategories: {
             include: {
               service: {
