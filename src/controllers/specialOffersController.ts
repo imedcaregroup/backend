@@ -22,15 +22,17 @@ const SpecialOffersController = () => {
         isActive: true,
         ...(search && search.trim().length > 0
           ? {
-              title: { contains: search, mode: "insensitive" },
+              OR: [
+                { title_az: { contains: search, mode: "insensitive" } },
+                { title_en: { contains: search, mode: "insensitive" } },
+                { title_ru: { contains: search, mode: "insensitive" } },
+              ],
             }
           : {}),
         ...(Number.isFinite(medicalId) ? { medicalId } : {}),
-        ...{
-          price: {
-            gte: Number.isFinite(minPrice) ? minPrice : 0,
-            lte: Number.isFinite(maxPrice) ? maxPrice : undefined,
-          },
+        price: {
+          gte: Number.isFinite(minPrice) ? minPrice : 0,
+          lte: Number.isFinite(maxPrice) ? maxPrice : undefined,
         },
         startsAt: {
           lte: new Date(),
