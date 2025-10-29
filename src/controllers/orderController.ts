@@ -1,3 +1,4 @@
+
 import dotenv from "dotenv";
 dotenv.config();
 import dayjs from "dayjs";
@@ -87,9 +88,14 @@ const OrderController = () => {
         });
       }
 
-      // Extract serviceId from serviceCat to determine if this is a home doctor call
+      // Extract serviceId from serviceCat or specialOffer to determine if this is a home doctor call
       let extractedServiceId: number | null = null;
-      if (serviceCat && Array.isArray(serviceCat) && serviceCat.length > 0) {
+
+      if (specialOffer && specialOffer.subCategories && specialOffer.subCategories.length > 0) {
+        // Get serviceId from special offer
+        extractedServiceId = specialOffer.subCategories[0].category.service.id;
+      } else if (serviceCat && Array.isArray(serviceCat) && serviceCat.length > 0) {
+        // Get serviceId from serviceCat
         const firstService = serviceCat[0]?.service?.[0];
         if (firstService?.id) {
           extractedServiceId = firstService.id;
@@ -209,6 +215,8 @@ const OrderController = () => {
             paymentMethod,
             orderDate: new Date(date),
             startTime,
+            // Save serviceId to Order table
+            serviceId: extractedServiceId,
             // Connect medical only if medicalId is provided (not required for home doctor calls)
             ...(specialOffer?.medicalId || medicalId
               ? {
