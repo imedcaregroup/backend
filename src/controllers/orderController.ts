@@ -1,4 +1,3 @@
-
 import dotenv from "dotenv";
 dotenv.config();
 import dayjs from "dayjs";
@@ -91,10 +90,18 @@ const OrderController = () => {
       // Extract serviceId from serviceCat or specialOffer to determine if this is a home doctor call
       let extractedServiceId: number | null = null;
 
-      if (specialOffer && specialOffer.subCategories && specialOffer.subCategories.length > 0) {
+      if (
+        specialOffer &&
+        specialOffer.subCategories &&
+        specialOffer.subCategories.length > 0
+      ) {
         // Get serviceId from special offer
         extractedServiceId = specialOffer.subCategories[0].category.service.id;
-      } else if (serviceCat && Array.isArray(serviceCat) && serviceCat.length > 0) {
+      } else if (
+        serviceCat &&
+        Array.isArray(serviceCat) &&
+        serviceCat.length > 0
+      ) {
         // Get serviceId from serviceCat
         const firstService = serviceCat[0]?.service?.[0];
         if (firstService?.id) {
@@ -216,8 +223,9 @@ const OrderController = () => {
         }
       }
 
+      logHttp("extractedServiceId", extractedServiceId);
       // транзакция
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await __db.$transaction(async (tx) => {
         // создаём заказ
         const order = await tx.order.create({
           data: {
@@ -233,7 +241,7 @@ const OrderController = () => {
             orderDate: new Date(date),
             startTime,
             // Save serviceId to Order table
-            serviceId: extractedServiceId,
+            Service: { connect: { id: extractedServiceId ?? undefined } },
             // Connect medical only if medicalId is provided (not required for home doctor calls)
             ...(specialOffer?.medicalId || medicalId
               ? {
@@ -577,13 +585,13 @@ const OrderController = () => {
           if (isHomeDoctorCall && order.employeeId) {
             // For home doctor calls, get price from EmployeeCategory
             const employeeCategory = osc.subCategory.employeeCategories?.find(
-              (ec: any) => ec.employeeId === order.employeeId
+              (ec: any) => ec.employeeId === order.employeeId,
             );
             price = employeeCategory?.price || 0;
           } else if (order.medicalId) {
             // For facility visits, get price from MedicalCategory
             const medicalCategory = osc.subCategory.medicalCategories?.find(
-              (mc: any) => mc.medicalId === order.medicalId
+              (mc: any) => mc.medicalId === order.medicalId,
             );
             price = medicalCategory?.price || 0;
           }
