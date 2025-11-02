@@ -10,57 +10,57 @@ export const NOTIFICATION_MESSAGES = {
   ORDER_COMPLETED: {
     az: {
       title: "Sifariş tamamlandı",
-      body: "Sifarişiniz uğurla tamamlandı.",
+      body: "Xidmət uğurla yerinə yetirildi. Təşəkkür edirik!",
     },
     en: {
       title: "Order Completed",
-      body: "Your order has been completed successfully.",
+      body: "Service has been successfully provided. Thank you!",
     },
     ru: {
       title: "Заказ завершен",
-      body: "Ваш заказ успешно завершен.",
+      body: "Услуга успешно оказана. Спасибо!",
     },
   },
   ORDER_ON_THE_WAY: {
     az: {
-      title: "Sifariş yoldadır",
-      body: "Sifarişiniz indi çatdırılır.",
+      title: "Mütəxəssis yoldadır",
+      body: "Tezliklə ünvanınıza çatacaq",
     },
     en: {
-      title: "Order on the way",
-      body: "Your order is being delivered now.",
+      title: "Specialist on the way",
+      body: "Will arrive at your address soon",
     },
     ru: {
-      title: "Заказ в пути",
-      body: "Ваш заказ доставляется.",
+      title: "Специалист в пути",
+      body: "Скоро прибудет по вашему адресу",
     },
   },
   ORDER_ACCEPTED: {
     az: {
-      title: "Sifarişiniz qəbul edildi",
-      body: "Sifarişiniz admin tərəfindən qəbul edildi.",
+      title: "Sifariş təsdiqləndi",
+      body: "Sifarişiniz qəbul olundu və tezliklə emal olunacaq",
     },
     en: {
-      title: "Your order has been accepted",
-      body: "Your order has been accepted by admin.",
+      title: "Order Confirmed",
+      body: "Your order has been accepted and will be processed shortly",
     },
     ru: {
-      title: "Ваш заказ принят",
-      body: "Ваш заказ принят администратором.",
+      title: "Заказ подтвержден",
+      body: "Ваш заказ принят и скоро будет обработан",
     },
   },
   ORDER_REJECTED: {
     az: {
-      title: "Sifarişiniz rədd edildi",
-      body: "Sifarişiniz admin tərəfindən rədd edildi.",
+      title: "Sifariş ləğv edildi",
+      body: "Təəssüf ki, sifarişiniz qəbul oluna bilmədi",
     },
     en: {
-      title: "Your order has been rejected",
-      body: "Your order has been rejected by admin.",
+      title: "Order Cancelled",
+      body: "Unfortunately, your order could not be accepted",
     },
     ru: {
-      title: "Ваш заказ отклонен",
-      body: "Ваш заказ отклонен администратором.",
+      title: "Заказ отменен",
+      body: "К сожалению, ваш заказ не может быть принят",
     },
   },
 } as const;
