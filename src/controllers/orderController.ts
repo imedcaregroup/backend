@@ -561,9 +561,13 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
+              id: true,
               title_az: true,
               title_en: true,
               title_ru: true,
+              imageUrl_az: true,
+              imageUrl_en: true,
+              imageUrl_ru: true,
             },
           },
         },
@@ -575,7 +579,9 @@ const OrderController = () => {
       // Format `orderSubCategories` into a flat array of subCategory objects
       const formattedOrders = orders.map((order: any) => ({
         ...order,
-        title: order.SpecialOffer?.title || null,
+        title_az: order.SpecialOffer?.title_az || null,
+        title_en: order.SpecialOffer?.title_en || null,
+        title_ru: order.SpecialOffer?.title_ru || null,
         orderSubCategories: order.orderSubCategories.map((osc: any) => {
           let price = 0;
 
@@ -983,9 +989,13 @@ const OrderController = () => {
             },
             SpecialOffer: {
               select: {
+                id: true,
                 title_az: true,
                 title_en: true,
                 title_ru: true,
+                imageUrl_az: true,
+                imageUrl_en: true,
+                imageUrl_ru: true,
               },
             },
           },
@@ -998,7 +1008,9 @@ const OrderController = () => {
         // Format `orderSubCategories` into a flat array of subCategory objects
         const formattedOrders = orders.map((order: any) => ({
           ...order,
-          title: order.SpecialOffer?.title || null,
+          title_az: order.SpecialOffer?.title_az || null,
+          title_en: order.SpecialOffer?.title_en || null,
+          title_ru: order.SpecialOffer?.title_ru || null,
           orderSubCategories: order.orderSubCategories.map((osc: any) => ({
             id: osc.subCategory.id,
             name: osc.subCategory.name,
@@ -1087,9 +1099,13 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
+              id: true,
               title_az: true,
               title_en: true,
               title_ru: true,
+              imageUrl_az: true,
+              imageUrl_en: true,
+              imageUrl_ru: true,
             },
           },
         },
@@ -1201,9 +1217,13 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
+              id: true,
               title_az: true,
               title_en: true,
               title_ru: true,
+              imageUrl_az: true,
+              imageUrl_en: true,
+              imageUrl_ru: true,
             },
           },
         },

@@ -41,6 +41,7 @@ const SubCategoryController = () => {
               },
             ],
           }),
+          type: "NORMAL",
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),
