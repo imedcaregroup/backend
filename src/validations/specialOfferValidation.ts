@@ -31,16 +31,19 @@ export const createSpecialOfferValidation = [
     .isDate({ format: "MM/DD/YYYY", strictMode: true })
     .withMessage("Starts at must be a valid date in MM/DD/YYYY format"),
 
-  check("imageUrl").notEmpty().withMessage("Please provide image URL"),
-  check("title").notEmpty().withMessage("Please provide title"),
+  check("imageUrl_az").notEmpty().withMessage("Please provide image URL"),
+  check("imageUrl_en").notEmpty().withMessage("Please provide image URL"),
+  check("imageUrl_ru").notEmpty().withMessage("Please provide image URL"),
+  check("title_az").notEmpty().withMessage("Please provide title"),
+  check("title_en").notEmpty().withMessage("Please provide title"),
+  check("title_ru").notEmpty().withMessage("Please provide title"),
   check("priority")
     .optional({ nullable: true, checkFalsy: true })
     .isInt()
     .withMessage("Priority must be an integer"),
-  check("title_en").optional({ nullable: true, checkFalsy: true }),
-  check("title_az").optional({ nullable: true, checkFalsy: true }),
-  check("title_ru").optional({ nullable: true, checkFalsy: true }),
-  check("description").optional({ nullable: true, checkFalsy: true }),
+  check("description_az").optional({ nullable: true, checkFalsy: true }),
+  check("description_en").optional({ nullable: true, checkFalsy: true }),
+  check("description_ru").optional({ nullable: true, checkFalsy: true }),
   check("originalPrice")
     .optional({ nullable: true, checkFalsy: true })
     .isFloat({ gt: 0 })
