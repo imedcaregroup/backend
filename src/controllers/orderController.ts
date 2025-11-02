@@ -579,7 +579,7 @@ const OrderController = () => {
       // Format `orderSubCategories` into a flat array of subCategory objects
       const formattedOrders = orders.map((order: any) => ({
         ...order,
-        title_az: order.SpecialOffer?.title_az || null,
+        title: order.SpecialOffer?.title_az || null,
         title_en: order.SpecialOffer?.title_en || null,
         title_ru: order.SpecialOffer?.title_ru || null,
         orderSubCategories: order.orderSubCategories.map((osc: any) => {
@@ -1008,7 +1008,7 @@ const OrderController = () => {
         // Format `orderSubCategories` into a flat array of subCategory objects
         const formattedOrders = orders.map((order: any) => ({
           ...order,
-          title_az: order.SpecialOffer?.title_az || null,
+          title: order.SpecialOffer?.title_az || null,
           title_en: order.SpecialOffer?.title_en || null,
           title_ru: order.SpecialOffer?.title_ru || null,
           orderSubCategories: order.orderSubCategories.map((osc: any) => ({
