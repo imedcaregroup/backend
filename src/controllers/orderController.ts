@@ -1,4 +1,3 @@
-
 import dotenv from "dotenv";
 dotenv.config();
 import dayjs from "dayjs";
@@ -11,7 +10,7 @@ import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import prisma from "../config/db";
-import {HttpException} from "../utils/exception";
+import { HttpException } from "../utils/exception";
 import { getNotificationMessage } from "../utils/notificationMessages";
 
 // Set up Multer storage for S3 file upload
@@ -92,10 +91,18 @@ const OrderController = () => {
       // Extract serviceId from serviceCat or specialOffer to determine if this is a home doctor call
       let extractedServiceId: number | null = null;
 
-      if (specialOffer && specialOffer.subCategories && specialOffer.subCategories.length > 0) {
+      if (
+        specialOffer &&
+        specialOffer.subCategories &&
+        specialOffer.subCategories.length > 0
+      ) {
         // Get serviceId from special offer
         extractedServiceId = specialOffer.subCategories[0].category.service.id;
-      } else if (serviceCat && Array.isArray(serviceCat) && serviceCat.length > 0) {
+      } else if (
+        serviceCat &&
+        Array.isArray(serviceCat) &&
+        serviceCat.length > 0
+      ) {
         // Get serviceId from serviceCat
         const firstService = serviceCat[0]?.service?.[0];
         if (firstService?.id) {
@@ -106,7 +113,12 @@ const OrderController = () => {
       const isHomeDoctorCall = extractedServiceId === 1;
 
       // Валидации
-      if ((!serviceCat || !Array.isArray(serviceCat) || serviceCat.length === 0) && !specialOfferId) {
+      if (
+        (!serviceCat ||
+          !Array.isArray(serviceCat) ||
+          serviceCat.length === 0) &&
+        !specialOfferId
+      ) {
         return res.status(400).json({
           msg: "Service categories are required.",
           statusCode: 400,
@@ -128,7 +140,10 @@ const OrderController = () => {
         });
       }
 
-      if (forAnotherPerson && (!forAnotherPersonName || !forAnotherPersonPhone)) {
+      if (
+        forAnotherPerson &&
+        (!forAnotherPersonName || !forAnotherPersonPhone)
+      ) {
         return res.status(400).json({
           msg: "For another person name and phone are required.",
           statusCode: 400,
@@ -137,7 +152,8 @@ const OrderController = () => {
 
       // Проверка занятости слота
       const currentDate = new Date(date);
-      const slotDay = currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
+      const slotDay =
+        currentDate.getDay() - 1 < 0 ? 6 : currentDate.getDay() - 1;
 
       if (isHomeDoctorCall && employeeId) {
         // For home doctor calls, check employee availability
@@ -154,7 +170,10 @@ const OrderController = () => {
           where: { employeeId: employeeId, startTime: startTime, day: slotDay },
         });
 
-        if (existingEmployeeOrders.length && existingEmployeeOrders.length >= availableEmployeeSlots.length) {
+        if (
+          existingEmployeeOrders.length &&
+          existingEmployeeOrders.length >= availableEmployeeSlots.length
+        ) {
           return res.status(400).json({
             msg: "The selected employee slot is already booked. Please choose a different slot or employee.",
             statusCode: 400,
@@ -175,7 +194,10 @@ const OrderController = () => {
           where: { medicalId: medicalId, startTime: startTime, day: slotDay },
         });
 
-        if (existingOrder.length && existingOrder.length >= availableSlots.length) {
+        if (
+          existingOrder.length &&
+          existingOrder.length >= availableSlots.length
+        ) {
           return res.status(400).json({
             msg: "The selected slot is already booked. Please choose a different slot.",
             statusCode: 400,
@@ -187,7 +209,9 @@ const OrderController = () => {
       let medical = null;
       if (specialOffer?.medicalId || medicalId) {
         medical = await __db.medical.findUnique({
-          where: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+          where: {
+            id: specialOffer ? specialOffer.medicalId : parseInt(medicalId),
+          },
           select: { adminId: true },
         });
 
@@ -200,8 +224,9 @@ const OrderController = () => {
         }
       }
 
+      logHttp("extractedServiceId", extractedServiceId);
       // транзакция
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await __db.$transaction(async (tx) => {
         // создаём заказ
         const order = await tx.order.create({
           data: {
@@ -217,24 +242,32 @@ const OrderController = () => {
             orderDate: new Date(date),
             startTime,
             // Save serviceId to Order table
-            serviceId: extractedServiceId,
+            Service: { connect: { id: extractedServiceId ?? undefined } },
             // Connect medical only if medicalId is provided (not required for home doctor calls)
             ...(specialOffer?.medicalId || medicalId
               ? {
                   medical: {
-                    connect: { id: specialOffer ? specialOffer.medicalId : parseInt(medicalId) },
+                    connect: {
+                      id: specialOffer
+                        ? specialOffer.medicalId
+                        : parseInt(medicalId),
+                    },
                   },
                 }
               : {}),
             employee: employeeId ? { connect: { id: employeeId } } : undefined,
             user: { connect: { id: req.user._id } },
-            admin: medical?.adminId ? { connect: { id: medical.adminId } } : undefined,
+            admin: medical?.adminId
+              ? { connect: { id: medical.adminId } }
+              : undefined,
             additionalInfo,
             forAnotherPerson: forAnotherPerson || false,
             forAnotherPersonName: forAnotherPersonName || null,
             forAnotherPersonPhone: forAnotherPersonPhone || null,
             fileUrl: fileUrls.join(","),
-            ...(specialOfferId && { SpecialOffer: { connect: { id: specialOfferId } } }),
+            ...(specialOfferId && {
+              SpecialOffer: { connect: { id: specialOfferId } },
+            }),
           },
         });
 
@@ -248,7 +281,9 @@ const OrderController = () => {
             const subCategoryId = subCategory.id;
 
             if (!serviceId || !categoryId || !subCategoryId) {
-              throw new Error("Service, Category, and SubCategory are required for each special offer.");
+              throw new Error(
+                "Service, Category, and SubCategory are required for each special offer.",
+              );
             }
 
             const sub = await tx.orderSubCategory.create({
@@ -268,12 +303,19 @@ const OrderController = () => {
                 const subCategoryIds = category?.subCategoryId || [];
 
                 if (!serviceId || !categoryId || subCategoryIds.length === 0) {
-                  throw new Error("Service, Category, and SubCategories are required for each service category.");
+                  throw new Error(
+                    "Service, Category, and SubCategories are required for each service category.",
+                  );
                 }
 
                 for (const subCategoryId of subCategoryIds) {
                   const sub = await tx.orderSubCategory.create({
-                    data: { orderId: order.id, serviceId, categoryId, subCategoryId },
+                    data: {
+                      orderId: order.id,
+                      serviceId,
+                      categoryId,
+                      subCategoryId,
+                    },
                   });
                   orderSubCategories.push(sub);
                 }
@@ -520,7 +562,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -542,13 +586,13 @@ const OrderController = () => {
           if (isHomeDoctorCall && order.employeeId) {
             // For home doctor calls, get price from EmployeeCategory
             const employeeCategory = osc.subCategory.employeeCategories?.find(
-              (ec: any) => ec.employeeId === order.employeeId
+              (ec: any) => ec.employeeId === order.employeeId,
             );
             price = employeeCategory?.price || 0;
           } else if (order.medicalId) {
             // For facility visits, get price from MedicalCategory
             const medicalCategory = osc.subCategory.medicalCategories?.find(
-              (mc: any) => mc.medicalId === order.medicalId
+              (mc: any) => mc.medicalId === order.medicalId,
             );
             price = medicalCategory?.price || 0;
           }
@@ -935,7 +979,9 @@ const OrderController = () => {
             },
             SpecialOffer: {
               select: {
-                title: true,
+                title_az: true,
+                title_en: true,
+                title_ru: true,
               },
             },
           },
@@ -1037,7 +1083,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -1055,7 +1103,9 @@ const OrderController = () => {
           orders: orders.map((order) => {
             return {
               ...order,
-              title: order.SpecialOffer?.title || null,
+              title_az: order.SpecialOffer?.title_az || null,
+              title_en: order.SpecialOffer?.title_en || null,
+              title_ru: order.SpecialOffer?.title_ru || null,
             };
           }),
           meta: {
@@ -1147,7 +1197,9 @@ const OrderController = () => {
           },
           SpecialOffer: {
             select: {
-              title: true,
+              title_az: true,
+              title_en: true,
+              title_ru: true,
             },
           },
         },
@@ -1178,7 +1230,9 @@ const OrderController = () => {
         res,
         data: {
           ...order,
-          title: order.SpecialOffer?.title || null,
+          title_az: order.SpecialOffer?.title_az || null,
+          title_en: order.SpecialOffer?.title_en || null,
+          title_ru: order.SpecialOffer?.title_ru || null,
           user: {
             ...order.user,
             userOrderCount,

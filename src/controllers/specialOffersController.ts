@@ -22,15 +22,17 @@ const SpecialOffersController = () => {
         isActive: true,
         ...(search && search.trim().length > 0
           ? {
-              title: { contains: search, mode: "insensitive" },
+              OR: [
+                { title_az: { contains: search, mode: "insensitive" } },
+                { title_en: { contains: search, mode: "insensitive" } },
+                { title_ru: { contains: search, mode: "insensitive" } },
+              ],
             }
           : {}),
         ...(Number.isFinite(medicalId) ? { medicalId } : {}),
-        ...{
-          price: {
-            gte: Number.isFinite(minPrice) ? minPrice : 0,
-            lte: Number.isFinite(maxPrice) ? maxPrice : undefined,
-          },
+        price: {
+          gte: Number.isFinite(minPrice) ? minPrice : 0,
+          lte: Number.isFinite(maxPrice) ? maxPrice : undefined,
         },
         startsAt: {
           lte: new Date(),
@@ -117,6 +119,9 @@ const SpecialOffersController = () => {
             select: {
               id: true,
               name: true,
+              name_az: true,
+              name_en: true,
+              name_ru: true,
               category: {
                 select: {
                   id: true,
@@ -169,12 +174,15 @@ const SpecialOffersController = () => {
         startsAt,
         endsAt,
         priority,
-        imageUrl,
-        title,
-        title_en,
+        imageUrl_az,
+        imageUrl_en,
+        imageUrl_ru,
         title_az,
+        title_en,
         title_ru,
-        description,
+        description_az,
+        description_en,
+        description_ru,
         originalPrice,
         discountType,
         discountValue,
@@ -183,12 +191,15 @@ const SpecialOffersController = () => {
 
       const specialOffer = await __db.specialOffer.create({
         data: {
-          title,
           title_en,
           title_az,
           title_ru,
-          description,
-          imageUrl,
+          description_az,
+          description_en,
+          description_ru,
+          imageUrl_az,
+          imageUrl_en,
+          imageUrl_ru,
           medicalId,
           isActive,
           startsAt: new Date(startsAt),
