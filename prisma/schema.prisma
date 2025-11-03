@@ -65,11 +65,17 @@ model SubCategory {
   name_ru            String?
   systemName         String?
   categoryId         Int
+  type               SubCategoryType    @default(NORMAL)
   medicalCategories  MedicalCategory[]
   employeeCategories EmployeeCategory[]
   orderSubCategories OrderSubCategory[] @relation("SubCategoryOrderSubCategories")
   category           Category           @relation(fields: [categoryId], references: [id])
   specialOffers      SpecialOffer[]
+}
+
+enum SubCategoryType {
+  NORMAL
+  SPECIAL_OFFER_ONLY
 }
 
 model Medical {
