@@ -37,6 +37,8 @@ export const authMiddleware = async (
       req.user = {
         _id: user.id,
         email: user.email,
+        name: user.name,
+        surname: user.surName,
         googleId: user?.googleId,
         authProvider: user?.authProvider,
       };

@@ -9,8 +9,7 @@ import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import prisma from "../config/db";
-import { HttpException } from "../utils/exception";
+import { sendMail } from "../utils/sendMail";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -211,7 +210,7 @@ const OrderController = () => {
           where: {
             id: specialOffer ? specialOffer.medicalId : parseInt(medicalId),
           },
-          select: { adminId: true },
+          select: { adminId: true, name: true },
         });
 
         if (!medical && !isHomeDoctorCall) {
@@ -325,6 +324,31 @@ const OrderController = () => {
 
         return { order, orderSubCategories };
       });
+
+      [
+        "support@imed.az",
+        "karim.aliyev@caregroup.tech",
+        "farhad.abas@caregroup.tech",
+        "imed@caregroup.tech",
+      ].forEach((email) =>
+        sendMail(
+          email,
+          "Yeni sifariş göndərildi",
+          `
+          Sifariş ID: ${result.order.id}
+          Medikal: ${medical?.name}
+          Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
+          Tarix üçün: ${date}
+          Vaxt üçün: ${formatTime(startTime)}
+          Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
+          Əlavə qeyd: ${additionalInfo || "Yoxdur"}
+          Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
+          Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
+          
+          Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
+          `,
+        ),
+      );
 
       // если заказ для себя, обновляем user.passportUrls
       if (!forAnotherPerson) {
@@ -464,7 +488,7 @@ const OrderController = () => {
         }
       });
     } catch (error) {
-      console.error("Unexpected Error: ", error);
+      logger.error(`Unexpected Error: ${JSON.stringify(error)}`);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
@@ -1465,6 +1489,13 @@ const OrderController = () => {
       });
     }
   };
+
+  function formatTime(time: number) {
+    const str = time.toString().padStart(4, "0"); // ensures 4 digits, e.g. 900 → "0900"
+    const hours = str.slice(0, 2);
+    const minutes = str.slice(2);
+    return `${hours}:${minutes}`;
+  }
 
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
