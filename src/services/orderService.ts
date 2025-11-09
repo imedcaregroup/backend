@@ -1,6 +1,7 @@
 import { OrderException } from "../utils/exception";
 import { sendPostNotifications } from "../utils/helpers";
 import { EmailJsService } from "./emailJsService";
+import { getNotificationMessage } from "../utils/notificationMessages";
 
 export class OrderService {
   public async completeOrder(orderId: number): Promise<void> {
@@ -39,10 +40,12 @@ export class OrderService {
       },
     );
 
+    const notificationMessage = getNotificationMessage("ORDER_COMPLETED", "az");
+
     const notification = await __db.notification.create({
       data: {
-        title: "Order Completed",
-        body: "Your order has been completed successfully.",
+        title: notificationMessage.title,
+        body: notificationMessage.body,
       },
     });
     await __db.userNotification.create({
@@ -55,8 +58,8 @@ export class OrderService {
     await this.sendPostNotification(
       order.userId,
       order.id,
-      "Order Completed",
-      "Your order has been completed successfully.",
+      notificationMessage.title,
+      notificationMessage.body,
     );
   }
 
@@ -72,10 +75,15 @@ export class OrderService {
       },
     });
 
+    const notificationMessage = getNotificationMessage(
+      "ORDER_ON_THE_WAY",
+      "az",
+    );
+
     const notification = await __db.notification.create({
       data: {
-        title: "Order on the way",
-        body: "Your order is being delivered now.",
+        title: notificationMessage.title,
+        body: notificationMessage.body,
       },
     });
 
@@ -89,8 +97,8 @@ export class OrderService {
     await this.sendPostNotification(
       order.userId,
       order.id,
-      "Order on the way",
-      "Your order is being delivered now.",
+      notificationMessage.title,
+      notificationMessage.body,
     );
   }
 

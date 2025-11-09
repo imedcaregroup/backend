@@ -10,6 +10,9 @@ import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { sendMail } from "../utils/sendMail";
+import prisma from "../config/db";
+import { HttpException } from "../utils/exception";
+import { getNotificationMessage } from "../utils/notificationMessages";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -765,17 +768,16 @@ const OrderController = () => {
         },
       });
 
+      // Get appropriate notification message based on status
+      const notificationMessage =
+        status === "accepted"
+          ? getNotificationMessage("ORDER_ACCEPTED", "az")
+          : getNotificationMessage("ORDER_REJECTED", "az");
+
       const notification = await __db.notification.create({
         data: {
-          title:
-            req.body.orderStatus === "accepted"
-              ? "Your order has been accepted"
-              : "Your order has been rejected",
-          body:
-            req.body.orderStatus === "accepted"
-              ? "You account has been accepted by admin"
-              : req.body.declinedReason ||
-                "Your order has been rejected by admin",
+          title: notificationMessage.title,
+          body: notificationMessage.body,
         },
       });
 
@@ -800,12 +802,8 @@ const OrderController = () => {
       if (tokens)
         await sendPostNotifications(
           tokens,
-          req.body.orderStatus === "accepted"
-            ? "Your order has been accepted"
-            : "Your order has been rejected",
-          req.body.orderStatus === "accepted"
-            ? "You account has been accepted by admin"
-            : req.body.declinedReason,
+          notificationMessage.title,
+          notificationMessage.body,
           {
             deepLink: "imedapp://orders/" + orderId,
           },
