@@ -401,8 +401,6 @@ const OrderController = () => {
               ContentType: file.mimetype,
             };
 
-            console.log("1");
-
             return new Promise((resolve, reject) => {
               s3.upload(params, (uploadError: Error | null, data: any) => {
                 if (uploadError) {
@@ -415,7 +413,6 @@ const OrderController = () => {
               });
             });
           });
-          console.log("2");
 
           await Promise.all(uploadPromises);
         }
@@ -430,6 +427,10 @@ const OrderController = () => {
           select: { lat: true, lng: true },
         });
 
+        if (!medicalId) {
+          throw new Error("Medical ID is required");
+        }
+
         if (!medical) {
           return sendErrorResponse({
             res,
@@ -438,11 +439,6 @@ const OrderController = () => {
           });
         }
 
-        if (!medicalId) {
-          console.error("Medical ID is missing");
-          throw new Error("Medical ID is required");
-        }
-        logHttp("3", fileUrls);
         logHttp("Preparing to create request order...");
         const orderData = {
           additionalInfo,
@@ -838,6 +834,7 @@ const OrderController = () => {
           orderStatus: true,
           payment_order_id: true,
           paymetStatus: true,
+          paymentMethod: true,
         },
       });
 
@@ -849,13 +846,17 @@ const OrderController = () => {
         return sendErrorResponse({
           res,
           error:
-            "Order status can only be changed to 'canceled-by-user' from 'completed' or 'processing'",
+            "Order status can not be changed to 'canceled-by-user' from 'completed' or 'processing'",
         });
       }
 
       logHttp("canceling order ==> ");
 
-      if (order.payment_order_id && order.paymetStatus === "success") {
+      if (
+        order.payment_order_id &&
+        order.paymetStatus === "success" &&
+        order.paymentMethod === "Card"
+      ) {
         const body = {
           amount,
           orderId: order.payment_order_id,
@@ -890,7 +891,11 @@ const OrderController = () => {
         orderStatus: "canceled-by-user",
       };
 
-      if (order.payment_order_id && order.paymetStatus === "success") {
+      if (
+        order.payment_order_id &&
+        order.paymetStatus === "success" &&
+        order.paymentMethod === "Card"
+      ) {
         updateBody.refounded = true;
         updateBody.refoundedAmount = amount;
       }
