@@ -935,6 +935,10 @@ const OrderController = () => {
         startTime: { not: null },
         user: { isDeleted: false },
         adminId: req.admin?._id, // 👈 Only show orders for logged-in admin
+        OR: [
+          { paymentMethod: "Card", paymetStatus: "success" },
+          { paymentMethod: "COD" },
+        ],
       };
 
       if (orderStatus) {
@@ -955,12 +959,12 @@ const OrderController = () => {
           lte: endDate, // Less than or equal to end date
         };
       }
-      condition["startTime"] = {
-        not: null, // This filters for orders where startTime is not null
-      };
-      condition["user"] = {
-        isDeleted: false,
-      };
+      // condition["startTime"] = {
+      //   not: null, // This filters for orders where startTime is not null
+      // };
+      // condition["user"] = {
+      //   isDeleted: false,
+      // };
 
       logHttp("Counting orders", condition);
       const count = await __db.order.count({
