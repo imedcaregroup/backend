@@ -30,7 +30,12 @@ const PaymentController = () => {
 
       const order = await prisma.order.findFirst({
         select: { id: true },
-        where: { id: orderId, paymetStatus: "pending" },
+        where: {
+          id: orderId,
+          paymetStatus: {
+            in: ["pending", "failed"],
+          },
+        },
       });
 
       if (!order) {
@@ -147,29 +152,29 @@ const PaymentController = () => {
         });
       }
 
-      sentryLogger.logMessage("Try to get order information", req.body);
+      // sentryLogger.logMessage("Try to get order information", req.body);
 
-      const response = await fetch(
-        Payriff.BASE_URL + "/orders/" + paymentOrderId,
-        {
-          headers: getHeaders(),
-        },
-      );
-      const data = await response.json();
-
-      if (data.code != Payriff.SUCCESS) {
-        sentryLogger.logMessage("Payment not found", data);
-
-        return sendErrorResponse({
-          res,
-          statusCode: 404,
-          error: "Payment order not found",
-        });
-      }
+      // const response = await fetch(
+      //   Payriff.BASE_URL + "/orders/" + paymentOrderId,
+      //   {
+      //     headers: getHeaders(),
+      //   },
+      // );
+      // const data = await response.json();
+      //
+      // if (data.code != Payriff.SUCCESS) {
+      //   sentryLogger.logMessage("Payment not found", data);
+      //
+      //   return sendErrorResponse({
+      //     res,
+      //     statusCode: 404,
+      //     error: "Payment order not found",
+      //   });
+      // }
 
       const paymentIsSuccessful = code === Payriff.SUCCESS;
 
-      sentryLogger.logMessage("Payment completed", data);
+      sentryLogger.logMessage("Payment completed", req.body);
 
       try {
         await __db.order.update({
@@ -179,14 +184,16 @@ const PaymentController = () => {
           where: { id: order.id },
         });
 
-        const mailService = new EmailJsService();
-        await mailService.sendMessage(
-          order.user.email as string,
-          "payment_successful",
-          { name: order.user.name as string },
-        );
+        if (paymentIsSuccessful) {
+          const mailService = new EmailJsService();
+          await mailService.sendMessage(
+            order.user.email as string,
+            "payment_successful",
+            { name: order.user.name as string },
+          );
+        }
       } catch (error) {
-        sentryLogger.logException(error, data);
+        sentryLogger.logException(error, req.body);
 
         return sendErrorResponse({
           res,
