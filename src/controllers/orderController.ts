@@ -243,7 +243,9 @@ const OrderController = () => {
             orderDate: new Date(date),
             startTime,
             // Save serviceId to Order table
-            Service: { connect: { id: extractedServiceId ?? undefined } },
+            ...(extractedServiceId && {
+              Service: { connect: { id: extractedServiceId } },
+            }),
             // Connect medical only if medicalId is provided (not required for home doctor calls)
             ...(specialOffer?.medicalId || medicalId
               ? {

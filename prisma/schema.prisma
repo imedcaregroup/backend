@@ -334,6 +334,12 @@ model SpecialOffer {
   description_az String?
   description_en String?
   description_ru String?
+  benefits_az    String[]
+  benefits_en    String[]
+  benefits_ru    String[]
+  forWhom_az     String[]
+  forWhom_en     String[]
+  forWhom_ru     String[]
   imageUrl_az    String    @default("")
   imageUrl_en    String    @default("")
   imageUrl_ru    String    @default("")

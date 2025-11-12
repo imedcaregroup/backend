@@ -7,8 +7,8 @@ export const createSpecialOfferValidation = [
     .isInt()
     .withMessage("Medical ID must be an integer"),
   check("subCategoryIds")
-    .isArray({ min: 1 })
-    .withMessage("Please provide at least one subcategory ID"),
+    .isArray()
+    .withMessage("Sub-category IDs must be an array"),
   check("price")
     .notEmpty()
     .withMessage("Please provide price")
@@ -37,6 +37,30 @@ export const createSpecialOfferValidation = [
   check("title_az").notEmpty().withMessage("Please provide title"),
   check("title_en").notEmpty().withMessage("Please provide title"),
   check("title_ru").notEmpty().withMessage("Please provide title"),
+  check("benefits_az")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("Benefits must be an array (AZ)"),
+  check("benefits_en")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("Benefits must be an array (EN)"),
+  check("benefits_ru")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("Benefits must be an array (RU)"),
+  check("forWhom_az")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("For whom must be an array (AZ)"),
+  check("forWhom_en")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("For whom must be an array (EN)"),
+  check("forWhom_ru")
+    .optional({ nullable: true, checkFalsy: true })
+    .isArray()
+    .withMessage("For whom must be an array (RU)"),
   check("priority")
     .optional({ nullable: true, checkFalsy: true })
     .isInt()
