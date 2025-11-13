@@ -35,6 +35,28 @@ model User {
   notificationsPivot  UserNotification[]
 }
 
+enum PhoneOtpIntent {
+  SIGNUP
+  PHONE_CHANGE
+}
+
+model PhoneOtpCode {
+  id          Int            @id @default(autoincrement())
+  phone       String
+  deviceId    String? // optional device binding (maybe use later to limit OTPs per device)
+  intent      PhoneOtpIntent
+  codeHash    String
+  attempts    Int            @default(0)
+  maxAttempts Int            @default(5)
+  taskId      String // for tracking with external service
+  expiresAt   DateTime
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([phone, intent, expiresAt])
+  @@index([expiresAt])
+}
+
 model Service {
   id         Int                @id @default(autoincrement())
   iconUrl    String
