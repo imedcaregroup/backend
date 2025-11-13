@@ -105,6 +105,7 @@ model Medical {
   employees         Employee[]
   SpecialOffer      SpecialOffer[]
   employeeMedical   EmployeeMedical[]
+  HomeServicePolicy HomeServicePolicy?
 }
 
 model DistancePricingTier {
@@ -112,11 +113,32 @@ model DistancePricingTier {
   medicalId Int
   minKm     Decimal  @db.Decimal(10, 2)
   maxKm     Decimal? @db.Decimal(10, 2)
-  feeAzn    Decimal  @db.Decimal(10, 2)
 
-  medical Medical @relation(fields: [medicalId], references: [id])
+  medical            Medical              @relation(fields: [medicalId], references: [id])
+  LeadtimeAdjustment LeadtimeAdjustment[]
 
   @@index([medicalId, minKm, maxKm])
+}
+
+model HomeServicePolicy {
+  id          Int      @id @default(autoincrement())
+  medicalId   Int      @unique
+  freeOverAzn Decimal? @db.Decimal(10, 2) // null => use global (e.g., 50)
+  isActive    Boolean  @default(true)
+
+  medical Medical @relation(fields: [medicalId], references: [id])
+}
+
+model LeadtimeAdjustment {
+  id                    Int     @id @default(autoincrement())
+  distancePricingTierId Int
+  minLeadHours          Int     @default(0) // inclusive
+  maxLeadHours          Int? // exclusive; null = open-ended
+  feeAzn                Decimal @db.Decimal(10, 2)
+
+  distancePricingTier DistancePricingTier @relation(fields: [distancePricingTierId], references: [id])
+
+  @@index([distancePricingTierId, minLeadHours, maxLeadHours])
 }
 
 model MedicalCategory {
