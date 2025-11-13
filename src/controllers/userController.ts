@@ -491,14 +491,17 @@ const UserController = () => {
         req.body.imageUrl = data.Location;
       }
 
-      // Create data object with type conversions
+      // Create a data object with type conversions
       const updateData = {
         ...req.body,
         // Convert lat and lng from string to float if they exist
         ...(req.body.lat && { lat: parseFloat(req.body.lat) }),
         ...(req.body.lng && { lng: parseFloat(req.body.lng) }),
-        // Convert date string to Date object if it exists
+        // Convert a date string to a Date object if it exists
         ...(req.body.dob && { dob: new Date(req.body.dob) }),
+        notificationEnabled:
+          req.body.notificationEnabled === "true" ||
+          req.body.notificationEnabled === true,
       };
 
       const user = await __db.user.update({
@@ -510,14 +513,13 @@ const UserController = () => {
 
       logHttp("Updated user profile");
 
-      if (user?.password)
-        // @ts-ignore
-        delete user.password;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...safeUser } = user;
 
       return sendSuccessResponse({
         res,
         data: {
-          ...user,
+          ...safeUser,
         },
         message: "User profile updated successfully!",
       });
