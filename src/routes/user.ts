@@ -9,6 +9,8 @@ import {
   VerifyEmailValidation,
   resetPasswordValidation,
   updateLocationValidation,
+  requestOtpValidation,
+  verifyOtpValidation,
 } from "../validations/userValidation";
 import { validationWrapper } from "../utils/helpers";
 import multer, { FileFilterCallback } from "multer";
@@ -53,15 +55,26 @@ router
 router
   .route("/login")
   .post(loginUserValidation, validationWrapper(userController.logIn));
+
 router
   .route("/reset-password")
   .post(
     resetPasswordValidation,
     validationWrapper(userController.resetPassword),
   );
+
 router
   .route("/verify-email")
   .post(VerifyEmailValidation, validationWrapper(userController.verifyEmail));
+
+router
+  .route("/otp/request")
+  .post(requestOtpValidation, validationWrapper(userController.requestOtp));
+
+router
+  .route("/otp/verify")
+  .post(verifyOtpValidation, validationWrapper(userController.verifyOtp));
+
 router.use(authMiddleware);
 router.route("/me").get(userController.getMyProfile);
 router.route("/passports").get(userController.getPassports);

@@ -4,95 +4,14 @@ import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { generateJWT } from "../utils/helpers";
 import { UserRequest } from "../types";
-import s3 from "../utils/aws"; // Import the AWS S3 instance
+import s3 from "../utils/aws";
+import { buildIndividualSubmitXml } from "../utils/sendSms";
+import { parseStringPromise } from "xml2js";
+import axios from "axios"; // Import the AWS S3 instance
+
+const TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 const UserController = () => {
-  // const signUp = async (req: Request, res: Response): Promise<any> => {
-  //   try {
-  //     logHttp("Adding user with reqBody ==> ", req.body);
-  //     const {
-  //       name,
-  //       surName,
-  //       pytroNym,
-  //       email,
-  //       password,
-  //       address,
-  //       dob,
-  //       country,
-  //       gender,
-  //       mobileNumber,
-  //       lat,
-  //       lng,
-  //       notificationEnabled,
-  //     } = req.body;
-  //     console.log("R", req.body);
-  //     if (!email || !password) {
-  //       throw {
-  //         statusCode: 400,
-  //         message: "Email and password are required",
-  //       };
-  //     }
-
-  //     logHttp("Finding user with email ==> ", email);
-  //     let user = await __db.user.findFirst({
-  //       where: {
-  //         email,
-  //         isDeleted: false,
-  //       },
-  //     });
-
-  //     if (user) {
-  //       throw {
-  //         statusCode: 409,
-  //         message: "User already exists with this email",
-  //       };
-  //     }
-  //     const hashPassword = await bcrypt.hash(password, 10);
-
-  //     logHttp("Creating user");
-  //     await __db.user.create({
-  //       data: {
-  //         name,
-  //         surName,
-  //         pytroNym,
-  //         email,
-  //         mobileNumber,
-  //         address,
-  //         dob,
-  //         country,
-  //         gender,
-  //         lat,
-  //         lng,
-  //         password: hashPassword,
-  //         notificationEnabled,
-  //         authProvider: "PASSWORD",
-  //       },
-  //     });
-  //     logHttp("Created new user with email", email);
-  //     const token = await generateJWT(
-  //       { _id: user?.id, type: "ACCESS_TOKEN" },
-  //       "365d",
-  //     );
-
-  //     return sendSuccessResponse({
-  //       res,
-  //       message: "User created successfully!!!",
-  //       data: {
-  //         user,
-  //         token,
-  //         userExists: false,
-  //       },
-  //     });
-  //   } catch (error: any) {
-  //     logError(`Error while signUp ==> `, error?.message);
-
-  //     return sendErrorResponse({
-  //       res,
-  //       statusCode: error?.statusCode || 500,
-  //       error: error.message || "Internal Server Error",
-  //     });
-  //   }
-  // };
   const signUp = async (req: Request, res: Response): Promise<any> => {
     try {
       logHttp("Adding user with reqBody ==> ", req.body);
@@ -408,6 +327,161 @@ const UserController = () => {
       return sendErrorResponse({
         res,
         statusCode: error.statusCode || 500,
+        error: error.message || "Internal Server Error",
+      });
+    }
+  };
+
+  const requestOtp = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Requesting OTP with reqBody ==> ", req.body);
+      const phone = req.body.phoneNumber.replace(/\D/g, ""); // Normalize phone number by removing non-digit characters
+      const intent = req.body.intent;
+      const now = new Date();
+
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      const otpHash = await bcrypt.hash(otp, 10);
+
+      // Invalidate any existing OTPs for this phone and intent
+      await __db.phoneOtpCode.updateMany({
+        where: {
+          phone,
+          intent,
+          expiresAt: { gt: now }, // not expired yet
+        },
+        data: {
+          expiresAt: now, // expire them immediately
+        },
+      });
+
+      const xmlBody = buildIndividualSubmitXml({
+        title: "iMed",
+        scheduled: "NOW",
+        controlId: `${now.getTime()}`, // must be unique for each task
+        recipients: [{ msisdn: phone, message: `Your pin is ${otp}` }],
+      });
+
+      const response = await axios.post(
+        "https://click.atlsms.az/bulksms/api",
+        xmlBody,
+        {
+          headers: {
+            "Content-Type": "application/xml",
+          },
+          timeout: 15000,
+        },
+      );
+      const xml = response.data;
+
+      // Parse XML → JS object
+      const parsed = await parseStringPromise(xml);
+
+      // Extract taskId
+      const taskId = parsed.response.body[0].taskid[0];
+      if (!taskId) {
+        logError("Failed to send OTP SMS", parsed);
+        throw {
+          statusCode: 500,
+          message: "Failed to send OTP SMS",
+        };
+      }
+
+      // Create a new OTP record
+      const otpRecord = await __db.phoneOtpCode.create({
+        data: {
+          phone,
+          intent,
+          codeHash: otpHash,
+          expiresAt: new Date(now.getTime() + TTL_MS),
+          taskId,
+        },
+      });
+
+      return sendSuccessResponse({
+        res,
+        message: "OTP generated successfully",
+        data: {
+          otp: {
+            id: otpRecord.id,
+          },
+        },
+      });
+    } catch (error: any) {
+      logError(`Error while requesting OTP ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 500,
+        error: error.message || "Internal Server Error",
+      });
+    }
+  };
+
+  const verifyOtp = async (req: Request, res: Response): Promise<any> => {
+    try {
+      logHttp("Verifying OTP with reqBody ==> ", req.body);
+      const { otpId, code } = req.body;
+      const now = new Date();
+
+      // Find the OTP record by id
+      const otpRecord = await __db.phoneOtpCode.findFirst({
+        where: {
+          id: otpId,
+          expiresAt: { gt: now },
+        },
+        orderBy: {
+          createdAt: "desc", // use the newest one
+        },
+      });
+
+      if (!otpRecord) {
+        throw {
+          statusCode: 404,
+          message: "OTP record not found",
+        };
+      }
+
+      if (otpRecord.attempts >= otpRecord.maxAttempts) {
+        throw {
+          statusCode: 400,
+          message: "Maximum OTP verification attempts exceeded",
+        };
+      }
+
+      // Verify the OTP code
+      const isMatched = await bcrypt.compare(code, otpRecord.codeHash);
+      if (!isMatched) {
+        // Increment attempts
+        await __db.phoneOtpCode.update({
+          where: { id: otpRecord.id },
+          data: {
+            attempts: { increment: 1 },
+          },
+        });
+
+        throw {
+          statusCode: 400,
+          message: "Invalid OTP code",
+        };
+      }
+
+      // OTP is valid, expire it immediately
+      await __db.phoneOtpCode.update({
+        where: { id: otpRecord.id },
+        data: {
+          attempts: { increment: 1 },
+          expiresAt: now, // expire it immediately
+        },
+      });
+
+      return sendSuccessResponse({
+        res,
+        message: "OTP verified successfully",
+      });
+    } catch (error: any) {
+      logError(`Error while verifying OTP ==> `, error?.message);
+      return sendErrorResponse({
+        res,
+        statusCode: error?.statusCode || 500,
         error: error.message || "Internal Server Error",
       });
     }
@@ -786,6 +860,8 @@ const UserController = () => {
     logIn,
     verifyEmail,
     loginUserWithGoogle,
+    requestOtp,
+    verifyOtp,
     getMyProfile,
     setMyProfile,
     updatePassword,

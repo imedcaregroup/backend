@@ -50,3 +50,40 @@ export const updateLocationValidation = [
   check("lat").notEmpty().withMessage("Please provide lat"),
   check("lng").notEmpty().withMessage("Please provide lng"),
 ];
+
+export const requestOtpValidation = [
+  check("phoneNumber")
+    .notEmpty()
+    .withMessage("phoneNumber is required")
+    .isString()
+    .withMessage("phoneNumber must be a string")
+    .trim(),
+
+  check("intent")
+    .notEmpty()
+    .withMessage("intent is required")
+    .isIn(["SIGNUP", "PHONE_CHANGE"])
+    .withMessage("Invalid intent value"),
+];
+
+export const verifyOtpValidation = [
+  check("otpId")
+    .notEmpty()
+    .withMessage("otpId is required")
+    .custom((value) => {
+      if (typeof value !== "number") {
+        throw new Error("otpId must be a number (not a string)");
+      }
+      return true;
+    })
+    .isInt({ min: 1 })
+    .withMessage("otpId must be an integer"),
+
+  check("code")
+    .notEmpty()
+    .withMessage("code is required")
+    .isLength({ min: 4, max: 8 })
+    .withMessage("code must be between 4 and 8 digits")
+    .isNumeric()
+    .withMessage("code must contain only digits"),
+];
