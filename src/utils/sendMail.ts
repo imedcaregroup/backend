@@ -19,24 +19,28 @@ export async function sendMail(
   subject: string,
   text: string,
 ) {
-  const { token: accessToken } = await oAuth2Client.getAccessToken();
+  try {
+    const { token: accessToken } = await oAuth2Client.getAccessToken();
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: GMAIL_ADDRESS,
-      clientId: GOOGLE_CLIENT_ID!,
-      clientSecret: GOOGLE_CLIENT_SECRET!,
-      refreshToken: GOOGLE_REFRESH_TOKEN!,
-      accessToken: accessToken!, // optional
-    },
-  });
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: GMAIL_ADDRESS,
+        clientId: GOOGLE_CLIENT_ID!,
+        clientSecret: GOOGLE_CLIENT_SECRET!,
+        refreshToken: GOOGLE_REFRESH_TOKEN!,
+        accessToken: accessToken!, // optional
+      },
+    });
 
-  await transporter.sendMail({
-    from: `"IMed" <${GMAIL_ADDRESS}>`,
-    to: recipientEmail,
-    subject: subject,
-    text: text,
-  });
+    await transporter.sendMail({
+      from: `"IMed" <${GMAIL_ADDRESS}>`,
+      to: recipientEmail,
+      subject: subject,
+      text: text,
+    });
+  } catch (error) {
+    throw error;
+  }
 }

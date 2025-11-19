@@ -330,30 +330,31 @@ const OrderController = () => {
         return { order, orderSubCategories };
       });
 
-      [
-        "support@imed.az",
-        "karim.aliyev@caregroup.tech",
-        "farhad.abas@caregroup.tech",
-        "imed@caregroup.tech",
-      ].forEach((email) =>
-        sendMail(
-          email,
-          "Yeni sifariş göndərildi",
-          `
-          Sifariş ID: ${result.order.id}
-          Medikal: ${medical?.name}
-          Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
-          Tarix üçün: ${date}
-          Vaxt üçün: ${formatTime(startTime)}
-          Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
-          Əlavə qeyd: ${additionalInfo || "Yoxdur"}
-          Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
-          Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
-          
-          Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
-          `,
-        ),
-      );
+      // [
+      //   // "support@imed.az",
+      //   // "karim.aliyev@caregroup.tech",
+      //   // "farhad.abas@caregroup.tech",
+      //   // "imed@caregroup.tech",
+      //   "kamran@pentagonteam.studio",
+      // ].forEach((email) =>
+      //   sendMail(
+      //     email,
+      //     "Yeni sifariş göndərildi",
+      //     `
+      //     Sifariş ID: ${result.order.id}
+      //     Medikal: ${medical?.name}
+      //     Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
+      //     Tarix üçün: ${date}
+      //     Vaxt üçün: ${formatTime(startTime)}
+      //     Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
+      //     Əlavə qeyd: ${additionalInfo || "Yoxdur"}
+      //     Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
+      //     Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
+      //
+      //     Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
+      //     `,
+      //   ),
+      // );
 
       // если заказ для себя, обновляем user.passportUrls
       if (!forAnotherPerson) {
@@ -369,6 +370,7 @@ const OrderController = () => {
         statusCode: 200,
       });
     } catch (error: any) {
+      logError("Error creating order and order subcategories: ", error);
       return res.status(error.statusCode ?? 500).json({
         msg: "Error creating order and order subcategories.",
         error: error.message,
