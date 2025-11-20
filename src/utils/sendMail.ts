@@ -1,46 +1,31 @@
 import nodemailer from "nodemailer";
-import { google } from "googleapis";
 
-const {
-  GMAIL_ADDRESS,
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REFRESH_TOKEN,
-} = process.env;
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: Number(process.env.MAIL_PORT || 587),
+  secure: false, // false for 587 (STARTTLS), true for 465
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
-const oAuth2Client = new google.auth.OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-);
-oAuth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+interface SendMailOptions {
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}
 
-export async function sendMail(
-  recipientEmail: string,
-  subject: string,
-  text: string,
-) {
-  try {
-    const { token: accessToken } = await oAuth2Client.getAccessToken();
+export async function sendMail(options: SendMailOptions) {
+  const fromName = process.env.MAIL_FROM_NAME || "No Reply";
+  const fromEmail = process.env.MAIL_FROM_EMAIL || process.env.MAIL_USER;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: GMAIL_ADDRESS,
-        clientId: GOOGLE_CLIENT_ID!,
-        clientSecret: GOOGLE_CLIENT_SECRET!,
-        refreshToken: GOOGLE_REFRESH_TOKEN!,
-        accessToken: accessToken!, // optional
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"IMed" <${GMAIL_ADDRESS}>`,
-      to: recipientEmail,
-      subject: subject,
-      text: text,
-    });
-  } catch (error) {
-    throw error;
-  }
+  return transporter.sendMail({
+    from: `"${fromName}" <${fromEmail}>`,
+    to: options.to,
+    subject: options.subject,
+    text: options.text,
+    html: options.html,
+  });
 }

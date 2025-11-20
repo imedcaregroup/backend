@@ -331,29 +331,27 @@ const OrderController = () => {
       });
 
       // [
-      //   // "support@imed.az",
-      //   // "karim.aliyev@caregroup.tech",
-      //   // "farhad.abas@caregroup.tech",
-      //   // "imed@caregroup.tech",
-      //   "kamran@pentagonteam.studio",
+      //   "support@imed.az",
+      //   "karim.aliyev@caregroup.tech",
+      //   "farhad.abas@caregroup.tech",
+      //   "imed@caregroup.tech",
       // ].forEach((email) =>
-      //   sendMail(
-      //     email,
-      //     "Yeni sifariş göndərildi",
-      //     `
+      //   sendMail({
+      //     to: email,
+      //     subject: "Yeni sifariş göndərildi",
+      //     text: `
       //     Sifariş ID: ${result.order.id}
       //     Medikal: ${medical?.name}
       //     Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
       //     Tarix üçün: ${date}
-      //     Vaxt üçün: ${formatTime(startTime)}
-      //     Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
+      //     Vaxt üçün: ${formatTime(startTime)} Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
       //     Əlavə qeyd: ${additionalInfo || "Yoxdur"}
       //     Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
       //     Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
       //
       //     Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
       //     `,
-      //   ),
+      //   }),
       // );
 
       // если заказ для себя, обновляем user.passportUrls
