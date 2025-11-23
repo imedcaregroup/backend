@@ -4,15 +4,13 @@ import dayjs from "dayjs";
 import { Response } from "express";
 import multer, { FileFilterCallback } from "multer";
 import { OrderService } from "../services/orderService";
-import { AdminRequest, Payriff, UserRequest } from "../types";
+import { AdminRequest, Language, Payriff, UserRequest } from "../types";
 import s3 from "../utils/aws"; // Import the AWS S3 instance
 import { sendPostNotifications } from "../utils/helpers";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import { sendMail } from "../utils/sendMail";
-import prisma from "../config/db";
-import { HttpException } from "../utils/exception";
 import { getNotificationMessage } from "../utils/notificationMessages";
+import { sendMail } from "../utils/sendMail";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -330,29 +328,12 @@ const OrderController = () => {
         return { order, orderSubCategories };
       });
 
-      // [
-      //   "support@imed.az",
-      //   "karim.aliyev@caregroup.tech",
-      //   "farhad.abas@caregroup.tech",
-      //   "imed@caregroup.tech",
-      // ].forEach((email) =>
-      //   sendMail({
-      //     to: email,
-      //     subject: "Yeni sifariş göndərildi",
-      //     text: `
-      //     Sifariş ID: ${result.order.id}
-      //     Medikal: ${medical?.name}
-      //     Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
-      //     Tarix üçün: ${date}
-      //     Vaxt üçün: ${formatTime(startTime)} Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
-      //     Əlavə qeyd: ${additionalInfo || "Yoxdur"}
-      //     Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
-      //     Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
-      //
-      //     Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
-      //     `,
-      //   }),
-      // );
+      const emails = [
+        "support@imed.az",
+        "karim.aliyev@caregroup.tech",
+        "farhad.abas@caregroup.tech",
+        "imed@caregroup.tech",
+      ];
 
       // если заказ для себя, обновляем user.passportUrls
       if (!forAnotherPerson) {
@@ -362,11 +343,33 @@ const OrderController = () => {
         });
       }
 
-      return res.json({
+      res.json({
         msg: "Order and associated OrderSubCategories created successfully!",
         data: result,
         statusCode: 200,
       });
+
+      for (const email of emails) {
+        sendMail({
+          to: email,
+          subject: "Yeni sifariş göndərildi",
+          text: `
+          Sifariş ID: ${result.order.id}
+          Medikal: ${medical?.name}
+          Məbləğ: ${specialOffer ? specialOffer.price : price} AZN
+          Tarix üçün: ${date}
+          Vaxt üçün: ${formatTime(startTime)}
+          Special offer: ${specialOffer ? specialOffer.title_az : "Yoxdur"}
+          Əlavə qeyd: ${additionalInfo || "Yoxdur"}
+          Sifarişi verən şəxs: ${req.user.name} ${req.user.surname} (${req.user.email})
+          Başqa şəxs üçün: ${forAnotherPerson ? "Bəli" : "Xeyr"}
+
+          Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${result.order.id}
+          `,
+        }).catch((err) => {
+          logger.error(`Failed to send email to ${email}: ${err.message}`);
+        });
+      }
     } catch (error: any) {
       logError("Error creating order and order subcategories: ", error);
       return res.status(error.statusCode ?? 500).json({

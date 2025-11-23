@@ -4,8 +4,9 @@ import { Payriff, UserRequest } from "../types/index";
 import { Response } from "express";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import prisma from "../config/db";
-import { EmailJsService } from "../services/emailJsService";
 import { sentryLogger } from "../utils/sentryLogger";
+import { getMailTemplate } from "../utils/emailTemplates";
+import { sendMail } from "../utils/sendMail";
 
 const PaymentController = () => {
   const getHeaders = () => {
@@ -185,12 +186,14 @@ const PaymentController = () => {
         });
 
         if (paymentIsSuccessful) {
-          const mailService = new EmailJsService();
-          await mailService.sendMessage(
-            order.user.email as string,
-            "payment_successful",
-            { name: order.user.name as string },
-          );
+          const mailTemplate = getMailTemplate("PAYMENT_SUCCESSFUL");
+          await sendMail({
+            to: order.user.email as string,
+            subject: mailTemplate.subject,
+            html: mailTemplate.body({
+              name: (order.user.name as string).trim(),
+            }),
+          });
         }
       } catch (error) {
         sentryLogger.logException(error, req.body);
