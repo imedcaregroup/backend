@@ -1,42 +1,71 @@
-import nodemailer from "nodemailer";
-import { google } from "googleapis";
+import { Client } from "@microsoft/microsoft-graph-client";
+import { ClientSecretCredential } from "@azure/identity";
+import logger from "./logger";
 
-const {
-  GMAIL_ADDRESS,
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REFRESH_TOKEN,
-} = process.env;
+const tenantId = process.env.AZURE_TENANT_ID!;
+const clientId = process.env.AZURE_CLIENT_ID!;
+const clientSecret = process.env.AZURE_CLIENT_SECRET!;
+const sender = process.env.GRAPH_SENDER!; // e.g. no-reply@imed.az
 
-const oAuth2Client = new google.auth.OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-);
-oAuth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
 
-export async function sendMail(
-  recipientEmail: string,
-  subject: string,
-  text: string,
-) {
-  const { token: accessToken } = await oAuth2Client.getAccessToken();
+async function getAccessToken() {
+  const scope = "https://graph.microsoft.com/.default";
+  const token = await credential.getToken(scope);
+  if (!token) {
+    throw new Error("Could not obtain access token from Azure AD");
+  }
+  return token.token;
+}
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: GMAIL_ADDRESS,
-      clientId: GOOGLE_CLIENT_ID!,
-      clientSecret: GOOGLE_CLIENT_SECRET!,
-      refreshToken: GOOGLE_REFRESH_TOKEN!,
-      accessToken: accessToken!, // optional
+function getGraphClient(accessToken: string) {
+  return Client.init({
+    authProvider: (done) => {
+      done(null, accessToken);
     },
   });
+}
 
-  await transporter.sendMail({
-    from: `"IMed" <${GMAIL_ADDRESS}>`,
-    to: recipientEmail,
-    subject: subject,
-    text: text,
-  });
+export interface SendMailOptions {
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}
+
+/**
+ * Send email via Microsoft Graph as GRAPH_SENDER (no-reply@imed.az)
+ */
+export async function sendMail(options: SendMailOptions) {
+  const accessToken = await getAccessToken();
+  const client = getGraphClient(accessToken);
+
+  const message = {
+    subject: options.subject,
+    body: {
+      contentType: options.html ? "HTML" : "Text",
+      content: options.html || options.text || "",
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: options.to,
+        },
+      },
+    ],
+    from: {
+      emailAddress: {
+        address: sender,
+      },
+    },
+  };
+
+  try {
+    await client.api(`/users/${sender}/sendMail`).post({
+      message,
+      saveToSentItems: false,
+    });
+  } catch (error) {
+    logger.error(`Send mail to ${options.to} => ${JSON.stringify(error)}`);
+  }
 }

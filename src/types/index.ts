@@ -47,6 +47,4 @@ export const Payriff = {
   SUCCESS: "00000",
 };
 
-// export interface IRequestHandler {
-//   (req: Request | UserRequest, res: Response, next: NextFunction): Promise<any>;
-// }
+export type Language = "az" | "en" | "ru";

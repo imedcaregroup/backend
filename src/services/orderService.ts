@@ -1,7 +1,10 @@
 import { OrderException } from "../utils/exception";
 import { sendPostNotifications } from "../utils/helpers";
-import { EmailJsService } from "./emailJsService";
 import { getNotificationMessage } from "../utils/notificationMessages";
+import { sendMail } from "../utils/sendMail";
+import { getMailTemplate } from "../utils/emailTemplates";
+import logger from "../utils/logger";
+import { Language } from "index";
 
 export class OrderService {
   public async completeOrder(orderId: number): Promise<void> {
@@ -9,6 +12,7 @@ export class OrderService {
       where: { id: orderId },
       include: { user: true },
     });
+    logger.http(`Order ${orderId} completed by admin`);
 
     if (!order) {
       throw OrderException.orderNotFound();
@@ -30,15 +34,15 @@ export class OrderService {
       throw OrderException.couldNotSave();
     }
 
-    const mailService = new EmailJsService();
-    await mailService.sendMessage(
-      order.user.email as string,
-      "order_completed",
-      {
-        name: order.user.name as string,
+    const mailTemplate = getMailTemplate("ORDER_COMPLETED");
+    await sendMail({
+      to: order.user.email as string,
+      subject: mailTemplate.subject,
+      html: mailTemplate.body({
+        name: (order.user.name as string).trim(),
         orderId: orderId,
-      },
-    );
+      }),
+    });
 
     const notificationMessage = getNotificationMessage("ORDER_COMPLETED", "az");
 

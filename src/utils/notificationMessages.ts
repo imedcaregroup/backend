@@ -1,10 +1,4 @@
-export type NotificationLanguage = "az" | "en" | "ru";
-
-interface NotificationMessage {
-  az: { title: string; body: string };
-  en: { title: string; body: string };
-  ru: { title: string; body: string };
-}
+import { Language } from "index";
 
 export const NOTIFICATION_MESSAGES = {
   ORDER_COMPLETED: {
@@ -66,32 +60,14 @@ export const NOTIFICATION_MESSAGES = {
 } as const;
 
 /**
- * Get notification message in specified language
+ * Get a notification message in specified language
  * @param messageKey - Key from NOTIFICATION_MESSAGES
  * @param language - Language code (az, en, ru). Defaults to 'az'
  * @returns Notification title and body in the specified language
  */
 export const getNotificationMessage = (
   messageKey: keyof typeof NOTIFICATION_MESSAGES,
-  language: NotificationLanguage = "az",
+  language: Language = "az",
 ): { title: string; body: string } => {
   return NOTIFICATION_MESSAGES[messageKey][language];
-};
-
-/**
- * Get custom rejection message with optional custom reason
- * @param customReason - Custom rejection reason (optional)
- * @param language - Language code (az, en, ru). Defaults to 'az'
- * @returns Notification title and body
- */
-export const getOrderRejectionMessage = (
-  customReason?: string,
-  language: NotificationLanguage = "az",
-): { title: string; body: string } => {
-  const message = NOTIFICATION_MESSAGES.ORDER_REJECTED[language];
-
-  return {
-    title: message.title,
-    body: customReason || message.body,
-  };
 };
