@@ -1316,7 +1316,7 @@ const OrderController = () => {
   ): Promise<any> => {
     try {
       const medicalId = Number(req.params.id);
-      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${"AIzaSyDkG-aWOZsoHrimiH_ls_JZt1JOtiPCY2o"}`;
+      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
 
       const response = await fetch(endpoint);
       const data = await response.json();
