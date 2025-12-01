@@ -23,22 +23,22 @@ docker run -d --name some-postgres  -p 5432:5432  -e POSTGRES_USER=â€˜postgresâ€
 
 ## Node Version
 
-**20.11.1**
+**22.20.0**
 
-## Yarn Version
+## npm Version
 
-**1.22.22**
+**10.9.3**
 
 ## Clone the project
 
 ```bash
-  git clone https://github.com/mudassir089/iMed-backend.git
+  git clone https://github.com/imedcaregroup/backend.git
 ```
 
 ### Go to the project directory
 
 ```bash
-  cd iMed-backend
+  cd backend
 ```
 
 Install dependencies
