@@ -34,9 +34,9 @@ app.use("/api/v1", routes);
 // Error Middleware
 app.use(errorMiddleware as any);
 
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
 
-app.listen(PORT, async () => {
+app.listen(PORT, "0.0.0.0", async () => {
   try {
     logger.info(`Server is running on port ${PORT}`);
   } catch (error) {
