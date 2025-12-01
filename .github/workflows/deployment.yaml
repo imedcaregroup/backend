@@ -1,91 +1,76 @@
-#name: Deploy to EC2 Dev
-#
-#on:
-#  push:
-#    branches:
-#      - main
-#
-#jobs:
-#  deploy:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v3
-#
-#      - name: Setup Node.js
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: "20"
-#
-#      - name: Install dependencies
-#        run: npm install
-#
-#      - name: Clean and Fix Permissions for Build Directory
-#        run: |
-#          sudo chmod -R u+w ./build || true
-#          sudo rm -rf ./build || true
-#
-#      - name: Build the project
-#        env:
-#          NODE_OPTIONS: "--max-old-space-size=4096"
-#        run: npm run build
-#
-#      - name: Setup SSH
-#        env:
-#          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-#        run: |
-#          mkdir -p ~/.ssh
-#          echo "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-#          chmod 600 ~/.ssh/id_rsa
-#          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-#
-#      - name: Debug SSH connection
-#        run: |
-#          ssh -v -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} echo "SSH connection successful"
-#
-#      - name: Deploy to EC2
-#        if: success()
-#        run: |
-#          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-#            echo "Deployment in progress."
-#            cd /home/imed-user/projects/iMed-backend || exit 1
-#            git config pull.rebase false
-#
-#            git config --global user.email "muhammadmudassir0900@gmail.com"
-#            git config --global user.name "mudassir089"
-#
-#            git reset --hard HEAD || exit 1
-#            git pull origin main || exit 1
-#
-#            export NVM_DIR="$HOME/.nvm"
-#            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-#            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-#
-#            echo "Installing dependencies."
-#            npm install || exit 1
-#
-#            echo "Generate Prisma Client."
-#            npx prisma generate || exit 1
-#
-#            echo "Building Project."
-#            npm run build || exit 1
-#
-#            echo "Running Migrations."
-#            npx prisma migrate deploy
-#
-#
-#            echo "Stop the existing process if it exists"
-#            pm2 stop imed-backend-prod || true
-#            pm2 delete imed-backend-prod || true
-#
-#
-#            echo "Start the process"
-#            npm run start:prod
-#
-#
-#            echo "Saving pm2"
-#            pm2 save
-#
-#
-#            echo "Deployment successful."
-#          EOF
+name: CI & Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }} # 22 if not set
+          script: |
+            set -e
+
+            cd /home/imed-user/projects/backend
+
+            repo_url="https://imedcaregroup:${{ secrets.G_ACCESS_TOKEN }}@github.com/imedcaregroup/backend.git"
+
+            if [ ! -d ".git" ]; then
+              echo "Repository not found, cloning..."
+              git clone "$repo_url" .
+            else
+              echo "Repository found, cleaning and pulling..."
+              git reset --hard
+              git clean -fd
+              git pull "$repo_url" main --ff-only
+            fi
+
+            # Install production dependencies
+            npm ci --omit=dev
+          
+            # Generate Prisma client
+            npx prisma generate
+          
+            # Build project for production
+            npm run build
+          
+            # Apply DB migrations
+            npx prisma migrate deploy
+          
+            # Restart app with PM2
+            pm2 restart imed-backend-prod
+            pm2 save
