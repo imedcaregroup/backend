@@ -17,6 +17,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Restore Firebase service account file
+        run: |
+          mkdir -p src
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}" | base64 -d > src/service-account.json
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
