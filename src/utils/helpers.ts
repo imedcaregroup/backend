@@ -4,6 +4,9 @@ import { validationResult } from "express-validator";
 import { UserRequest, ValidationError } from "../types";
 import { messaging } from "../config/messaging";
 import * as bcrypt from "bcrypt";
+import { sendMail } from "./sendMail";
+import dayjs from "dayjs";
+import logger from "./logger";
 
 const SECRET_KEY: Secret = process.env.JWT_SECRET_KEY || "SECRET_KEY";
 type DecodedTokenType = {
@@ -18,6 +21,18 @@ export type DecodedLoginTokenType = {
   email: string;
   iat: number;
   exp: number;
+};
+
+export type OrderSubmitMailBody = {
+  id: string;
+  medical: { name: string };
+  price: number;
+  orderDate: string;
+  startTime?: number;
+  SpecialOffer?: { title_az: string };
+  additionalInfo?: string;
+  forAnotherPerson: boolean;
+  user: { name: string; surname: string; email: string };
 };
 
 export const checkValidation = (req: Request) => {
@@ -154,4 +169,35 @@ export const comparePasswords = async (
   hashedPassword: string,
 ): Promise<boolean> => {
   return await bcrypt.compare(plainTextPassword, hashedPassword);
+};
+
+export const sendOrderSubmitMails = (mailBody: OrderSubmitMailBody) => {
+  const emails = [
+    "support@imed.az",
+    "karim.aliyev@caregroup.tech",
+    "farhad.abas@caregroup.tech",
+    "imed@caregroup.tech",
+  ];
+
+  for (const email of emails) {
+    sendMail({
+      to: email,
+      subject: "Yeni sifariş göndərildi",
+      text: `
+          Sifariş ID: ${mailBody.id}
+          Medikal: ${mailBody.medical?.name}
+          Məbləğ: ${mailBody.price} AZN
+          Tarix üçün: ${dayjs(mailBody.orderDate).format("YYYY-MM-DD")}
+          Vaxt üçün: ${mailBody.startTime ? formatTime(mailBody.startTime) : "Qeyd edilməyib"}
+          Special offer: ${mailBody.SpecialOffer ? mailBody.SpecialOffer.title_az : "Yoxdur"}
+          Əlavə qeyd: ${mailBody.additionalInfo || "Yoxdur"}
+          Sifarişi verən şəxs: ${mailBody.user.name} ${mailBody.user.surname} (${mailBody.user.email})
+          Başqa şəxs üçün: ${mailBody.forAnotherPerson ? "Bəli" : "Xeyr"}
+
+          Tam sifariş məlumatlarını görmək üçün linkə klikləyin: https://imed.admin.caregroup.tech/orders/${mailBody.id}
+          `,
+    }).catch((err) => {
+      logger.error(`Failed to send email to ${email}: ${err.message}`);
+    });
+  }
 };

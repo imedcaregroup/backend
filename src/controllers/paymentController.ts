@@ -3,10 +3,11 @@ dotenv.config();
 import { Payriff, UserRequest } from "../types/index";
 import { Response } from "express";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
-import prisma from "../config/db";
 import { sentryLogger } from "../utils/sentryLogger";
 import { getMailTemplate } from "../utils/emailTemplates";
 import { sendMail } from "../utils/sendMail";
+import dayjs from "dayjs";
+import { OrderSubmitMailBody, sendOrderSubmitMails } from "../utils/helpers";
 
 const PaymentController = () => {
   const getHeaders = () => {
@@ -29,7 +30,7 @@ const PaymentController = () => {
         });
       }
 
-      const order = await prisma.order.findFirst({
+      const order = await __db.order.findFirst({
         select: { id: true },
         where: {
           id: orderId,
@@ -78,9 +79,10 @@ const PaymentController = () => {
       if (data.code === Payriff.SUCCESS) {
         sentryLogger.logMessage("Successful payment request", data, req.user);
 
-        await prisma.order.update({
+        await __db.order.update({
           data: {
             payment_order_id: data.payload.orderId,
+            paymetStatus: "pending",
           },
           where: {
             id: order.id,
@@ -130,13 +132,15 @@ const PaymentController = () => {
       }
 
       // db
-      let order = await prisma.order.findFirst({
+      let order = await __db.order.findFirst({
         where: {
           paymetStatus: "pending",
           payment_order_id: paymentOrderId,
         },
         include: {
           user: true,
+          medical: true,
+          SpecialOffer: true,
         },
       });
 
@@ -205,7 +209,7 @@ const PaymentController = () => {
         });
       }
 
-      return sendSuccessResponse({
+      sendSuccessResponse({
         res,
         data: {
           message: paymentIsSuccessful
@@ -213,6 +217,25 @@ const PaymentController = () => {
             : "There is an error on payment",
         },
       });
+
+      const mailBody: OrderSubmitMailBody = {
+        id: order.id.toString(),
+        medical: { name: order.medical?.name || "" },
+        price: order.price,
+        orderDate: dayjs(order.orderDate).format("YYYY-MM-DD"),
+        startTime: order?.startTime || undefined,
+        SpecialOffer: order.SpecialOffer
+          ? { title_az: order.SpecialOffer.title_az }
+          : undefined,
+        additionalInfo: order.additionalInfo || undefined,
+        forAnotherPerson: order.forAnotherPerson || false,
+        user: {
+          name: order.user.name || "",
+          surname: order.user.surName || "",
+          email: order.user.email || "",
+        },
+      };
+      sendOrderSubmitMails(mailBody);
     } catch (error: any) {
       return sendErrorResponse({
         res,
