@@ -3,10 +3,10 @@ name: CI & Deploy to EC2
 on:
   push:
     branches:
-      - main
+      - staging
   pull_request:
     branches:
-      - main
+      - staging
   workflow_dispatch:
 
 jobs:
@@ -25,8 +25,8 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.20.0'
-          cache: 'npm'
+          node-version: "22.20.0"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -37,7 +37,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
 
     steps:
       - name: Deploy to EC2 via SSH
@@ -50,32 +50,32 @@ jobs:
           script: |
             set -e
 
-            cd /home/imed-user/projects/backend
+            cd /home/imed-user/projects/backend-staging
 
             repo_url="https://imedcaregroup:${{ secrets.G_ACCESS_TOKEN }}@github.com/imedcaregroup/backend.git"
 
             if [ ! -d ".git" ]; then
-              echo "Repository not found, cloning..."
-              git clone "$repo_url" .
+              echo "Repository not found"
+              exit 1
             else
               echo "Repository found, cleaning and pulling..."
               git reset --hard
               git clean -fd
-              git pull "$repo_url" main --ff-only
+              git pull "$repo_url" staging --ff-only
             fi
 
-            # Install production dependencies
-            npm ci --omit=dev
-          
+            # Install staging dependencies
+            npm ci
+
             # Generate Prisma client
             npx prisma generate
-          
-            # Build project for production
+
+            # Build project for staging
             npm run build
-          
+
             # Apply DB migrations
             npx prisma migrate deploy
-          
+
             # Restart app with PM2
-            pm2 restart imed-backend-prod
+            pm2 restart imed-backend-staging
             pm2 save

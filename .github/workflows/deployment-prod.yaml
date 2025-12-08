@@ -1,0 +1,81 @@
+name: CI & Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Restore Firebase service account file
+        run: |
+          mkdir -p src
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}" | base64 -d > src/service-account.json
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }} # 22 if not set
+          script: |
+            set -e
+
+            cd /home/imed-user/projects/backend
+
+            repo_url="https://imedcaregroup:${{ secrets.G_ACCESS_TOKEN }}@github.com/imedcaregroup/backend.git"
+
+            if [ ! -d ".git" ]; then
+              echo "Repository not found"
+              exit 1
+            else
+              echo "Repository found, cleaning and pulling..."
+              git reset --hard
+              git clean -fd
+              git pull "$repo_url" main --ff-only
+            fi
+
+            # Install production dependencies
+            npm ci
+
+            # Generate Prisma client
+            npx prisma generate
+
+            # Build project for production
+            npm run build
+
+            # Apply DB migrations
+            npx prisma migrate deploy
+
+            # Restart app with PM2
+            pm2 restart imed-backend-prod
+            pm2 save
