@@ -1311,8 +1311,35 @@ const OrderController = () => {
   ): Promise<any> => {
     try {
       const medicalId = Number(req.params.id);
-      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+      const orderPrice = Number(req.body.info.orderPrice);
+      const orderDate = new Date(req.body.info.orderDate);
 
+      const nowServer = new Date();
+      // add 4 hours to get Azerbaijan time (it should be done according to user location, but for now we assume all users are in Azerbaijan, because our service is only in Azerbaijan for now)
+      const userNow = new Date(nowServer.getTime() + 4 * 60 * 60000); // TODO(xelilovkamran): get user timezone offset dynamically and calculate user's local time accordingly. Then continue all calculations based on user's local time
+
+      const userNowDayUTC = userNow.getUTCDate();
+      let orderDateDayUTC = null;
+
+      if (!medicalId || isNaN(medicalId)) {
+        throw new Error("Medical ID is required");
+      }
+
+      // if (!orderPrice || isNaN(orderPrice)) {
+      //   throw new Error("Order price is required");
+      // }
+      //
+      // if (isNaN(orderDate.getTime())) {
+      //   throw new Error("Invalid order date");
+      // }
+      if (!orderDate || isNaN(orderDate.getTime())) {
+        orderDateDayUTC = userNowDayUTC; // if the order date is not provided or invalid, assume the order is for today
+      } else {
+        orderDateDayUTC = orderDate.getUTCDate();
+      }
+
+      // call Google Maps distance matrix API to get distance between two locations
+      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 
@@ -1328,7 +1355,27 @@ const OrderController = () => {
         );
       }
 
-      const distancePricingTiers = await __db.distancePricingTier.findFirst({
+      // get home service policy for medical to check a free delivery threshold
+      const policy = await __db.homeServicePolicy.findFirst({
+        where: {
+          medicalId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          freeOverAzn: true,
+        },
+      });
+
+      if (policy?.freeOverAzn && orderPrice >= Number(policy?.freeOverAzn)) {
+        return sendSuccessResponse({
+          res,
+          data: { distanceFee: 0 },
+        });
+      }
+
+      // base distance fee from table
+      const tier = await __db.distancePricingTier.findFirst({
         where: {
           medicalId: medicalId,
           minKm: { lte: distanceInKm },
@@ -1336,21 +1383,36 @@ const OrderController = () => {
         },
       });
 
-      if (!distancePricingTiers) {
-        return sendErrorResponse({
-          res,
-          statusCode: 404,
-          error:
-            "No distance pricing tiers configured for the specified medical.",
-        });
+      if (!tier) {
+        throw new Error(
+          "No distance pricing tier found for the calculated distance",
+        );
+      }
+
+      // lead-time adjustment from table based on distance tier and lead hours
+      const leadHours = (orderDateDayUTC - userNowDayUTC) * 24;
+
+      const adj = await __db.leadtimeAdjustment.findFirst({
+        where: {
+          distancePricingTierId: tier.id,
+          minLeadHours: { lte: leadHours },
+          OR: [{ maxLeadHours: null }, { maxLeadHours: { gt: leadHours } }],
+        },
+        orderBy: [{ minLeadHours: "desc" }],
+      });
+
+      if (!adj) {
+        throw new Error(
+          "No lead-time adjustment found for the calculated lead hours",
+        );
       }
 
       return sendSuccessResponse({
         res,
-        data: { distanceFee: Number(distancePricingTiers.feeAzn) },
+        data: { distanceFee: Number(adj.feeAzn) },
       });
     } catch (error: any) {
-      console.log("errrr:", error);
+      logError("error", error);
       return sendErrorResponse({
         res,
         statusCode: error?.statusCode || 400,
