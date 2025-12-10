@@ -1324,21 +1324,26 @@ const OrderController = () => {
       const userNow = new Date(nowServer.getTime() + 4 * 60 * 60000); // TODO(xelilovkamran): get user timezone offset dynamically and calculate user's local time accordingly. Then continue all calculations based on user's local time
 
       const userNowDayUTC = userNow.getUTCDate();
-      const orderDateDayUTC = orderDate.getUTCDate();
+      let orderDateDayUTC = null;
 
       if (!medicalId || isNaN(medicalId)) {
         throw new Error("Medical ID is required");
       }
 
-      if (!orderPrice || isNaN(orderPrice)) {
-        throw new Error("Order price is required");
+      // if (!orderPrice || isNaN(orderPrice)) {
+      //   throw new Error("Order price is required");
+      // }
+      //
+      // if (isNaN(orderDate.getTime())) {
+      //   throw new Error("Invalid order date");
+      // }
+      if (!orderDate || isNaN(orderDate.getTime())) {
+        orderDateDayUTC = userNowDayUTC; // if the order date is not provided or invalid, assume the order is for today
+      } else {
+        orderDateDayUTC = orderDate.getUTCDate();
       }
 
-      if (isNaN(orderDate.getTime())) {
-        throw new Error("Invalid order date");
-      }
-
-      // call google maps distance matrix API to get distance between two locations
+      // call Google Maps distance matrix API to get distance between two locations
       const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
       const response = await fetch(endpoint);
       const data = await response.json();
@@ -1355,7 +1360,7 @@ const OrderController = () => {
         );
       }
 
-      // get home service policy for medical to check free delivery threshold
+      // get home service policy for medical to check a free delivery threshold
       const policy = await __db.homeServicePolicy.findFirst({
         where: {
           medicalId,
