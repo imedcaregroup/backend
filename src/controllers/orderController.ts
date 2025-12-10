@@ -1325,6 +1325,15 @@ const OrderController = () => {
         throw new Error("Medical ID is required");
       }
 
+      const medicalCoordinates = await __db.medical.findUnique({
+        where: { id: medicalId },
+        select: { lat: true, lng: true },
+      });
+
+      if (!medicalCoordinates) {
+        throw new Error("Medical location not found");
+      }
+
       // if (!orderPrice || isNaN(orderPrice)) {
       //   throw new Error("Order price is required");
       // }
@@ -1339,7 +1348,7 @@ const OrderController = () => {
       }
 
       // call Google Maps distance matrix API to get distance between two locations
-      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(req.body.info.address)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+      const endpoint = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(`${medicalCoordinates.lat}, ${medicalCoordinates.lng}`)}&destinations=${encodeURIComponent(`${req.body.info.lat}, ${req.body.info.lng}`)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 
