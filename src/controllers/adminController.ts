@@ -163,7 +163,7 @@ const AdminController = () => {
 
       const adminId = req.admin._id;
 
-      const admin = await prisma.admin.findUnique({
+      const admin = await __db.admin.findUnique({
         where: { id: adminId },
       });
 
