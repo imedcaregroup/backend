@@ -517,9 +517,9 @@ const OrderController = () => {
                   in: ["accepted", "pending"],
                 }
               : status,
-          startTime: {
-            not: null,
-          },
+          // startTime: {
+          //   not: null,
+          // },
         },
         ...(cursor && { cursor: { id: cursor } }),
         ...(cursor && { skip: 1 }),

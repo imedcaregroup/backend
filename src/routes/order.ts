@@ -21,6 +21,8 @@ router.route("/my").get(orderController.getMyOrders);
 // Request orders
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
 router.route("/getRequestOrder").get(orderController.getRequestOrder);
+
+// Calculate distance fee
 router
   .route("/calculateDistanceFee/:id")
   .post(orderController.calculateDistanceFee);
@@ -34,9 +36,11 @@ router
     validationWrapper(orderController.acceptOrRejectOrder),
   );
 
+// cancel order
 router
   .route("/:id/cancel")
   .post(cancelOrderValidation, validationWrapper(orderController.cancelOrder));
+
 router.route("/:id/start").post(orderController.startOrder);
 router.route("/:id/complete").post(orderController.completeOrder);
 router.route("/:id/assign").post(orderController.assignEmployeeToOrder);

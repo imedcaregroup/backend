@@ -1,10 +1,9 @@
+import { getMailTemplate } from "../utils/emailTemplates";
 import { OrderException } from "../utils/exception";
 import { sendPostNotifications } from "../utils/helpers";
+import logger from "../utils/logger";
 import { getNotificationMessage } from "../utils/notificationMessages";
 import { sendMail } from "../utils/sendMail";
-import { getMailTemplate } from "../utils/emailTemplates";
-import logger from "../utils/logger";
-import { Language } from "index";
 
 export class OrderService {
   public async completeOrder(orderId: number): Promise<void> {
