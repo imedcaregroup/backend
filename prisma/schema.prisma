@@ -405,11 +405,30 @@ model SpecialOffer {
   orders Order[] // orders created from this offer
 }
 
+enum NotificationActionType {
+  NONE
+  INTERNAL_URL
+  EXTERNAL_URL
+  ENTITY
+}
+
 model Notification {
   id        Int      @id @default(autoincrement())
   title     String
   body      String
   createdAt DateTime @default(now())
+
+  actionType NotificationActionType @default(NONE)
+
+  // If actionType is INTERNAL_URL / EXTERNAL_URL
+  actionUrl String?
+
+  // If actionType is ENTITY
+  entityType String?
+  entityId   String?
+
+  // Optional extra payload (flexible)
+  data Json?
 
   recipients UserNotification[]
 

@@ -27,7 +27,9 @@ const FcmTokenController = () => {
       // We delete instead of update to prevent race conditions where notifications
       // meant for the old user get delivered to the new user's device
       if (existingToken && existingToken.userId !== req.user._id) {
-        logHttp(`Token exists for different user (userId: ${existingToken.userId}), deleting old entry and creating new one for current user (userId: ${req.user._id})`);
+        logHttp(
+          `Token exists for different user (userId: ${existingToken.userId}), deleting old entry and creating new one for current user (userId: ${req.user._id})`,
+        );
 
         // Delete old token entry
         await __db.fcmToken.delete({

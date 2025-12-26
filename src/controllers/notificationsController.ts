@@ -14,12 +14,7 @@ const NotificationsController = () => {
           userId: req.user?._id,
         },
         include: {
-          notification: {
-            select: {
-              title: true,
-              body: true,
-            },
-          },
+          notification: true,
         },
         orderBy: { notification: { createdAt: "desc" } },
       });

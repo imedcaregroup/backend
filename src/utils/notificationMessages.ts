@@ -57,6 +57,20 @@ export const NOTIFICATION_MESSAGES = {
       body: "К сожалению, ваш заказ не может быть принят",
     },
   },
+  REQUEST_ACCEPTED: {
+    az: {
+      title: "Resept təsdiqləndi",
+      body: "Reseptiniz təsdiqləndi. Zəhmət olmasa, təfərrüatları nəzərdən keçirin və randevunuzu təsdiqləmək üçün ödənişə davam edin.",
+    },
+    en: {
+      title: "Prescription Approved",
+      body: "Your prescription has been approved. Please review the details and proceed with the payment to confirm your appointment.",
+    },
+    ru: {
+      title: "Рецепт одобрен",
+      body: "Ваш рецепт одобрен. Пожалуйста, ознакомьтесь с подробностями и перейдите к оплате, чтобы подтвердить запись на прием.",
+    },
+  },
 } as const;
 
 /**
