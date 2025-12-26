@@ -14,6 +14,7 @@ import {
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { getNotificationMessage } from "../utils/notificationMessages";
+import subCategory from "../routes/subCategory";
 
 // Set up Multer storage for S3 file upload
 const storage = multer.memoryStorage(); // Store the file in memory before uploading it to S3
@@ -418,18 +419,15 @@ const OrderController = () => {
         }
 
         const { additionalInfo, medicalId, doctor, address = null } = req.body;
-        const medical = await __db.medical.findUnique({
-          where: { id: parseInt(medicalId) },
-          select: { adminId: true, lat: true, lng: true },
-        });
-        const user = await __db.user.findUnique({
-          where: { id: parseInt(req.user._id) },
-          select: { lat: true, lng: true },
-        });
 
         if (!medicalId) {
           throw new Error("Medical ID is required");
         }
+
+        const medical = await __db.medical.findUnique({
+          where: { id: parseInt(medicalId) },
+          select: { adminId: true, lat: true, lng: true },
+        });
 
         if (!medical) {
           return sendErrorResponse({
@@ -438,6 +436,11 @@ const OrderController = () => {
             error: "Medical not found",
           });
         }
+
+        const user = await __db.user.findUnique({
+          where: { id: parseInt(req.user._id) },
+          select: { lat: true, lng: true },
+        });
 
         logHttp("Preparing to create request order...");
         const orderData = {
@@ -455,6 +458,7 @@ const OrderController = () => {
           fileUrl: fileUrls.join(","),
           createdAt: new Date(),
           orderDate: new Date(),
+          orderStatus: "preorder-pending",
           address,
           doctor,
           medical: {
@@ -494,6 +498,126 @@ const OrderController = () => {
         error: error?.message || "Unexpected error occurred",
       });
     }
+  };
+
+  const acceptRequestOrder = async (req: UserRequest, res: Response) => {
+    const subcategories = req.body.subcategories;
+    const orderId = req.params.id;
+
+    const order = await __db.order.findFirst({
+      where: { id: +orderId, adminId: req.admin._id },
+      select: { id: true, userId: true, orderStatus: true },
+    });
+
+    if (!order) {
+      return sendErrorResponse({
+        res,
+        statusCode: 404,
+        error: "Order not found",
+      });
+    }
+
+    if (order.orderStatus !== "pending") {
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: "Order status is not pending",
+      });
+    }
+
+    if (!subcategories || subcategories.length === 0) {
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: "Subcategories are required",
+      });
+    }
+
+    const detailedSubcategories = await __db.subCategory.findMany({
+      where: { id: { in: subcategories } },
+      select: {
+        id: true,
+        category: {
+          select: {
+            id: true,
+            service: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    for (const subcategory of detailedSubcategories) {
+      await __db.orderSubCategory.create({
+        data: {
+          orderId: order.id,
+          subCategoryId: subcategory.id,
+          categoryId: subcategory.category.id,
+          serviceId: subcategory.category.service.id,
+        },
+      });
+    }
+
+    await __db.order.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        orderStatus: "preorder",
+      },
+    });
+
+    const notificationMessage = getNotificationMessage(
+      "REQUEST_ACCEPTED",
+      "az",
+    );
+
+    const notification = await __db.notification.create({
+      data: {
+        title: notificationMessage.title,
+        body: notificationMessage.body,
+        actionType: "INTERNAL_URL",
+        actionUrl: "/reqeust-orders/" + orderId,
+      },
+    });
+
+    await __db.userNotification.create({
+      data: {
+        user: { connect: { id: order.userId } },
+        notification: { connect: { id: notification.id } },
+      },
+    });
+
+    const tokens = await __db.fcmToken.findMany({
+      where: {
+        userId: order.userId,
+      },
+      select: {
+        token: true,
+      },
+    });
+
+    if (tokens.length > 0) {
+      await sendPostNotifications(
+        tokens,
+        notificationMessage.title,
+        notificationMessage.body,
+        {
+          deepLink: "imedapp://reqeust-orders/" + orderId,
+        },
+      );
+      logHttp("push notifications sent ==> ", JSON.stringify(tokens));
+    } else {
+      logError("push notifications not sent ==> ", "No tokens found");
+    }
+
+    return sendSuccessResponse({
+      res,
+      message: "Request order accepted successfully",
+    });
   };
 
   const getMyOrders = async (req: UserRequest, res: Response): Promise<any> => {
@@ -1084,12 +1208,11 @@ const OrderController = () => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const page = parseInt(req.query.page as string) || 1;
-      const orderStatus = req.query.orderStatus;
+      // const orderStatus = req.query.orderStatus;
       const from = req.query.from;
       const to = req.query.to;
 
       const condition: { [key: string]: any } = {};
-      if (orderStatus) condition["orderStatus"] = orderStatus;
 
       // Add date range condition if from and to are provided
       if (from && to) {
@@ -1103,6 +1226,7 @@ const OrderController = () => {
 
       // Fetch orders where startTime is null
       condition["startTime"] = null;
+      condition["orderStatus"] = "preorder-pending";
       condition["user"] = {
         isDeleted: false,
       };
@@ -1303,6 +1427,29 @@ const OrderController = () => {
         error: error?.message,
       });
     }
+  };
+
+  const getOrderSubcategories = async (req: UserRequest, res: Response) => {
+    const orderId = parseInt(req.params.id as string);
+
+    logHttp("Fetching order subcategories from db");
+    const orderSubcategories = await __db.orderSubCategory.findMany({
+      where: {
+        orderId,
+      },
+      select: {
+        subCategoryId: true,
+        categoryId: true,
+        serviceId: true,
+      },
+    });
+
+    logHttp("Fetched order subcategories from db");
+
+    return sendSuccessResponse({
+      res,
+      data: orderSubcategories,
+    });
   };
 
   const calculateDistanceFee = async (
@@ -1568,13 +1715,6 @@ const OrderController = () => {
     }
   };
 
-  function formatTime(time: number) {
-    const str = time.toString().padStart(4, "0"); // ensures 4 digits, e.g. 900 → "0900"
-    const hours = str.slice(0, 2);
-    const minutes = str.slice(2);
-    return `${hours}:${minutes}`;
-  }
-
   const logHttp = (context: string, value?: any) =>
     logger.http(`Order - ${context} => ${JSON.stringify(value)}`);
 
@@ -1588,7 +1728,9 @@ const OrderController = () => {
     cancelOrder,
     getOrders,
     getOrder,
+    getOrderSubcategories,
     createRequestOrder,
+    acceptRequestOrder,
     getRequestOrder,
     calculateDistanceFee,
     startOrder,

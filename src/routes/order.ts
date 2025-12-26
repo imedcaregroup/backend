@@ -10,17 +10,15 @@ const orderController = OrderController();
 const router = Router();
 
 // Create order (normal user only)
-router
-  .route("/")
-  .post(orderController.createOrder)
-  .get(orderController.getOrders);
+router.route("/").post(orderController.createOrder);
+// .get(orderController.getOrders);
 
 // My orders (user)
 router.route("/my").get(orderController.getMyOrders);
 
 // Request orders
 router.route("/createRequestOrder").post(orderController.createRequestOrder);
-router.route("/getRequestOrder").get(orderController.getRequestOrder);
+// router.route("/getRequestOrder").get(orderController.getRequestOrder);
 
 // Calculate distance fee
 router
@@ -35,6 +33,9 @@ router
     acceptOrRejectOrderValidation,
     validationWrapper(orderController.acceptOrRejectOrder),
   );
+
+// Order subcategories
+router.route("/:id/subcategories").get(orderController.getOrderSubcategories);
 
 // cancel order
 router
