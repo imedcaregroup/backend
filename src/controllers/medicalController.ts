@@ -2,6 +2,7 @@ import { Response, Request } from "express";
 import logger from "../utils/logger";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response";
 import { UserRequest, AdminRequest } from "index";
+import { Prisma } from ".prisma/client";
 
 const MedicalController = () => {
   const getMedicalsBySubcategory = async (
@@ -243,53 +244,48 @@ const MedicalController = () => {
       const page = parseInt(req.query.page as string) || 1;
       const skip = (page - 1) * limit;
 
-      const medical = await global.__db.medical.findFirst({
+      const medical = await __db.medical.findFirst({
         where: { adminId },
-        include: {
-          medicalCatrgories: {
-            include: {
-              subCategory: {
-                include: {
-                  category: {
-                    include: {
-                      service: true,
-                    },
-                  },
-                },
-              },
+        select: { id: true },
+      });
+
+      if (!medical) return sendSuccessResponse({ res, data: [] });
+
+      const whereCategories: Prisma.MedicalCategoryWhereInput = {
+        medicalId: medical.id,
+        subCategory: {
+          OR: [
+            { name_en: { contains: query, mode: "insensitive" } },
+            { name_az: { contains: query, mode: "insensitive" } },
+            { name_ru: { contains: query, mode: "insensitive" } },
+          ],
+        },
+      };
+
+      const [results, totalCount] = await __db.$transaction([
+        __db.medicalCategory.findMany({
+          where: whereCategories,
+          skip,
+          take: limit,
+          orderBy: { id: "asc" },
+          include: {
+            subCategory: {
+              include: { category: { include: { service: true } } },
             },
           },
-        },
-      });
-
-      if (!medical) {
-        return sendSuccessResponse({ res, data: [] });
-      }
-
-      const filtered = medical.medicalCatrgories.filter((mc) => {
-        const subCatName = mc?.subCategory?.name || "";
-        const normalizedName = subCatName
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase();
-
-        const normalizedQuery = query
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase();
-
-        return normalizedName.includes(normalizedQuery);
-      });
-
-      const paginated = filtered.slice(skip, skip + limit);
+        }),
+        __db.medicalCategory.count({
+          where: whereCategories,
+        }),
+      ]);
 
       return sendSuccessResponse({
         res,
         data: {
-          results: paginated,
+          results: results,
           page,
-          total: filtered.length,
-          totalPages: Math.ceil(filtered.length / limit),
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       });
     } catch (error: any) {
