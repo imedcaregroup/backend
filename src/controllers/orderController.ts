@@ -504,6 +504,14 @@ const OrderController = () => {
     const subcategories = req.body.subcategories;
     const orderId = req.params.id;
 
+    if (!subcategories || subcategories.length === 0) {
+      return sendErrorResponse({
+        res,
+        statusCode: 400,
+        error: "Subcategories are required",
+      });
+    }
+
     const order = await __db.order.findFirst({
       where: { id: +orderId, adminId: req.admin._id },
       select: { id: true, userId: true, orderStatus: true },
@@ -517,19 +525,11 @@ const OrderController = () => {
       });
     }
 
-    if (order.orderStatus !== "pending") {
+    if (order.orderStatus !== "preorder-pending") {
       return sendErrorResponse({
         res,
         statusCode: 400,
         error: "Order status is not pending",
-      });
-    }
-
-    if (!subcategories || subcategories.length === 0) {
-      return sendErrorResponse({
-        res,
-        statusCode: 400,
-        error: "Subcategories are required",
       });
     }
 
