@@ -528,7 +528,7 @@ const OrderController = () => {
     if (order.orderStatus !== "preorder-pending") {
       return sendErrorResponse({
         res,
-        statusCode: 400,
+        statusCode: 409,
         error: "Order status is not pending",
       });
     }
@@ -1432,23 +1432,71 @@ const OrderController = () => {
   const getOrderSubcategories = async (req: UserRequest, res: Response) => {
     const orderId = parseInt(req.params.id as string);
 
-    logHttp("Fetching order subcategories from db");
-    const orderSubcategories = await __db.orderSubCategory.findMany({
+    logHttp("Fetching order from db");
+    const order = await __db.order.findFirst({
       where: {
-        orderId,
+        id: orderId,
       },
       select: {
-        subCategoryId: true,
-        categoryId: true,
-        serviceId: true,
+        medical: {
+          select: {
+            id: true,
+          },
+        },
+        orderSubCategories: {
+          select: {
+            subCategory: {
+              select: {
+                id: true,
+                name: true,
+                name_az: true,
+                name_en: true,
+                name_ru: true,
+                iconUrl: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            service: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    logHttp("Fetched order subcategories from db");
+    if (!order) {
+      return sendErrorResponse({
+        res,
+        statusCode: 404,
+        error: "No order found",
+      });
+    }
+
+    logHttp("Fetching medical categories from db");
+    const medicalCategories = await __db.medicalCategory.findMany({
+      where: {
+        subCategoryId: {
+          in: order.orderSubCategories.map((sc) => sc.subCategory.id),
+        },
+      },
+    });
+
+    const totalPrice = medicalCategories.reduce((acc, mc) => acc + mc.price, 0);
 
     return sendSuccessResponse({
       res,
-      data: orderSubcategories,
+      data: {
+        subCategories: order.orderSubCategories,
+        totalPrice,
+      },
     });
   };
 
