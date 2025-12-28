@@ -1432,17 +1432,11 @@ const OrderController = () => {
   const getOrderSubcategories = async (req: UserRequest, res: Response) => {
     const orderId = parseInt(req.params.id as string);
 
-    logHttp("Fetching order from db");
+    logHttp("Fetching order and total price from db");
     const order = await __db.order.findFirst({
-      where: {
-        id: orderId,
-      },
+      where: { id: orderId },
       select: {
-        medical: {
-          select: {
-            id: true,
-          },
-        },
+        medical: { select: { id: true } },
         orderSubCategories: {
           select: {
             subCategory: {
@@ -1455,18 +1449,8 @@ const OrderController = () => {
                 iconUrl: true,
               },
             },
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            service: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+            category: { select: { id: true, name: true } },
+            service: { select: { id: true, name: true } },
           },
         },
       },
@@ -1480,16 +1464,16 @@ const OrderController = () => {
       });
     }
 
-    logHttp("Fetching medical categories from db");
-    const medicalCategories = await __db.medicalCategory.findMany({
-      where: {
-        subCategoryId: {
-          in: order.orderSubCategories.map((sc) => sc.subCategory.id),
-        },
-      },
+    const subCategoryIds = order.orderSubCategories.map(
+      (sc) => sc.subCategory.id,
+    );
+
+    const totalAgg = await __db.medicalCategory.aggregate({
+      where: { subCategoryId: { in: subCategoryIds } },
+      _sum: { price: true },
     });
 
-    const totalPrice = medicalCategories.reduce((acc, mc) => acc + mc.price, 0);
+    const totalPrice = totalAgg._sum.price ?? 0;
 
     return sendSuccessResponse({
       res,
