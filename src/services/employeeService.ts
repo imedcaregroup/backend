@@ -1,22 +1,24 @@
 import prisma from "../config/db";
-import {HttpException} from "../utils/exception";
-import {formatTime} from "../utils/helpers";
+import { HttpException } from "../utils/exception";
+import { formatTime } from "../utils/helpers";
+import { Prisma, Order } from ".prisma/client";
+import { Employee } from "@prisma/client";
 
 const daysMap: Record<number, string> = {
-    1: "Monday",
-    2: "Tuesday",
-    3: "Wednesday",
-    4: "Thursday",
-    5: "Friday",
-    6: "Saturday",
-    7: "Sunday"
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+  6: "Saturday",
+  7: "Sunday",
 };
 
 export class EmployeeService {
   public async getDoctors(categoryId: number | null): Promise<any> {
     let condition: any = {
       include: {
-        medicals: { include: { medical: true} },
+        medicals: { include: { medical: true } },
         employeeCategories: {
           include: {
             subCategory: true,
@@ -60,9 +62,9 @@ export class EmployeeService {
         position: employee.position,
         imageUrl: employee.imageUrl,
         medicals: employee.medicals.map((em: any) => ({
-            id: em.medical.id,
-            name: em.medical.name,
-            iconUrl: em.medical.iconUrl,
+          id: em.medical.id,
+          name: em.medical.name,
+          iconUrl: em.medical.iconUrl,
         })),
         services: employee.employeeCategories.map((item: any) => {
           return {
@@ -80,76 +82,125 @@ export class EmployeeService {
   }
 
   public async getDoctor(id: number): Promise<any> {
-      const employee = await prisma.employee.findUnique({
+    const employee = await prisma.employee.findUnique({
+      include: {
+        medicals: {
+          include: { medical: true },
+        },
+        city: true,
+        employeeCategories: {
           include: {
-              medicals: {
-                  include: { medical: true },
+            subCategory: {
+              include: {
+                category: true,
               },
-              city: true,
-              employeeCategories: {
-                  include: {
-                      subCategory: {
-                          include: {
-                              category: true
-                          }
-                      },
-                  },
-              },
+            },
           },
-          where: {
-              type: "DOCTOR",
-              id
-          },
-      });
+        },
+      },
+      where: {
+        type: "DOCTOR",
+        id,
+      },
+    });
 
-      if (!employee) {
-          throw new HttpException(404, 'Doctor not found');
-      }
+    if (!employee) {
+      throw new HttpException(404, "Doctor not found");
+    }
 
-      return {
-          id: employee.id,
-          name: employee.name,
-          surName: employee.surName,
-          position: employee.position,
-          patientsCount: employee.patientsCount,
-          experienceYears: {
-              az: employee.experienceYears_az,
-              ru: employee.experienceYears_ru,
-              en: employee.experienceYears_en,
-          },
-          about: {
-            az: employee.about_az,
-            ru: employee.about_ru,
-            en: employee.about_en,
-          },
-          city: employee.city ? {
+    return {
+      id: employee.id,
+      name: employee.name,
+      surName: employee.surName,
+      position: employee.position,
+      patientsCount: employee.patientsCount,
+      experienceYears: {
+        az: employee.experienceYears_az,
+        ru: employee.experienceYears_ru,
+        en: employee.experienceYears_en,
+      },
+      about: {
+        az: employee.about_az,
+        ru: employee.about_ru,
+        en: employee.about_en,
+      },
+      city: employee.city
+        ? {
             az: employee.city.name_az,
             ru: employee.city.name_ru,
             en: employee.city.name_en,
-          } : null,
-          imageUrl: employee.imageUrl,
-          medicals: employee.medicals.map((em: any) => ({
-              id: em.medical.id,
-              name: em.medical.name,
-              iconUrl: em.medical.iconUrl,
-              address: em.medical.address,
-          })),
-          schedule: await this.getSchedule(employee.id),
-          services: employee.employeeCategories.map((item: any) => {
-              return {
-                  categoryId: item.subCategory.categoryId,
-                  subCategoryId: item.subCategoryId,
-                  categoryIconUrl: item.subCategory.category.iconUrl,
-                  categoryName: item.subCategory.category.name,
-                  name: item.subCategory.name,
-                  az: item.subCategory.name_az,
-                  ru: item.subCategory.name_ru,
-                  en: item.subCategory.name_en,
-                  systemName: item.subCategory.systemName,
-                  price: item.price.toString(),
-              };
-          }),
-      };
+          }
+        : null,
+      imageUrl: employee.imageUrl,
+      medicals: employee.medicals.map((em: any) => ({
+        id: em.medical.id,
+        name: em.medical.name,
+        iconUrl: em.medical.iconUrl,
+        address: em.medical.address,
+      })),
+      schedule: await this.getSchedule(employee.id),
+      services: employee.employeeCategories.map((item: any) => {
+        return {
+          categoryId: item.subCategory.categoryId,
+          subCategoryId: item.subCategoryId,
+          categoryIconUrl: item.subCategory.category.iconUrl,
+          categoryName: item.subCategory.category.name,
+          name: item.subCategory.name,
+          az: item.subCategory.name_az,
+          ru: item.subCategory.name_ru,
+          en: item.subCategory.name_en,
+          systemName: item.subCategory.systemName,
+          price: item.price.toString(),
+        };
+      }),
+    };
+  }
+
+  public async getDoctorByUserId(userId: number): Promise<Employee> {
+    const employee = await prisma.employee.findFirst({
+      where: { userId },
+    });
+
+    if (!employee) {
+      throw new HttpException(404, "Doctor not found");
+    }
+
+    return employee;
+  }
+
+  public async getOrdersByDoctorId(id: number): Promise<Order[]> {
+    return __db.order.findMany({
+      where: {
+        employeeId: id,
+      },
+      include: {
+        orderSubCategories: {
+          include: {
+            subCategory: {
+              select: {
+                id: true,
+                name: true,
+                iconUrl: true,
+              },
+            },
+          },
+        },
+        SpecialOffer: {
+          select: {
+            id: true,
+            title_az: true,
+            title_en: true,
+            title_ru: true,
+            imageUrl_az: true,
+            imageUrl_en: true,
+            imageUrl_ru: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
   }
 
   public async createEmployee(data: any): Promise<any> {
@@ -169,7 +220,7 @@ export class EmployeeService {
       about_en,
       experienceYears_az,
       experienceYears_ru,
-      experienceYears_en
+      experienceYears_en,
     } = data;
 
     const existingEmployeeByUser = await prisma.employee.findFirst({
@@ -195,7 +246,7 @@ export class EmployeeService {
         experienceYears_en,
         experienceYears_ru,
         user: { connect: { id: userId } },
-        city: cityId ? { connect: {id: cityId} } : undefined,
+        city: cityId ? { connect: { id: cityId } } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });
@@ -251,7 +302,7 @@ export class EmployeeService {
         experienceYears_en,
         imageUrl,
         user: { connect: { id: userId } },
-        city: cityId ? { connect: {id: undefined} } : undefined,
+        city: cityId ? { connect: { id: undefined } } : undefined,
         medical: { connect: { id: medicals[0] } },
       },
     });
@@ -284,35 +335,35 @@ export class EmployeeService {
   }
 
   protected async syncEmployeeMedicals(
-      employeeId: number,
-      medicals: number[]
+    employeeId: number,
+    medicals: number[],
   ): Promise<number[]> {
-      await prisma.employeeMedical.deleteMany({
+    await prisma.employeeMedical.deleteMany({
+      where: {
+        employeeId,
+        medicalId: { notIn: medicals },
+      },
+    });
+
+    await Promise.all(
+      medicals.map(async (medicalId) => {
+        const medical = await prisma.medical.findUnique({
+          where: { id: medicalId },
+        });
+
+        if (!medical) return;
+
+        await prisma.employeeMedical.upsert({
           where: {
-              employeeId,
-              medicalId: { notIn: medicals },
+            employeeId_medicalId: { employeeId, medicalId },
           },
-      });
+          create: { employeeId, medicalId },
+          update: {},
+        });
+      }),
+    );
 
-      await Promise.all(
-          medicals.map(async (medicalId) => {
-              const medical = await prisma.medical.findUnique({
-                  where: { id: medicalId },
-              });
-
-              if (!medical) return;
-
-              await prisma.employeeMedical.upsert({
-                  where: {
-                      employeeId_medicalId: { employeeId, medicalId },
-                  },
-                  create: { employeeId, medicalId },
-                  update: {}
-              });
-          })
-      );
-
-      return medicals;
+    return medicals;
   }
 
   protected async syncEmployeeCategories(
@@ -362,12 +413,12 @@ export class EmployeeService {
 
   protected async getSchedule(employeeId: number): Promise<string> {
     const slots = await prisma.availability.findMany({
-        where: {employeeId},
-        orderBy: {day: "asc"}
+      where: { employeeId },
+      orderBy: { day: "asc" },
     });
 
     if (!slots.length) {
-        return '';
+      return "";
     }
 
     const result: string[] = [];
@@ -375,39 +426,39 @@ export class EmployeeService {
     let prev: any = null;
 
     for (const slot of slots) {
-        if (!rangeStart) {
-            rangeStart = slot;
-            prev = slot;
-            continue;
-        }
-
-        const sameHours =
-            slot.startTime === rangeStart.startTime &&
-            slot.endTime === rangeStart.endTime;
-
-        if (!sameHours || slot.day !== prev.day + 1) {
-            const time = `${formatTime(rangeStart.startTime)}-${formatTime(rangeStart.endTime)}`;
-            result.push(
-                rangeStart.day === prev.day
-                    ? `${daysMap[rangeStart.day]} ${time}`
-                    : `${daysMap[rangeStart.day]} - ${daysMap[prev.day]}, ${time}`
-            );
-
-            rangeStart = slot;
-        }
-
+      if (!rangeStart) {
+        rangeStart = slot;
         prev = slot;
+        continue;
+      }
+
+      const sameHours =
+        slot.startTime === rangeStart.startTime &&
+        slot.endTime === rangeStart.endTime;
+
+      if (!sameHours || slot.day !== prev.day + 1) {
+        const time = `${formatTime(rangeStart.startTime)}-${formatTime(rangeStart.endTime)}`;
+        result.push(
+          rangeStart.day === prev.day
+            ? `${daysMap[rangeStart.day]} ${time}`
+            : `${daysMap[rangeStart.day]} - ${daysMap[prev.day]}, ${time}`,
+        );
+
+        rangeStart = slot;
+      }
+
+      prev = slot;
     }
 
     if (rangeStart) {
-        const time = `${formatTime(rangeStart.startTime)}-${formatTime(rangeStart.endTime)}`;
-        result.push(
-            rangeStart.day === prev.day
-                ? `${daysMap[rangeStart.day]} ${time}`
-                : `${daysMap[rangeStart.day]} - ${daysMap[prev.day]}, ${time}`
-        );
+      const time = `${formatTime(rangeStart.startTime)}-${formatTime(rangeStart.endTime)}`;
+      result.push(
+        rangeStart.day === prev.day
+          ? `${daysMap[rangeStart.day]} ${time}`
+          : `${daysMap[rangeStart.day]} - ${daysMap[prev.day]}, ${time}`,
+      );
     }
 
-    return result.join(', ');
+    return result.join(", ");
   }
 }
