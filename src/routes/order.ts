@@ -10,8 +10,10 @@ const orderController = OrderController();
 const router = Router();
 
 // Create order (normal user only)
-router.route("/").post(orderController.createOrder);
-// .get(orderController.getOrders);
+router
+  .route("/")
+  .post(orderController.createOrder)
+  .get(orderController.getOrders);
 
 // My orders (user)
 router.route("/my").get(orderController.getMyOrders);
@@ -42,6 +44,7 @@ router
   .route("/:id/cancel")
   .post(cancelOrderValidation, validationWrapper(orderController.cancelOrder));
 
+// employee order actions
 router.route("/:id/start").post(orderController.startOrder);
 router.route("/:id/complete").post(orderController.completeOrder);
 router.route("/:id/assign").post(orderController.assignEmployeeToOrder);

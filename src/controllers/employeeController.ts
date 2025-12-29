@@ -108,16 +108,34 @@ const EmployeeController = () => {
   const getDoctor = async (req: UserRequest, res: Response): Promise<any> => {
     const employeeId = parseInt(req.params.id as string);
     if (!employeeId) {
-        return sendErrorResponse({res, error: 'Invalid employee id', statusCode: 400});
+      return sendErrorResponse({
+        res,
+        error: "Invalid employee id",
+        statusCode: 400,
+      });
     }
 
     try {
-        const employeeService = new EmployeeService();
-        const doctor = await employeeService.getDoctor(employeeId);
+      const employeeService = new EmployeeService();
+      const doctor = await employeeService.getDoctor(employeeId);
 
-        return sendSuccessResponse({res, data: doctor});
+      return sendSuccessResponse({ res, data: doctor });
     } catch (error) {
-        return sendErrorResponse({res, error});
+      return sendErrorResponse({ res, error });
+    }
+  };
+
+  const getOrders = async (req: UserRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id;
+
+    try {
+      const employeeService = new EmployeeService();
+      const doctor = await employeeService.getDoctorByUserId(userId);
+      const doctorOrders = await employeeService.getOrdersByDoctorId(doctor.id);
+
+      return sendSuccessResponse({ res, data: doctorOrders });
+    } catch (error) {
+      return sendErrorResponse({ res, error });
     }
   };
 
@@ -128,6 +146,7 @@ const EmployeeController = () => {
     createEmployee,
     updateEmployee,
     deleteEmployee,
+    getOrders,
   };
 };
 

@@ -106,21 +106,20 @@ router
   .delete(subCategoryController.deleteSubCategory);
 
 // employee
-router.route("/employees").get(employeeController.getEmployees);
 router
   .route("/employees")
+  .get(employeeController.getEmployees)
   .post(
     createEmployeeValidation,
     validationWrapper(employeeController.createEmployee),
   );
+
 router
   .route("/employees/:id")
   .patch(
     updateEmployeeValidation,
     validationWrapper(employeeController.updateEmployee),
-  );
-router
-  .route("/employees/:id")
+  )
   .delete(
     deleteEmployeeValidation,
     validationWrapper(employeeController.deleteEmployee),
