@@ -78,36 +78,38 @@ const SubCategoryController = () => {
       return sendSuccessResponse({
         res,
         data: {
-          subCategories: subCategories.map((obj: any) => {
-            let item = {
-              id: obj.id,
-              iconUrl: obj.iconUrl,
-              name: obj.name,
-              en: obj.name_en,
-              az: obj.name_az,
-              ru: obj.name_ru,
-              categoryId: obj.categoryId,
-              categoryName: obj.category?.name,
-              serviceId: obj.category?.serviceId,
-              serviceName: obj.category.service?.name,
-              price: "0 AZN",
-            };
+          subCategories: subCategories
+            .filter((obj) => Boolean(obj.medicalCategories.length))
+            .map((obj: any) => {
+              let item = {
+                id: obj.id,
+                iconUrl: obj.iconUrl,
+                name: obj.name,
+                en: obj.name_en,
+                az: obj.name_az,
+                ru: obj.name_ru,
+                categoryId: obj.categoryId,
+                categoryName: obj.category?.name,
+                serviceId: obj.category?.serviceId,
+                serviceName: obj.category.service?.name,
+                price: "0 AZN",
+              };
 
-            if (obj.medicalCategories.length > 1) {
-              const minPrice = Math.ceil(obj.medicalCategories[0].price);
-              const maxPrice = Math.ceil(
-                obj.medicalCategories[obj.medicalCategories.length - 1].price,
-              );
+              if (obj.medicalCategories.length > 1) {
+                const minPrice = Math.ceil(obj.medicalCategories[0].price);
+                const maxPrice = Math.ceil(
+                  obj.medicalCategories[obj.medicalCategories.length - 1].price,
+                );
 
-              if (minPrice === maxPrice) item.price = `${minPrice} AZN`;
-              else item.price = `${minPrice}-${maxPrice} AZN`;
-            } else if (obj.medicalCategories.length === 1) {
-              item.price =
-                Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
-            }
+                if (minPrice === maxPrice) item.price = `${minPrice} AZN`;
+                else item.price = `${minPrice}-${maxPrice} AZN`;
+              } else if (obj.medicalCategories.length === 1) {
+                item.price =
+                  Math.ceil(obj.medicalCategories[0].price).toString() + " AZN";
+              }
 
-            return item;
-          }),
+              return item;
+            }),
           cursor:
             subCategories.length >= limit
               ? subCategories[subCategories.length - 1]["id"]
