@@ -64,6 +64,11 @@ const SubCategoryController = () => {
           medicalCategories: {
             select: { price: true },
             orderBy: { price: "asc" },
+            where: {
+              price: {
+                gt: 0,
+              },
+            },
           },
         },
       });
