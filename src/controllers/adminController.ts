@@ -346,13 +346,18 @@ const AdminController = () => {
       // Create where clause based on admin role
       const whereClause = adminRole === "SUPER_ADMIN" ? {} : { adminId };
 
-      const medicals = await prisma.medical.findMany({
+      const medicals = await __db.medical.findMany({
         where: whereClause as Prisma.MedicalWhereInput,
         include: {
           availabilities: true,
           medicalCatrgories: {
             include: {
               subCategory: true,
+            },
+            where: {
+              price: {
+                gt: 0,
+              },
             },
           },
         },
